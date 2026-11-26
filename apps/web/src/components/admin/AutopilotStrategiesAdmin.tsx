@@ -2,12 +2,14 @@
 // Admin · Autopilot strategies (HC-TR-277; ADR-141, ADR-142): every saved strategy with its stage, how it enters, its
 // backtest figures and who can use it, and the steps the API would accept for it: edit, copy, publish to paper, retire,
 // delete. A second tab lists the built-in strategies, read-only, each with "Copy as my own" (HC-TR-280): the built-in
-// one is never changed. Paper only.
+// one is never changed. HC-TR-289, HC-TR-290 (ADR-144): Backtest opens the app's own backtest of a strategy, and the
+// figures say whether they were computed in the app or entered by hand. Paper only.
 import { AUTOPILOT_PLAYBOOKS, type Playbook, playbookBacktest, playbookCadence } from "@hapiecoin/pricing";
 import { SAVED_STAGES, SAVED_STAGE_LABELS, type SavedStage, type SavedStrategy } from "@hapiecoin/schema";
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { AdminHeader } from "./AdminShell";
+import { AutopilotBacktestDialog, pricesOf } from "./AutopilotBacktestDialog";
 import { AutopilotStrategyDialog } from "./AutopilotStrategyDialog";
 import { useDeleteSavedStrategy, useSavedStrategies, useSavedStrategyStep } from "@/lib/api/autopilot-saved";
 import { useAdminPlans } from "@/lib/api/billing";
@@ -44,9 +46,12 @@ export function AutopilotStrategiesAdmin() {
   const [view, setView] = useState<"mine" | "builtin">("mine");
   const [copying, setCopying] = useState<{ id: string; from: string; form: SavedForm; notes: string[] } | null>(null);
   const [asking, setAsking] = useState<{ step: Step; strategy: SavedStrategy } | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
   const all = useMemo(() => list.data ?? [], [list.data]);
   const rows = all.filter((s) => (!q || `${s.name} ${s.summary}`.toLowerCase().includes(q.toLowerCase())) && (stage === "all" || s.stage === stage));
   const filtered = q !== "" || stage !== "all";
+  // (by id, so the dialog shows the strategy as the list has it after its figures are stored)
+  const testing = testingId ? all.find((s) => s.id === testingId) : undefined;
   const builtIn = BUILT_IN.filter(({ p }) => !q || `${p.name} ${p.summary}`.toLowerCase().includes(q.toLowerCase()));
   const clear = () => { setQ(""); setStage("all"); };
   // each tab starts unfiltered: a search or a stage chosen on one must not hide rows on the other
@@ -125,13 +130,15 @@ export function AutopilotStrategiesAdmin() {
                         <>
                           <div className={s.backtest.mean > 0 ? "text-profit" : s.backtest.mean < 0 ? "text-loss" : undefined}>{signed(s.backtest.mean)} a {s.backtest.per}</div>
                           <div className="micro">{s.backtest.positivePct} % won · worst {signed(s.backtest.worst)} · {s.backtest.samples} trades</div>
-                          <div className="micro" title={s.backtest.basis}>entered by hand{s.backtestAt ? ` · ${fmtDate(s.backtestAt)}` : ""}</div>
+                          <div className="micro" title={s.backtest.basis} data-testid="saved-backtest-source">{s.backtest.run ? `backtest in the app · ${pricesOf(s.backtest.run)}` : "entered by hand"}{s.backtestAt ? ` · ${fmtDate(s.backtestAt)}` : ""}</div>
+                          {s.backtest.run ? <div className="micro">{fmtDate(s.backtest.run.from)} to {fmtDate(s.backtest.run.to)}</div> : null}
                         </>
                       ) : <span className="text-muted-foreground">No figures yet</span>}
                     </td>
                     <td className="max-w-[180px] py-1.5 pr-2" data-testid="saved-who">{who(s)}</td>
                     <td className="py-1.5 pr-2 text-right whitespace-nowrap">
                       {can.edit ? <Button size="sm" variant="ghost" onClick={() => setEditing(s)} aria-label={`Edit ${s.name}`} data-testid="saved-edit">Edit</Button> : null}
+                      {can.edit ? <Button size="sm" variant="ghost" onClick={() => setTestingId(s.id)} aria-label={`Backtest ${s.name}`} data-testid="saved-backtest-open">Backtest</Button> : null}
                       <Button size="sm" variant="ghost" onClick={() => copy(s)} aria-label={`Copy ${s.name}`} data-testid="saved-copy">Copy</Button>
                       {can.publish ? <Button size="sm" variant="outline" onClick={() => setAsking({ step: "publish", strategy: s })} aria-label={`Publish ${s.name}`} data-testid="saved-publish">Publish</Button> : null}
                       {can.retire ? <Button size="sm" variant="outline" onClick={() => setAsking({ step: "retire", strategy: s })} aria-label={`Retire ${s.name}`} data-testid="saved-retire">Retire</Button> : null}
@@ -147,6 +154,7 @@ export function AutopilotStrategiesAdmin() {
       </div>
       {copying ? <AutopilotStrategyDialog key={`copy-${copying.id}`} strategy={null} copy={copying} onSaved={saved} onOpenChange={(o) => { if (!o) setCopying(null); }} /> : null}
       {editing ? <AutopilotStrategyDialog key={editing === "new" ? "new" : editing.id} strategy={editing === "new" ? null : editing} onSaved={saved} onOpenChange={(o) => { if (!o) setEditing(null); }} /> : null}
+      {testing ? <AutopilotBacktestDialog key={`bt-${testing.id}`} strategy={testing} onOpenChange={(o) => { if (!o) setTestingId(null); }} /> : null}
       <Dialog open={asking !== null} onOpenChange={(o) => { if (!o) setAsking(null); }}>
         <DialogContent className="sm:max-w-[440px]" data-testid="saved-confirm">
           <DialogHeader>
