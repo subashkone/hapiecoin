@@ -210,9 +210,9 @@
     "semantic_hash": ""
   },
   "mockup-v2/features/21-trading.json": {
-    "mtime": 1795666921.561495,
-    "seen": 1795667033.855208,
-    "ast_hash": "87e2bad511cfcb15537d172ee9e29b75",
+    "mtime": 1795678323.0780175,
+    "seen": 1795678390.977044,
+    "ast_hash": "cc8eb2c1fbf431328d6f72ae383c9ffa",
     "semantic_hash": ""
   },
   "mockup-v2/features/30-account.json": {
@@ -318,21 +318,21 @@
     "semantic_hash": ""
   },
   "spec/traceability.json": {
-    "mtime": 1795667657.8506112,
-    "seen": 1795667761.7940283,
-    "ast_hash": "9466a8ef717519f98e2318310eaed3de",
+    "mtime": 1795678330.147211,
+    "seen": 1795678391.01621,
+    "ast_hash": "f28d84703e5cd4c90a736116334482fc",
     "semantic_hash": ""
   },
   "GAPS.md": {
-    "mtime": 1795667657.698419,
-    "seen": 1795667761.8164608,
-    "ast_hash": "cedf8179ac5aac2095e72e3c5a62127b",
+    "mtime": 1795678323.0679674,
+    "seen": 1795678391.0262861,
+    "ast_hash": "73f87dbd27560aca8a9a06694979b68e",
     "semantic_hash": ""
   },
   "docs/DECISIONS.md": {
-    "mtime": 1795667657.698419,
-    "seen": 1795667761.820477,
-    "ast_hash": "96a06c4d6b17e0833b7791883f0d7884",
+    "mtime": 1795678323.0679674,
+    "seen": 1795678391.0262861,
+    "ast_hash": "c79c8d3c4302edf1880f74e7086f21e1",
     "semantic_hash": ""
   },
   "mockup-clone/CLONE-BRIEF.md": {
@@ -696,9 +696,9 @@
     "semantic_hash": ""
   },
   "spec/hapiecoin-build-spec.html": {
-    "mtime": 1795667657.869163,
-    "seen": 1795667761.8553512,
-    "ast_hash": "9f5616aab6ef417d794e99d13aed30e4",
+    "mtime": 1795678330.1601825,
+    "seen": 1795678391.0483553,
+    "ast_hash": "c2600a9e85ee369ef78e85bedee64306",
     "semantic_hash": ""
   },
   ".claude/hooks/_lib.js": {
@@ -762,9 +762,9 @@
     "semantic_hash": ""
   },
   ".claude/memory/activeContext.md": {
-    "mtime": 1795666921.5702624,
-    "seen": 1795667033.9184208,
-    "ast_hash": "21adba0b887b90bc7a7bdc6a99c45a6f",
+    "mtime": 1795678323.0679674,
+    "seen": 1795678391.0262861,
+    "ast_hash": "fa6d4e1a90b3b445f9cd97bc7cfa99d2",
     "semantic_hash": ""
   },
   ".claude/memory/productContext.md": {
@@ -2082,9 +2082,9 @@
     "semantic_hash": ""
   },
   "apps/web/test/mock-api.ts": {
-    "mtime": 1795657336.388572,
-    "seen": 1795658494.9277394,
-    "ast_hash": "22fb940e3bd821428d6fa9ccbfa88bd1",
+    "mtime": 1795678013.5534122,
+    "seen": 1795678390.9657807,
+    "ast_hash": "53a15bb1affa24105f888617080ef894",
     "semantic_hash": ""
   },
   "apps/web/test/next-mocks.ts": {
@@ -5460,9 +5460,9 @@
     "semantic_hash": ""
   },
   "docs/ROADMAP.md": {
-    "mtime": 1795667657.698419,
-    "seen": 1795667761.820477,
-    "ast_hash": "3430ad21b4523626039a005b8d975e1a",
+    "mtime": 1795678323.0679674,
+    "seen": 1795678391.0262861,
+    "ast_hash": "96af4435e9a01b80efc52a251b506238",
     "semantic_hash": ""
   },
   "docs/deploy.md": {
@@ -8100,15 +8100,15 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx": {
-    "mtime": 1795657336.0388362,
-    "seen": 1795658494.83656,
-    "ast_hash": "7f9474c20876c36a289a13a5364255d7",
+    "mtime": 1795678095.8376493,
+    "seen": 1795678390.9217522,
+    "ast_hash": "2de04b40058e352a1501ae72ab05ceba",
     "semantic_hash": ""
   },
   "apps/web/src/components/admin/AutopilotStrategyDialog.tsx": {
-    "mtime": 1795657336.0388362,
-    "seen": 1795658494.83656,
-    "ast_hash": "df19d4412ab22fbe67a142c55c84c997",
+    "mtime": 1795678013.5534122,
+    "seen": 1795678390.9217522,
+    "ast_hash": "0f272990dcbe0390a9321c2b7e97485d",
     "semantic_hash": ""
   },
   "apps/web/src/components/admin/autopilot-strategies.test.tsx": {
@@ -8118,9 +8118,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/lib/api/autopilot-saved.ts": {
-    "mtime": 1795657336.1010416,
-    "seen": 1795658494.889497,
-    "ast_hash": "c900ca1190d66d71ac62b752793f78da",
+    "mtime": 1795677956.338143,
+    "seen": 1795678390.9502666,
+    "ast_hash": "cfd6cbc8520670e0ff9541f9e488e0cd",
     "semantic_hash": ""
   },
   "apps/web/src/lib/strategy/saved-form.test.ts": {
@@ -8247,6 +8247,18 @@
     "mtime": 1795667259.077955,
     "seen": 1795667761.818469,
     "ast_hash": "d8ecfe94c1e33fd39198e6dbda623c76",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/admin/AutopilotBacktestDialog.tsx": {
+    "mtime": 1795678095.8358667,
+    "seen": 1795678390.9217522,
+    "ast_hash": "0e730c676b06ba3ea52a75bfec73ff6a",
+    "semantic_hash": ""
+  },
+  "apps/web/src/components/admin/autopilot-backtest.test.tsx": {
+    "mtime": 1795678275.5756736,
+    "seen": 1795678390.9217522,
+    "ast_hash": "6f08f07a74eb4fdc6120607a21cab3e7",
     "semantic_hash": ""
   }
 }

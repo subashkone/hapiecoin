@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { AUTOPILOT_PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
-import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
+import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedBacktestRun, SavedBacktestStart, type SavedBacktestTrade, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
@@ -146,6 +146,11 @@ export interface MockState {
   banners: MockBanner[];
   /** Saved Autopilot strategies (ADR-142), as the admin routes answer them. */
   savedStrategies: SavedStrategy[];
+  /** Runs of the backtest in the app (ADR-144), oldest first, each with the settings it tested. A running one is done after `savedBacktestReads` reads. */
+  savedBacktests: { run: SavedBacktestRun; tested: string; reads: number; asked?: boolean }[];
+  savedBacktestReads: number;
+  /** Whether this server has the exchange's price history: without it a backtest cannot start (503). */
+  savedBacktestSource: boolean;
   /** Coupons and payments (ADR-034); checkout answers in "mock" mode, confirm accepts the signature "mock-sig". */
   coupons: Coupon[];
   payments: (Payment & { userId: string; couponId: string | null })[];
@@ -276,7 +281,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], savedBacktests: [], savedBacktestReads: 1, savedBacktestSource: true, coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
@@ -1791,9 +1796,11 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const unknownPlan = body.planIds?.find((x) => !state.plans.some((pl) => pl.id === x));
     if (unknownPlan !== undefined) return err(c, 400, "BAD_REQUEST", `${SAVED_REFUSALS.unknownPlan}: ${unknownPlan}`);
     const resettled = body.definition !== undefined && stableJson(body.definition) !== stableJson(row.definition);
-    const backtest = body.backtest !== undefined ? body.backtest : resettled ? null : row.backtest;
+    // (figures typed back unchanged keep the mark of the run they came from, as the server keeps it)
+    const untouched = body.backtest && !resettled && row.backtest?.run && stableJson(body.backtest) === stableJson({ ...row.backtest, run: undefined });
+    const backtest = untouched ? row.backtest : body.backtest !== undefined ? body.backtest : resettled ? null : row.backtest;
     const at = nowIso();
-    const next = { name: body.name ?? row.name, summary: body.summary ?? row.summary, audience: body.audience ?? row.audience, userIds: body.userIds ?? row.userIds, planIds: body.planIds ?? row.planIds, backtest, backtestAt: body.backtest ? at : backtest ? row.backtestAt : null };
+    const next = { name: body.name ?? row.name, summary: body.summary ?? row.summary, audience: body.audience ?? row.audience, userIds: body.userIds ?? row.userIds, planIds: body.planIds ?? row.planIds, backtest, backtestAt: untouched ? row.backtestAt : body.backtest ? at : backtest ? row.backtestAt : null };
     if (resettled && row.traded) {
       const version = Math.max(...state.savedStrategies.filter((x) => x.familyId === row.familyId).map((x) => x.version)) + 1;
       const made: SavedStrategy = { ...savedDraft(next.name, next.summary, body.definition!, current(c)!.user.id, { familyId: row.familyId, version }), ...next, stage: backtest ? "backtested" : "draft" };
@@ -1850,6 +1857,67 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (row.traded) return err(c, 409, "CONFLICT", SAVED_REFUSALS.traded);
     state.savedStrategies.splice(state.savedStrategies.indexOf(row), 1);
     return c.json({ deleted: true });
+  });
+
+  // The backtest in the app (ADR-144; HC-TR-289, HC-TR-290): a run starts, is "running" for a read or two, then is done
+  // with three made-up trades. The refusals are the API's own.
+  const backtestResult = (row: SavedStrategy): Pick<SavedBacktestRun, "figures" | "noEntry" | "barsJudged" | "barsSkipped" | "notes" | "trades"> => {
+    const asset = row.definition.assets[0]!;
+    const trade = (day: number, net: number, reason: string, kind: string): SavedBacktestTrade => ({
+      asset, entryAt: `2026-11-${day}T16:00:00.000Z`, closedAt: `2026-11-${day + 1}T12:00:00.000Z`, expiry: `2026-11-${day + 1}`, spot: 84_000,
+      legs: [{ kind: "put", side: "sell", strike: 82_400, lots: row.definition.lots, price: 61.5 }, { kind: "call", side: "sell", strike: 85_600, lots: row.definition.lots, price: 58 }],
+      gross: net + 2.75, fees: 2.75, net, reason, events: [{ at: `2026-11-${day + 1}T12:00:00.000Z`, kind, pnl: net + 2.75 }], barsSkipped: 0,
+    });
+    return {
+      figures: { mean: 6.5, per: row.definition.cadence === "daily" ? "day" : "trade", positivePct: 66.7, worst: -40.25, samples: 3, basis: "Backtest in the app: 10 to 13 Nov 2026 on 5-minute prices, the exchange's real fees" },
+      noEntry: { "No expiry in its range on that day": 1 },
+      barsJudged: 720,
+      barsSkipped: 0,
+      notes: ["Fills are at the mark price of the bar: no spread is counted.", "The strikes on offer at an entry are the ones recorded at the last settlement before it, with the ones beyond its ends that the exchange was pricing at the entry."],
+      trades: [trade(10, 30.5, "expired", "settled"), trade(11, -40.25, "stopped", "leg_stop"), trade(12, 29.25, "expired", "settled")],
+    };
+  };
+  const runsFor = (row: SavedStrategy): SavedBacktestRun[] =>
+    state.savedBacktests.filter((b) => b.run.strategyId === row.id).map((b) => ({ ...b.run, current: b.tested === JSON.stringify(row.definition) })).reverse();
+  v1.get("/admin/autopilot-strategies/:id/backtests", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    for (const b of state.savedBacktests) {
+      if (b.run.strategyId !== row.id || b.run.status !== "running") continue;
+      b.reads += 1;
+      b.run = b.reads > state.savedBacktestReads ? { ...b.run, ...backtestResult(row), ...(b.asked ? {} : { from: "2026-11-10", to: "2026-11-13" }), status: "done", progress: { done: 4, total: 4 }, finishedAt: nowIso() } : { ...b.run, progress: { done: Math.min(3, b.reads), total: 4 } };
+    }
+    return c.json({ items: runsFor(row) });
+  });
+  v1.post("/admin/autopilot-strategies/:id/backtests", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const parsed = SavedBacktestStart.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION", parsed.error.issues[0]!.message);
+    if (!state.savedBacktestSource) return err(c, 503, "UNAVAILABLE", "The exchange's price history is not available on this server");
+    if (row.definition.conditions?.ivRank) return err(c, 409, "CONFLICT", "It enters on a volatility rank, which the recorded history cannot judge far enough back. Enter its backtest figures by hand.");
+    if (state.savedBacktests.some((b) => b.run.strategyId === row.id && b.run.status === "running")) return err(c, 409, "CONFLICT", SAVED_REFUSALS.backtestRunning);
+    const run: SavedBacktestRun = { id: id("bt"), strategyId: row.id, status: "running", progress: { done: 0, total: 0 }, from: parsed.data.from ?? nowIso().slice(0, 10), to: parsed.data.to ?? nowIso().slice(0, 10), resolution: row.definition.cadence === "daily" && row.definition.maxDte <= 3 ? "5m" : "1h", figures: null, noEntry: {}, barsJudged: 0, barsSkipped: 0, notes: [], trades: [], error: null, current: true, createdAt: nowIso(), finishedAt: null };
+    state.savedBacktests.push({ run, tested: JSON.stringify(row.definition), reads: 0, asked: parsed.data.from !== undefined || parsed.data.to !== undefined });
+    return c.json(run, 202);
+  });
+  v1.post("/admin/autopilot-strategies/:id/backtests/:run/use", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const run = runsFor(row).find((r) => r.id === c.req.param("run") && r.status === "done");
+    if (!run) return err(c, 404, "NOT_FOUND", "Finished backtest not found");
+    if (!run.figures) return err(c, 409, "CONFLICT", SAVED_REFUSALS.backtestEmpty);
+    if (row.stage === "retired") return err(c, 409, "CONFLICT", SAVED_REFUSALS.retired);
+    if (!run.current) return err(c, 409, "CONFLICT", SAVED_REFUSALS.backtestStale);
+    const at = nowIso();
+    Object.assign(row, { backtest: { ...run.figures, run: { id: run.id, from: run.from, to: run.to, resolution: run.resolution, notes: run.notes } }, backtestAt: at, stage: row.stage === "paper" ? "paper" : "backtested", updatedAt: at });
+    return c.json(row);
   });
 
   /* ---------------- coupons, checkout, payments (ADR-034) ---------------- */

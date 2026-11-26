@@ -9,6 +9,7 @@ import { type ReactNode, useState } from "react";
 import { useAdminUsersList } from "@/lib/api/admin";
 import { useCreateSavedStrategy, useUpdateSavedStrategy } from "@/lib/api/autopilot-saved";
 import { useAdminPlans } from "@/lib/api/billing";
+import { fmtDate } from "@/lib/format";
 import { FROM_HOURS, LEG_PRESETS, type LegForm, type SavedForm, TREND_COPY_NOTES, WEEKDAYS, emptySavedForm, istClock, sameDefinition, savedBacktestOf, savedDefinitionOf, savedFormOf } from "@/lib/strategy/saved-form";
 
 const input = "h-8 w-full rounded border border-input bg-background px-2 text-xs";
@@ -105,6 +106,9 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
     if (form.audience === "users" && form.userIds.length === 0) return fail("Name at least one user, or choose another audience.");
     if (form.audience === "plans" && form.planIds.length === 0) return fail("Choose at least one plan, or choose another audience.");
     if (strategy?.stage === "paper" && !resettled && figures.value === null) return fail("It is on paper: its backtest figures cannot be removed. Retire it first.");
+    // figures of a backtest in the app that were changed by hand are no longer that backtest's: its sentence cannot stay as their source
+    const ran = strategy?.backtest?.run ? strategy.backtest : null;
+    if (ran && !resettled && figures.value !== null && figures.value.basis === ran.basis && differs(figures.value, { ...ran, run: undefined })) return fail("These figures were a backtest in the app and you changed them: say where the new ones come from, in the field under them.");
     setError(null);
     const definition = parsed.value;
     const name = form.name.trim();
@@ -124,7 +128,8 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
         ...(differs(form.planIds, from.planIds) ? { planIds: form.planIds } : {}),
         ...(settings ? { definition } : {}),
         // figures typed for the old settings are not sent with new ones: the server clears them
-        ...(differs(figures.value, from.backtest) ? { backtest: figures.value } : {}),
+        // (figures computed in the app carry the mark of their run, which the form never holds: compared without it)
+        ...(differs(figures.value, from.backtest ? { ...from.backtest, run: undefined } : null) ? { backtest: figures.value } : {}),
       };
       if (Object.keys(body).length === 0) return done(from, from);
       update.mutate({ id: from.id, body }, { onSuccess: (s) => done(s, from), onError });
@@ -294,7 +299,8 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
             </div>
           </Section>
 
-          <Section n={5} title="Backtest figures" hint="Entered by hand from the research backtest of these same settings, in USD at this strategy's size. A strategy cannot be published without them, and they are cleared when the settings change.">
+          <Section n={5} title="Backtest figures" hint="In USD at this strategy's size. Enter them by hand from the research backtest of these same settings, or save the strategy and press Backtest in the list to have the app compute them. A strategy cannot be published without them, and they are cleared when the settings change.">
+            {strategy?.backtest ? <p className="micro" data-testid="saved-bt-source">{strategy.backtest.run ? `These figures are a backtest in the app on ${strategy.backtest.run.resolution === "5m" ? "5-minute" : "hourly"} prices, ${fmtDate(strategy.backtest.run.from)} to ${fmtDate(strategy.backtest.run.to)}. Changing anything here makes them figures entered by hand.` : "These figures were entered by hand."}</p> : null}
             <div className="grid gap-2 sm:grid-cols-5">
               <Field label="Average result (USD)"><input value={form.btMean} inputMode="decimal" onChange={(e) => set("btMean", e.target.value)} className={numInput} data-testid="saved-bt-mean" /></Field>
               <Field label="Per">
