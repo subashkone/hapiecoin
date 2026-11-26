@@ -677,7 +677,7 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
       await snapshotOnce(t.deps, curve, () => at - MIN);
       // HC-TR-257: the venue's list as it is keyed, by venue symbol, every contract at a margin percent of 0.5; the
       // source's own spot (1) must not be the one used, and the snapshot's must be handed to it
-      const params: ReadonlyMap<string, MarginParams> = new Map((await curve.products()).map((i) => [i.symbol, { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002" }]));
+      const params: ReadonlyMap<string, MarginParams> = new Map((await curve.products()).map((i) => [i.symbol, { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002", maxLeverageNotional: "200000" }]));
       const marginInputs = (_a: string, _v: string, given?: number) => {
         marginSpots.push(given);
         return Promise.resolve({ spot: 1, params });
@@ -720,7 +720,7 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     const x2d = (await entry(x2.id)).detail;
     expect(x2d).toMatchObject({ exit: "own", legStop: 2, capital: null, maxLoss: null }); // no maximum loss: no capital figure
     // HC-TR-257: the trade carries the margin estimated at entry: each sold option at the snapshot's spot (83 200) and its own entry price, 100 contracts
-    const shortMargin = (price: string) => ((0.5 + 0.000002 * 100) / 100) * 83_200 * 0.001 * 100 + Number(price) * 0.001 * 100;
+    const shortMargin = (price: string) => (0.5 / 100) * 83_200 * 0.001 * 100 + Number(price) * 0.001 * 100; // far under the threshold: the listed percent alone
     expect(Number(x2.marginEstimate)).toBeCloseTo(x2legs.reduce((sum, l) => sum + shortMargin(l.price), 0), 1);
     expect(Number(x2.marginEstimate)).toBeGreaterThan(83); // two sold options: 41.6 each before their premium
     expect(marginSpots.length).toBeGreaterThan(0);

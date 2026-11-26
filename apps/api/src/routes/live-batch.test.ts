@@ -56,7 +56,7 @@ describe("HC-TR-192 the batch sums the short legs' margin estimates against the 
   it("each strategy's shorts fit the wallet alone, together they do not: the batch says so and places nothing", async () => {
     t.now.value += 61_000;
     // a sold put: 10 contracts x ((1.00005 % x 79,500) + 900) x 0.001 = 16.95 margin, 9 received: marginRequired 16.95 per strategy
-    t.trading.product(PUT.symbol, 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt(PUT.symbol, "900", "79500");
+    t.trading.product(PUT.symbol, 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt(PUT.symbol, "900", "79500");
     t.trading.setBalances([{ asset: "USD", balance: "25", availableBalance: "25" }]);
     const a = await paper("short a", [PUT]);
     const b = await paper("short b", [PUT]);

@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, futuresMarginUsd, roundToTick, shortOptionMarginUsd, signDeltaRequest, type TradingFetch } from "./trading.js";
+import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, futuresMarginUsd, marginThresholdMissing, roundToTick, shortOptionMarginUsd, signDeltaRequest, type TradingFetch } from "./trading.js";
 
 const BASE = "https://cdn-ind.testnet.example";
 const CREDS = { apiKey: "key-1", apiSecret: "secret-1" };
@@ -53,24 +53,38 @@ describe("[VENUES] Delta trading client (ADR-025)", () => {
     expect(contractsFor(1, "0.001", "0")).toBeNull();
   });
 
-  it("HC-TR-192 short option margin = (pct + factor x contracts) / 100 x spot x contract value + mark x contract value, per contract, conservative", () => {
-    // 100 contracts of 0.001 BTC at spot 77,000, mark 450, 1 % + 0.000005 % per contract: 1.0005 % x 77,000 x 0.001 + 0.45 = 0.770385 + 0.45 per contract
-    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005" })).toBe("122.04");
-    // the scaling grows with size: 10,000 contracts (10 BTC) add 0.05 %, 1.05 % x 77 + 0.45 = 1.2585 per contract
-    expect(shortOptionMarginUsd({ contracts: 10_000, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005" })).toBe("12585");
+  it("HC-TR-192 HC-TR-295 short option margin = pct / 100 x spot x contract value + mark x contract value per contract; the percent is flat up to the threshold and grows per USD above it", () => {
+    const btc = { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002", maxLeverageNotional: "200000" };
+    // the figures of docs/research/delta-margin-verification.md (production BTC option, spot 59,209.3, premium left out):
+    // below the threshold (3,378 lots at that spot) the listed percent alone applies
+    expect(shortOptionMarginUsd({ ...btc, contracts: 100, spot: "59209.3", mark: "0" })).toBe("29.6");
+    expect(shortOptionMarginUsd({ ...btc, contracts: 1_000, spot: "59209.3", mark: "0" })).toBe("296.05");
+    expect(shortOptionMarginUsd({ ...btc, contracts: 3_000, spot: "59209.3", mark: "0" })).toBe("888.14");
+    // above it: 296,046.50 USD is 96,046.50 over, 0.5 + 0.000002 x 96,046.50 = 0.692093 %
+    expect(shortOptionMarginUsd({ ...btc, contracts: 5_000, spot: "59209.3", mark: "0" })).toBe("2048.92");
+    expect(shortOptionMarginUsd({ ...btc, contracts: 10_000, spot: "59209.3", mark: "0" })).toBe("7603.58");
+    // the testnet's parameters (factor 0.00002, threshold 100,000): the owner's check at 2,000 lots, spot 59,209.7
+    expect(shortOptionMarginUsd({ contracts: 2_000, contractValue: "0.001", spot: "59209.7", mark: "0", initialMarginPct: "0.5", initialMarginScalingFactor: "0.00002", maxLeverageNotional: "100000" })).toBe("1028.34");
+    // the option's own mark is added per contract: 100 contracts at spot 77,000, mark 450, 1 %: 0.77 + 0.45 each
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "100000" })).toBe("122");
+    // exactly at the threshold nothing is added
+    expect(shortOptionMarginUsd({ contracts: 1_000, contractValue: "0.001", spot: "100000", mark: "0", initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "100000" })).toBe("1000");
+    // a factor with no threshold cannot be worked out: null, never the old per-contract arithmetic; a factor of 0 needs none
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0", maxLeverageNotional: undefined })).toBe("122");
     // without a scaling factor the percent alone applies
-    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBe("122");
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBe("122");
     // any missing input answers null: the caller says "unknown", never a guess
-    expect(shortOptionMarginUsd({ contracts: null, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
-    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: null, mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
-    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: null, initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
-    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: undefined, initialMarginScalingFactor: undefined })).toBeNull();
-    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "nope", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: null, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: null, mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: null, initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: undefined, initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "nope", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBeNull();
     // the fake carries the parameters and the spot the same way
-    const fake = new FakeDeltaTradingClient().product("P-BTC-76400-150926", 9, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-76400-150926", "450", "77000");
+    const fake = new FakeDeltaTradingClient().product("P-BTC-76400-150926", 9, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt("P-BTC-76400-150926", "450", "77000");
     fake.markAt("P-BTC-76400-150926", "460"); // a re-mark without a spot keeps the spot
     return Promise.all([fake.getProduct("P-BTC-76400-150926"), fake.getTicker("P-BTC-76400-150926")]).then(([p, t]) => {
-      expect(p).toMatchObject({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005" });
+      expect(p).toMatchObject({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "100000" });
       expect(t).toEqual({ mark: "460", spot: "77000" });
     });
   });
@@ -230,18 +244,44 @@ describe("HC-TR-188 editOrder re-prices a resting limit in place (ADR-083)", () 
   });
 });
 
+describe("HC-TR-295 the margin percent grows per USD above the venue's threshold (ADR-146)", () => {
+  const fut = { contracts: 350, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "100000" as string | undefined };
+  it("HC-TR-295 a futures leg: nothing is added under the threshold, the factor counts every USD above it", () => {
+    // 28,000 USD is under 100,000
+    expect(futuresMarginUsd(fut)).toBe("280");
+    // 3,500 contracts are 280,000 USD, 180,000 over: (1 + 0.000005 x 180,000) % = 1.9 % of 280,000
+    expect(futuresMarginUsd({ ...fut, contracts: 3_500 })).toBe("5320");
+  });
+
+  it("HC-TR-295 a threshold that is absent, empty, not a number or below zero gives no figure, and so does a factor below zero or not a number; marginThresholdMissing names the first case", () => {
+    for (const maxLeverageNotional of [undefined, "", "  ", "N/A", "-1"]) {
+      expect(futuresMarginUsd({ ...fut, maxLeverageNotional })).toBeNull();
+      expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional })).toBeNull();
+      expect(marginThresholdMissing({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional })).toBe(true);
+    }
+    expect(futuresMarginUsd({ ...fut, initialMarginScalingFactor: "-0.000005" })).toBeNull();
+    expect(futuresMarginUsd({ ...fut, initialMarginScalingFactor: "abc" })).toBeNull();
+    // a threshold of 0 is a threshold: the factor counts from the first USD
+    expect(futuresMarginUsd({ ...fut, maxLeverageNotional: "0" })).toBe("319.2"); // (1 + 0.000005 x 28,000) % of 28,000
+    expect(marginThresholdMissing({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "0" })).toBe(false);
+    // nothing is missing when there is no factor, a factor of 0, or no margin percent at all (a venue with no margin data)
+    expect(marginThresholdMissing({ initialMarginPct: "1" })).toBe(false);
+    expect(marginThresholdMissing({ initialMarginPct: "1", initialMarginScalingFactor: "0" })).toBe(false);
+    expect(marginThresholdMissing({ initialMarginScalingFactor: "0.000005" })).toBe(false);
+    expect(marginThresholdMissing({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "200000" })).toBe(false);
+  });
+});
+
 describe("HC-TR-196 a futures leg carries an initial-margin estimate (ADR-095)", () => {
   it("HC-TR-196 margin is the percent of the notional, growing with size by the scaling factor (the side is no input: a long and a short are held alike)", () => {
     // 350 contracts x 0.001 BTC at 80,000 = 28,000 USD notional; 1 % of it is 280
-    expect(futuresMarginUsd({ contracts: 350, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBe("280");
-    // with the scaling factor: (1 + 0.000005 x 350) % = 1.00175 % of 28,000 = 280.49
-    expect(futuresMarginUsd({ contracts: 350, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: "0.000005" })).toBe("280.49");
+    expect(futuresMarginUsd({ contracts: 350, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBe("280");
     // no premium term: unlike a sold option, nothing is added for the future's own price
-    expect(futuresMarginUsd({ contracts: 1, contractValue: "0.001", price: "80000", initialMarginPct: "0.5", initialMarginScalingFactor: undefined })).toBe("0.4");
+    expect(futuresMarginUsd({ contracts: 1, contractValue: "0.001", price: "80000", initialMarginPct: "0.5", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined })).toBe("0.4");
   });
 
   it("HC-TR-196 a missing input gives no figure, never a guess", () => {
-    const ok = { contracts: 10, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: undefined };
+    const ok = { contracts: 10, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined };
     expect(futuresMarginUsd({ ...ok, contracts: null })).toBeNull();
     expect(futuresMarginUsd({ ...ok, contracts: 0 })).toBeNull();
     expect(futuresMarginUsd({ ...ok, price: null })).toBeNull();

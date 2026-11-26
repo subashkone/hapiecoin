@@ -66,7 +66,7 @@ describe("[VENUES] trading client edges", () => {
       fetch: (url: string) => {
         calls += 1;
         if (url.includes("/v2/products/DOWN")) return Promise.reject(new Error("offline"));
-        if (url.includes("/v2/products/MARGINED")) return json({ success: true, result: { id: 8, symbol: "MARGINED", contract_value: "0.001", contract_type: "put_options", state: "live", initial_margin: "1", initial_margin_scaling_factor: 0.000005 } });
+        if (url.includes("/v2/products/MARGINED")) return json({ success: true, result: { id: 8, symbol: "MARGINED", contract_value: "0.001", contract_type: "put_options", state: "live", initial_margin: "1", initial_margin_scaling_factor: 0.000005, max_leverage_notional: "200000" } });
         if (url.includes("/v2/products/")) return json({ success: true, result: { id: 7, symbol: "X", contract_value: "0.001", contract_type: "call_options", state: "live" } });
         if (url.endsWith("/v2/tickers/HAS")) return json({ success: true, result: { mark_price: 1234.5, spot_price: "77000" } });
         if (url.endsWith("/v2/tickers/NONE")) return json({ success: true, result: { mark_price: null } });
@@ -87,7 +87,8 @@ describe("[VENUES] trading client edges", () => {
     expect(await c.getTicker("HAS")).toEqual({ mark: "1234.5", spot: "77000" });
     expect(await c.getTicker("NONE")).toEqual({ mark: null, spot: null });
     expect(await c.getTicker("ERR")).toEqual({ mark: null, spot: null });
-    expect(await c.getProduct("MARGINED")).toMatchObject({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005" });
+    expect(await c.getProduct("MARGINED")).toMatchObject({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005", maxLeverageNotional: "200000" });
+    expect(await c.getProduct("X")).not.toHaveProperty("maxLeverageNotional");
     expect(await c.getProduct("X")).not.toHaveProperty("initialMarginPct");
     expect(await c.getMark("NONE")).toBeNull();
     expect(await c.getMark("BAD")).toBeNull();

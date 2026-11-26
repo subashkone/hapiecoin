@@ -163,8 +163,46 @@ export interface VenueProduct {
   tickSize?: string | undefined;
   /** Initial margin percent of the underlying (Delta `initial_margin`, e.g. "1" = 1 %), when the venue lists it (HC-TR-192). */
   initialMarginPct?: string | undefined;
-  /** Percent added per contract of size (Delta `initial_margin_scaling_factor`), when listed. */
+  /** Percent added per USD of position above `maxLeverageNotional` (Delta `initial_margin_scaling_factor`), when listed. */
   initialMarginScalingFactor?: string | undefined;
+  /** The position size in USD up to which the margin percent stays at `initialMarginPct` (Delta `max_leverage_notional`), when listed (HC-TR-295). */
+  maxLeverageNotional?: string | undefined;
+}
+
+/**
+ * The initial margin percent of a position of `notionalUsd` (ADR-146, HC-TR-295): the product's listed percent up to
+ * its threshold, then `factor` percent more for every USD above it (Delta's margin explainer: "Margin requirement
+ * remains flat till a certain position size ... increases linearly with position size"; the unit and the quantity are
+ * read from Delta's documents and its product list, docs/research/delta-margin-verification.md, and are NOT yet
+ * checked against the margin of a real position, GAPS #109). Null when the product lists a factor and no threshold:
+ * the term cannot be worked out, and the old per-contract arithmetic is not fallen back on.
+ */
+function marginPctOf(notionalUsd: number, initialMarginPct: string, factor: string | undefined, threshold: string | undefined): number | null {
+  const base = Number(initialMarginPct);
+  const f = factor === undefined ? 0 : Number(factor);
+  if (f === 0) return base;
+  // a factor that is not a number, or below zero (it would take the percent under the listed minimum), is no figure
+  if (!(f > 0)) return null;
+  const t = thresholdOf(threshold);
+  if (t === null) return null;
+  return base + f * Math.max(0, notionalUsd - t);
+}
+
+/** The threshold as a number, or null when it is absent, empty, not a number or below zero. */
+function thresholdOf(threshold: string | undefined): number | null {
+  if (threshold === undefined || threshold.trim() === "") return null;
+  const t = Number(threshold);
+  return Number.isFinite(t) && t >= 0 ? t : null;
+}
+
+/**
+ * True when a product lists a margin percent and a scaling factor above zero but no usable threshold for it: the
+ * estimate is null for that reason alone, and a caller that gates an order on the estimate must refuse and say so
+ * (HC-TR-295), never read the null as "the venue has no margin data".
+ */
+export function marginThresholdMissing(p: { initialMarginPct?: string | undefined; initialMarginScalingFactor?: string | undefined; maxLeverageNotional?: string | undefined }): boolean {
+  if (p.initialMarginPct === undefined || p.initialMarginScalingFactor === undefined) return false;
+  return Number(p.initialMarginScalingFactor) > 0 && thresholdOf(p.maxLeverageNotional) === null;
 }
 
 /** A product's ticker: the mark and, for an option, the underlying spot the venue priced it against. */
@@ -174,39 +212,45 @@ export interface VenueTicker {
 }
 
 /**
- * Conservative initial-margin estimate for a SHORT option, USD (ADR-091, HC-TR-192). Delta publishes no pre-trade margin
- * call; its contract specs give an initial margin percent of the underlying (`initial_margin`, e.g. "1") that grows with
- * size by a scaling factor in the same percent unit per contract (`initial_margin_scaling_factor`, e.g. "0.000005": the
- * unit follows Delta's margin explainer "Initial Margin% = Initial Margin%_MIN + Slope × size", not verified against a
- * worked example), and a sold option also carries its own mark. Per contract: (pct + factor × contracts) / 100 × spot ×
- * contractValue + mark × contractValue. The scaling is applied from the first contract and no spread relief is assumed,
- * so the estimate errs on the side of refusing. Null when any input is missing (the caller says so rather than guessing).
+ * Initial-margin estimate for a SHORT option, USD (ADR-091, HC-TR-192; the percent by ADR-146, HC-TR-295). Delta publishes no pre-trade margin
+ * call; its contract specs give an initial margin percent of the underlying (`initial_margin`, e.g. "1") that stays flat up
+ * to a position size in USD (`max_leverage_notional`) and then grows by a scaling factor in the same percent unit for
+ * every USD above it (`initial_margin_scaling_factor`, e.g. "0.000002"; see `marginPctOf`, ADR-146), and a sold option
+ * also carries its own mark. The position's size is contracts × contractValue × spot. Per contract: pct / 100 × spot ×
+ * contractValue + mark × contractValue. No spread relief is assumed. It is the figure at the product's HIGHEST
+ * leverage: an account trading at a lower one may be held to more, and the leverage setting is not read (GAPS #109).
+ * Null when any input is missing (the caller says so rather than guessing).
  */
-export function shortOptionMarginUsd(input: { contracts: number | null; contractValue: string; spot: string | null; mark: string | null; initialMarginPct: string | undefined; initialMarginScalingFactor: string | undefined }): string | null {
+export function shortOptionMarginUsd(input: { contracts: number | null; contractValue: string; spot: string | null; mark: string | null; initialMarginPct: string | undefined; initialMarginScalingFactor: string | undefined; maxLeverageNotional: string | undefined }): string | null {
   const { contracts, spot, mark, initialMarginPct, initialMarginScalingFactor } = input;
   if (contracts === null || contracts < 1 || spot === null || mark === null || initialMarginPct === undefined) return null;
   const cv = Number(input.contractValue);
-  const pct = (Number(initialMarginPct) + (initialMarginScalingFactor === undefined ? 0 : Number(initialMarginScalingFactor)) * contracts) / 100;
+  const listed = marginPctOf(contracts * cv * Number(spot), initialMarginPct, initialMarginScalingFactor, input.maxLeverageNotional);
+  if (listed === null) return null;
+  const pct = listed / 100;
   const perContract = pct * Number(spot) * cv + Number(mark) * cv;
   if (!Number.isFinite(perContract) || perContract < 0) return null;
   return toDecimal(perContract * contracts, 2);
 }
 
 /**
- * Conservative initial-margin estimate for a FUTURES leg, long or short, USD (ADR-095, HC-TR-196). A future pays no
- * premium but the exchange holds initial margin on its notional from the first contract: (pct + factor × contracts) / 100
- * × price × contractValue × contracts, with the same percent and scaling unit as `shortOptionMarginUsd` (equally
- * unverified against a worked example, GAPS #109) and no relief assumed for the options it hedges. It is a FLOOR, not
+ * Initial-margin estimate for a FUTURES leg, long or short, USD (ADR-095, HC-TR-196; the percent by ADR-146, HC-TR-295). A future pays no
+ * premium but the exchange holds initial margin on its notional from the first contract: pct / 100 × price ×
+ * contractValue × contracts, with the percent of `marginPctOf` on a position of contracts × contractValue × price, as
+ * in `shortOptionMarginUsd` (equally unverified against a real position, GAPS #109) and no relief assumed for the
+ * options it hedges. It is a FLOOR, not
  * a conservative figure: `initial_margin` is the product's minimum rate (its maximum leverage), and an account that
  * trades the product at a lower leverage is held to more; the leverage setting is not read (GAPS #120). `price` is the
  * future's mark, or the underlying spot when the ticker gave no mark. Null when any input is missing or the result is
  * not above zero (a linear leg is never free; the caller says so rather than guessing).
  */
-export function futuresMarginUsd(input: { contracts: number | null; contractValue: string; price: string | null; initialMarginPct: string | undefined; initialMarginScalingFactor: string | undefined }): string | null {
+export function futuresMarginUsd(input: { contracts: number | null; contractValue: string; price: string | null; initialMarginPct: string | undefined; initialMarginScalingFactor: string | undefined; maxLeverageNotional: string | undefined }): string | null {
   const { contracts, price, initialMarginPct, initialMarginScalingFactor } = input;
   if (contracts === null || contracts < 1 || price === null || initialMarginPct === undefined) return null;
-  const pct = (Number(initialMarginPct) + (initialMarginScalingFactor === undefined ? 0 : Number(initialMarginScalingFactor)) * contracts) / 100;
-  const total = pct * Number(price) * Number(input.contractValue) * contracts;
+  const notional = Number(price) * Number(input.contractValue) * contracts;
+  const listed = marginPctOf(notional, initialMarginPct, initialMarginScalingFactor, input.maxLeverageNotional);
+  if (listed === null) return null;
+  const total = (listed / 100) * notional;
   if (!Number.isFinite(total) || total <= 0) return null;
   return toDecimal(total, 2);
 }
@@ -292,6 +336,7 @@ const RawProduct = z.object({
   tick_size: z.union([z.string(), z.number()]).nullable().optional(),
   initial_margin: z.union([z.string(), z.number()]).nullable().optional(),
   initial_margin_scaling_factor: z.union([z.string(), z.number()]).nullable().optional(),
+  max_leverage_notional: z.union([z.string(), z.number()]).nullable().optional(),
 });
 const RawPosition = z.object({
   product_id: z.number(),
@@ -417,7 +462,8 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     if (!parsed?.success) throw new Error(`Delta product lookup failed for ${symbol}: HTTP ${res.status} ${res.json?.error?.code ?? ""}`.trim());
     const im = dec(parsed.data.initial_margin);
     const imf = dec(parsed.data.initial_margin_scaling_factor);
-    const product: VenueProduct = { id: parsed.data.id, symbol: parsed.data.symbol, contractValue: String(parsed.data.contract_value), contractType: parsed.data.contract_type, state: parsed.data.state, ...(parsed.data.tick_size === null || parsed.data.tick_size === undefined ? {} : { tickSize: String(parsed.data.tick_size) }), ...(im === null ? {} : { initialMarginPct: im }), ...(imf === null ? {} : { initialMarginScalingFactor: imf }) };
+    const mln = dec(parsed.data.max_leverage_notional);
+    const product: VenueProduct = { id: parsed.data.id, symbol: parsed.data.symbol, contractValue: String(parsed.data.contract_value), contractType: parsed.data.contract_type, state: parsed.data.state, ...(parsed.data.tick_size === null || parsed.data.tick_size === undefined ? {} : { tickSize: String(parsed.data.tick_size) }), ...(im === null ? {} : { initialMarginPct: im }), ...(imf === null ? {} : { initialMarginScalingFactor: imf }), ...(mln === null ? {} : { maxLeverageNotional: mln }) };
     this.products.set(symbol, { product, at: this.now() * 1000 });
     return product;
   }
@@ -550,8 +596,8 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
   private nextId = 1000;
   private partialNext = false;
 
-  product(symbol: string, id: number, contractValue = "0.001", state = "live", tickSize = "0.1", margin?: { pct: string; factor?: string }): this {
-    this.productsBySymbol.set(symbol, { id, symbol, contractValue, contractType: symbol.endsWith("USD") ? "perpetual_futures" : symbol.startsWith("C-") ? "call_options" : "put_options", state, tickSize, ...(margin ? { initialMarginPct: margin.pct, ...(margin.factor === undefined ? {} : { initialMarginScalingFactor: margin.factor }) } : {}) });
+  product(symbol: string, id: number, contractValue = "0.001", state = "live", tickSize = "0.1", margin?: { pct: string; factor?: string; threshold?: string }): this {
+    this.productsBySymbol.set(symbol, { id, symbol, contractValue, contractType: symbol.endsWith("USD") ? "perpetual_futures" : symbol.startsWith("C-") ? "call_options" : "put_options", state, tickSize, ...(margin ? { initialMarginPct: margin.pct, ...(margin.factor === undefined ? {} : { initialMarginScalingFactor: margin.factor }), ...(margin.threshold === undefined ? {} : { maxLeverageNotional: margin.threshold }) } : {}) });
     return this;
   }
   /** The mark the fake quotes for `symbol`, and the underlying spot its ticker reports; a re-mark without a spot keeps the spot it had. */

@@ -52,6 +52,21 @@ describe("HC-SH-125 [API] venue clients (ADR-070)", () => {
     expect(requested.some((u) => u.startsWith("https://api.india.delta.exchange/"))).toBe(false);
   });
 
+  it("HC-TR-295 the margin inputs of a trading venue carry each contract's percent, scaling factor and threshold from its product list; a data-only venue gives none", async () => {
+    const config = loadConfig({ ...BASE, API_VENUES: "delta_india,deribit" }, { warn: () => undefined });
+    const clients = createVenueClients(config, { fetch: fetchFixtures });
+    const inputs = await clients.marginInputs("BTC", "delta_india", 80_000);
+    expect(inputs?.spot).toBe(80_000); // the caller's spot: no ticker is read for it
+    expect(inputs!.params.size).toBeGreaterThan(0);
+    // the recorded list carries all three on every contract: one dropped on the way would leave every trade without a figure
+    for (const v of inputs!.params.values()) {
+      expect(v.initialMarginPct).toBeDefined();
+      expect(v.initialMarginScalingFactor).toBeDefined();
+      expect(Number(v.maxLeverageNotional)).toBeGreaterThan(0);
+    }
+    expect(await clients.marginInputs("BTC", "deribit", 80_000)).toBeNull();
+  });
+
   it("the snapshotter sources, the live spot and the rules tick speak each venue's dialect and stamp its id", async () => {
     const config = loadConfig({ ...BASE, API_VENUES: "delta_india,deribit" }, { warn: () => undefined });
     const clients = createVenueClients(config, { fetch: fetchFixtures });

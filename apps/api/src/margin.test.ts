@@ -3,25 +3,34 @@
 import { describe, expect, it } from "vitest";
 import { type MarginInputs, type MarginLeg, type MarginParams, entryMargin, marginEstimateOf } from "./margin.js";
 
-const DAILY: MarginParams = { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002" };
-const MONTHLY: MarginParams = { contractValue: "0.001", initialMarginPct: "5", initialMarginScalingFactor: "0.000002" };
+const DAILY: MarginParams = { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002", maxLeverageNotional: "200000" };
+const MONTHLY: MarginParams = { contractValue: "0.001", initialMarginPct: "5", initialMarginScalingFactor: "0.000002", maxLeverageNotional: "200000" };
 const PUT = "P-BTC-60000-241126";
 const CALL = "C-BTC-62000-241126";
 const WING = "C-BTC-63000-241126";
 const FAR = "C-BTC-62000-290127";
 const PERP = "BTCUSD";
-const inputs = (spot: number | null = 61_000): MarginInputs => ({ spot, params: new Map([[PUT, DAILY], [CALL, DAILY], [WING, DAILY], [FAR, MONTHLY], [PERP, { contractValue: "0.001", initialMarginPct: "0.5" }]]) });
+const inputs = (spot: number | null = 61_000): MarginInputs => ({ spot, params: new Map([[PUT, DAILY], [CALL, DAILY], [WING, DAILY], [FAR, MONTHLY], [PERP, { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: undefined, maxLeverageNotional: undefined }]]) });
 const leg = (symbol: string, side: MarginLeg["side"], price: string, over: Partial<MarginLeg> = {}): MarginLeg => ({ kind: symbol.startsWith("P-") ? "put" : symbol.startsWith("C-") ? "call" : "future", side, symbol, lots: 100, price, ...over });
-/** One sold option of 100 contracts: (pct + factor × 100) / 100 × spot × 0.001 + mark × 0.001, a contract. */
-const short = (pct: number, spot: number, mark: number) => ((pct + 0.000002 * 100) / 100) * spot * 0.001 * 100 + mark * 0.001 * 100;
+/** One sold option of 100 contracts, far under the 200,000 USD threshold: pct / 100 × spot × 0.001 + mark × 0.001, a contract. */
+const short = (pct: number, spot: number, mark: number) => (pct / 100) * spot * 0.001 * 100 + mark * 0.001 * 100;
 
 describe("HC-TR-257 the margin estimated at entry", () => {
   it("HC-TR-257 a sold strangle is the two sold options under their contract's percent, the spot and their marks", () => {
     const est = marginEstimateOf([leg(PUT, "sell", "400"), leg(CALL, "sell", "420")], "0.001", inputs());
     expect(Number(est)).toBeCloseTo(short(0.5, 61_000, 400) + short(0.5, 61_000, 420), 2);
-    expect(est).toBe("143.02");
+    expect(est).toBe("143");
     // the same strikes a month out are margined at ten times the percent
     expect(Number(marginEstimateOf([leg(FAR, "sell", "4400")], "0.001", inputs()))).toBeCloseTo(short(5, 61_000, 4400), 2);
+  });
+
+  it("HC-TR-295 the percent grows per USD of the position above the venue's threshold, and a factor with no threshold gives no figure", () => {
+    // 5,000 contracts at spot 61,000 are 305,000 USD, 105,000 over: 0.5 + 0.000002 x 105,000 = 0.71 % of 305,000 = 2,165.50, plus the mark (400 x 5)
+    expect(marginEstimateOf([leg(PUT, "sell", "400", { lots: 5_000 })], "0.001", inputs())).toBe("4165.5");
+    // each leg is its own position: two legs under the threshold each add nothing, whatever they sum to
+    expect(marginEstimateOf([leg(PUT, "sell", "400", { lots: 3_000 }), leg(CALL, "sell", "420", { lots: 3_000 })], "0.001", inputs())).toBe("4290");
+    const noThreshold: MarginInputs = { spot: 61_000, params: new Map([[PUT, { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002", maxLeverageNotional: undefined }]]) };
+    expect(marginEstimateOf([leg(PUT, "sell", "400")], "0.001", noThreshold)).toBeNull();
   });
 
   it("HC-TR-257 a bought option adds no margin; a net premium paid is added, a net premium collected is not taken off", () => {
@@ -49,7 +58,7 @@ describe("HC-TR-257 the margin estimated at entry", () => {
     expect(marginEstimateOf([leg(PUT, "sell", "400")], "0", inputs())).toBeNull();
     expect(marginEstimateOf([leg(PUT, "sell", "not a price")], "0.001", inputs())).toBeNull();
     expect(marginEstimateOf([leg(PUT, "sell", "400")], "0.001", null)).toBeNull();
-    const noPct: MarginInputs = { spot: 61_000, params: new Map([[PUT, { contractValue: "0.001" }]]) };
+    const noPct: MarginInputs = { spot: 61_000, params: new Map([[PUT, { contractValue: "0.001", initialMarginPct: undefined, initialMarginScalingFactor: undefined, maxLeverageNotional: undefined }]]) };
     expect(marginEstimateOf([leg(PUT, "sell", "400")], "0.001", noPct)).toBeNull();
   });
 

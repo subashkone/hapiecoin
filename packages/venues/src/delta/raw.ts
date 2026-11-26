@@ -34,8 +34,10 @@ export const RawProduct = z.object({
   settling_asset: RawAsset.nullish(),
   /** Initial margin as a percent of the underlying ("0.5", "1", "5"); it differs per contract by time to expiry (HC-TR-257). */
   initial_margin: numberish.nullish(),
-  /** Percent added per contract of size ("0.000002"). */
+  /** Percent added per USD of position above `max_leverage_notional` ("0.000002"). */
   initial_margin_scaling_factor: numberish.nullish(),
+  /** The position size in USD up to which the margin percent stays flat ("200000"; HC-TR-295). */
+  max_leverage_notional: numberish.nullish(),
 });
 export type RawProduct = z.infer<typeof RawProduct>;
 

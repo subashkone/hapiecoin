@@ -81,7 +81,7 @@ describe("HC-TR-192 short-leg margin: the whole placement is refused before the 
   });
   it("HC-TR-192 estimates a sold option's margin from the product's margin parameters and the ticker spot, adds the premium paid, and refuses when the wallet has less free", async () => {
     // 10 contracts x 0.001 BTC at spot 79,500, mark 900, 1 % + 0.000005 % per contract: (1.00005 % x 79,500 + 900) x 0.001 = 1.69503975 per contract
-    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt("P-BTC-78000-250926", "900", "79500");
     const s = await draft();
     const p = await json<LivePreview>(await preview(s.id));
     expect(p.legs.find((l) => l.symbol === "P-BTC-78000-250926")?.marginEstimate).toBe("16.95");
@@ -107,8 +107,36 @@ describe("HC-TR-192 short-leg margin: the whole placement is refused before the 
     expect((await json<Strategy>(placedOk)).marginEstimate).toBe("19.95");
   });
 
-  it("HC-TR-192 a short the venue priced next to one it did not is refused by name: a partial figure never reads as the whole", async () => {
+  it("HC-TR-295 a sold option above the venue's threshold is margined per USD over it: a wallet that covered the old per-contract figure is refused", async () => {
+    // 2,000 contracts x 0.001 BTC at spot 79,500 = 159,000 USD, 59,000 over the 100,000 threshold: (1 + 0.000005 x 59,000) % = 1.295 %
+    // 1.295 % x 159,000 = 2,059.05, plus the mark 900 x 2 = 1,800: 3,859.05. The old arithmetic gave (1 + 0.000005 x 2,000) % = 1.01 %: 3,405.90
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.setBalances([{ asset: "USD", balance: "3600", availableBalance: "3600" }]); // between the two figures
+    const s = await draft([{ ...PUT, lots: 2000 }]);
+    const p = await json<LivePreview>(await preview(s.id));
+    expect(p.legs[0]?.marginEstimate).toBe("3859.05");
+    expect(p.marginRequired).toBe("3859.05");
+    expect(p.ok).toBe(false);
+    expect(p.reasons.some((r) => r.includes("is below the margin the exchange will hold"))).toBe(true);
+  });
+
+  it("HC-TR-295 a sold option whose product lists a scaling factor and no threshold is refused by name, alone or not: it never falls to the wallet rules of a venue with no margin data", async () => {
     t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    const s = await draft([PUT]); // the only margined leg: no other figure to make the preview look at it
+    const p = await json<LivePreview>(await preview(s.id));
+    expect(p.legs.map((l) => l.marginEstimate)).toEqual([null]);
+    expect(p.marginRequired).toBeNull();
+    expect(p.ok).toBe(false);
+    expect(p.reasons).toContain("The margin for P-BTC-78000-250926 could not be estimated (the exchange lists a margin scaling factor and no size threshold for it); nothing was sent");
+    expect(p.reasons.some((r) => r.includes("no margin parameters"))).toBe(false); // one cause, said once
+    const sentBefore = t.trading.placed.length;
+    const placed = await place(s.id, "key-nothreshold-01");
+    expect(placed.status).toBe(409);
+    expect(t.trading.placed).toHaveLength(sentBefore); // no order went out
+  });
+
+  it("HC-TR-192 a short the venue priced next to one it did not is refused by name: a partial figure never reads as the whole", async () => {
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt("P-BTC-78000-250926", "900", "79500");
     t.trading.product("C-BTC-82000-250926", 103, "0.001").markAt("C-BTC-82000-250926", "700"); // no margin parameters, no spot
     const s = await draft([CALL, PUT, { ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" }]);
     const p = await json<LivePreview>(await preview(s.id));
@@ -121,7 +149,7 @@ describe("HC-TR-192 short-leg margin: the whole placement is refused before the 
     const s = await draft([CALL]);
     const live = await json<Strategy>(await place(s.id, "key-addleg-0001", { [s.legs[0]!.id]: "1200" }));
     expect(live.status).toBe("live");
-    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt("P-BTC-78000-250926", "900", "79500");
     t.trading.setBalances([{ asset: "USD", balance: "10", availableBalance: "10" }]);
     const before = t.trading.placed.length;
     const refused = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { confirm: "LIVE", legs: [PUT] } });
@@ -135,7 +163,7 @@ describe("HC-TR-192 short-leg margin: the whole placement is refused before the 
 
   it("HC-TR-196 a futures leg is margined on its notional and moves no premium; without margin parameters an entry into it is refused (ADR-095)", async () => {
     const FUT = { kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 10, price: "79500" };
-    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005", threshold: "100000" }).markAt("P-BTC-78000-250926", "900", "79500");
     t.trading.product("BTCUSD", 27, "0.001", "live", "0.5", { pct: "1" }).markAt("BTCUSD", "79500");
     const s = await draft([PUT, FUT], "Put with a long future");
     const p = await json<LivePreview>(await preview(s.id));
