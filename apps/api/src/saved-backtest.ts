@@ -6,7 +6,9 @@
 // after fees.
 //
 // Where it differs from the engine at work, and the run says each of these with its figures:
-// - the strike ladder of an entry is the one recorded at the last settlement before it; the legs are priced at the
+// - the strike ladder of an entry is the one recorded at the last settlement before it, extended past its ends by
+//   the strikes the exchange was pricing at the entry (a strike listed since inside the recorded range is not seen);
+// - the legs are priced at the
 //   entry instant from their candles (a leg chosen by premium among the options priced then, from the money outwards);
 // - an entry is tried on every bar of the window's first hour and then once an hour to its end, where the engine
 //   looks after every fresh snapshot: a trade the engine would take minutes after another closed is taken up to an
@@ -22,6 +24,7 @@ import { defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { CLOCK_ONCE_MS, inWindow, savedPlanFor, savedPlanRefusal, skipText } from "./autopilot.js";
 import { savedPlaybook } from "./autopilot-saved.js";
 import { eodDays } from "./chain-eod.js";
+import { HISTORY_STRIKE_STEP } from "./chain-eod-history.js";
 import { type SimBar, type SimLeg, simulateTrade } from "./clock-sim.js";
 import type { Db } from "./db/client.js";
 import { type MarkSource, RESOLUTION_MS, marksOf } from "./mark-candles.js";
@@ -42,6 +45,10 @@ const MOVE_REACH_BARS = 6;
 /** The reasons a day has no trade that are a lack of data, not a decision of the strategy. */
 const NO_DATA = ["No spot price at the entry", "No price for a leg at the entry", "No recorded chain before the entry", "No settlement price for its expiry", "The options were not priced far enough from the money for its premium", "No price in its entry window"] as const;
 const UNSETTLED = "Its expiry has not settled yet";
+/** The legs' strikes are not among the recorded ones nor among those the exchange priced beyond them at the entry: the engine would find no fit either. */
+const OFF_LADDER = "Its strikes are not among the ones listed at the entry";
+/** The most strikes looked for beyond one end of the recorded ladder when the price has moved past it. */
+export const LADDER_REACH = 25;
 /** The most strikes priced outwards from the money for a leg chosen by premium. */
 const PREMIUM_WALK = 30;
 
@@ -152,27 +159,63 @@ export async function backtestSaved(deps: BacktestDeps, row: { id: string; name:
       if (d.oncePerExpiry && tradedExpiries.has(expiry)) return no("Already traded this expiry", true);
       const settleMs = settlementMsOf(expiry, asset)!;
       if (settleMs > nowMs) return no(UNSETTLED);
-      // the strikes of the legs chosen by strikes or per cent do not depend on prices: read them off the ladder
+      // The strikes the entry can choose from: the recorded ones, and, where the price has since moved towards or past
+      // an end of that recording, the strikes beyond it that the exchange was pricing at the entry instant (it lists
+      // new ones as the price moves). A strike is never assumed: a candidate on the grid the nightly chain history
+      // walks (ADR-098) counts only when one of the options asked about has a mark at the entry.
+      const rows = [...chain.rows].sort((x, y) => x.strike - y.strike).map((r) => ({ strike: r.strike }));
+      const grid = HISTORY_STRIKE_STEP[asset];
+      /** Candidates beyond one end, nearest first, while `more` says the ladder is still short; at most LADDER_REACH. Returns the mark of each priced one. */
+      const extend = async (up: boolean, kinds: readonly ("call" | "put")[], more: (candidate: number) => boolean, each?: (mark: number) => boolean): Promise<void> => {
+        if (grid === undefined || rows.length === 0) return;
+        const end = up ? Math.max(...rows.map((r) => r.strike)) : Math.min(...rows.map((r) => r.strike));
+        for (let n = 1; n <= LADDER_REACH && more(up ? end + (n - 1) * grid : end - (n - 1) * grid); n++) {
+          const strike = up ? end + n * grid : end - n * grid;
+          let mark: number | undefined;
+          for (const kind of kinds) mark = (await marksFor(kind, strike, expiry, t - step, settleMs)).get(t) ?? mark;
+          if (mark === undefined) continue;
+          rows.push({ strike });
+          if (each && !each(mark)) break;
+        }
+        rows.sort((x, y) => x.strike - y.strike);
+      };
+      // the strikes of the legs chosen by strikes or per cent do not depend on prices: read them off the ladder, which
+      // has to hold, each side of the price, as many strikes as the furthest such leg counts (and two more) and to
+      // pass the furthest per cent (by two steps): an expiry on a wider step than the grid is reached by the count
       if (fixed) {
-        const placed = propose(fixed, [{ expiry, rows: chain.rows.map((r) => ({ strike: r.strike, call: { mark: 1 }, put: { mark: 1 } })) }]);
-        if (!placed.ok) return no(placed.reason === "noFit" ? "Its strikes are not on the recorded ladder" : skipText(placed.reason));
+        const fixedKinds = [...new Set(fixedLegs.flatMap((l) => (l.kind === "future" ? [] : [l.kind])))];
+        const count = Math.max(0, ...d.legs.map((l) => (l.by === "strikes" ? l.value + 2 : 0)));
+        const far = Math.max(0, ...d.legs.map((l) => (l.by === "pct" ? (s * l.value) / 100 + 2 * (grid ?? 0) : 0)));
+        await extend(true, fixedKinds, (c) => rows.filter((r) => r.strike > s).length < count || c < s + far);
+        await extend(false, fixedKinds, (c) => rows.filter((r) => r.strike < s).length < count || c > s - far);
+        const placed = propose(fixed, [{ expiry, rows: rows.map((r) => ({ strike: r.strike, call: { mark: 1 }, put: { mark: 1 } })) }]);
+        // (tried again on the next bar where strikes can be looked for: one newly listed may have its first bar a little later)
+        if (!placed.ok) return no(placed.reason === "noFit" ? OFF_LADDER : skipText(placed.reason), grid !== undefined);
         for (const leg of placed.proposal.legs) await marksFor(leg.kind as "call" | "put", Number(leg.strike), expiry, t - step, settleMs);
       }
       // a leg chosen by premium: the options out of the money are priced at the entry instant, from the money outwards,
-      // until one is worth less than half the premium asked for (the template takes the nearest, and none beyond half)
+      // until one is worth less than half the premium asked for (the template takes the nearest, and none beyond half);
+      // where the recorded strikes end before that, the walk goes on over the ones the exchange priced beyond them
       for (const leg of byPremium) {
-        const out = chain.rows.map((r) => r.strike).filter((k) => (leg.kind === "call" ? k > s : k < s)).sort((x, y) => (leg.kind === "call" ? x - y : y - x));
+        const out = rows.map((r) => r.strike).filter((k) => (leg.kind === "call" ? k > s : k < s)).sort((x, y) => (leg.kind === "call" ? x - y : y - x));
         let last: number | undefined;
         let nearest = Infinity;
-        for (const strike of out.slice(0, PREMIUM_WALK)) {
-          const mark = (await marksFor(leg.kind, strike, expiry, t - step, settleMs)).get(t);
-          if (mark === undefined) continue;
+        const seen = (mark: number): boolean => {
           last = mark;
           nearest = Math.min(nearest, Math.abs(mark - leg.premium));
-          if (mark < leg.premium / 2) break;
+          return mark >= leg.premium / 2;
+        };
+        let walking = true;
+        for (const strike of out.slice(0, PREMIUM_WALK)) {
+          const mark = (await marksFor(leg.kind, strike, expiry, t - step, settleMs)).get(t);
+          if (mark !== undefined && !seen(mark)) {
+            walking = false;
+            break;
+          }
         }
-        // nothing priced about there, and the furthest option priced is still dearer: the ladder (or the walk) ends
-        // before its premium is reached, and a strike nearer the money than the engine would sell is no answer
+        if (walking && out.length < PREMIUM_WALK) await extend(leg.kind === "call", [leg.kind], () => true, seen);
+        // nothing priced about there, and the furthest option priced is still dearer: the strikes end before its
+        // premium is reached, and a strike nearer the money than the engine would sell is no answer
         if (nearest > leg.premium / 2 && last !== undefined && last > leg.premium) return no("The options were not priced far enough from the money for its premium");
       }
       // then on the prices of the entry instant itself
@@ -180,7 +223,7 @@ export async function backtestSaved(deps: BacktestDeps, row: { id: string; name:
         const mark = legMarks.get(`${kind}|${strike}|${expiry}`)?.get(t);
         return mark === undefined ? {} : { [kind]: { mark } };
       };
-      const second = propose(p, [{ expiry, rows: chain.rows.map((r) => ({ strike: r.strike, ...quote("call", r.strike), ...quote("put", r.strike) })) }]);
+      const second = propose(p, [{ expiry, rows: rows.map((r) => ({ strike: r.strike, ...quote("call", r.strike), ...quote("put", r.strike) })) }]);
       if (!second.ok) return no(second.reason === "noFit" ? "No price for a leg at the entry" : skipText(second.reason), true);
       const proposal = second.proposal;
       // (every leg has a price above zero here: a close that is not one is never kept, see mark-candles.ts)
@@ -245,7 +288,7 @@ export async function backtestSaved(deps: BacktestDeps, row: { id: string; name:
   const notes = [
     "Fills are at the price of the bar: no bid and ask, no slippage.",
     `Prices are ${fine ? "5 minutes" : "an hour"} apart: a level touched and left inside a bar is not seen, and an exit is booked at the bar's price, not at its level.`,
-    "The strikes on offer at an entry are the ones recorded at the last settlement before it.",
+    "The strikes on offer at an entry are the ones recorded at the last settlement before it, with the ones beyond its ends that the exchange was pricing at the entry.",
     `An entry is tried on each bar of the window's first hour and then once an hour; Autopilot itself looks every few minutes.`,
     "The spot, the settlement price included, is the mark price of the perpetual; sizes are in the exchange's lot.",
     ...(noData > 0 ? [`${noData} of ${entryDays} entry days had no usable price and are not in the figures.`] : []),

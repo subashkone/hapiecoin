@@ -164,7 +164,7 @@ describe("HC-TR-288 a saved strategy backtested in the app", () => {
     // the figures are those trades after fees
     const nets = r.trades.map((x) => x.net);
     expect(r.figures).toEqual({ mean: Number((nets.reduce((a, b) => a + b, 0) / 5).toFixed(2)), per: "day", positivePct: 80, worst: jump.net, samples: 5, basis: `HapieCoin backtest, ${day(21)} to ${day(25)}: 5-minute mark prices from Delta Exchange India, the exchange's fees counted, fills at the bar's price with no slippage.` });
-    expect(r.notes.slice(0, 3)).toEqual(["Fills are at the price of the bar: no bid and ask, no slippage.", "Prices are 5 minutes apart: a level touched and left inside a bar is not seen, and an exit is booked at the bar's price, not at its level.", "The strikes on offer at an entry are the ones recorded at the last settlement before it."]);
+    expect(r.notes.slice(0, 3)).toEqual(["Fills are at the price of the bar: no bid and ask, no slippage.", "Prices are 5 minutes apart: a level touched and left inside a bar is not seen, and an exit is booked at the bar's price, not at its level.", "The strikes on offer at an entry are the ones recorded at the last settlement before it, with the ones beyond its ends that the exchange was pricing at the entry."]);
     expect(r.barsJudged).toBeGreaterThan(0);
     // the spot and two options an evening were asked of the venue; a second run asks nothing
     // (one call of the 22nd was already kept by the test above)
@@ -244,6 +244,30 @@ describe("HC-TR-288 a saved strategy backtested in the app", () => {
     const moved = await backtestSaved(deps, row(byPct), { from: day(23), to: day(23) });
     expect(moved.noEntry).toEqual({});
     expect(moved.trades.map((x) => x.legs.map((l) => [l.kind, l.strike]))).toEqual([[["put", 84_800]]]);
+    // the price has moved to the top of the strikes recorded at noon (86,400 the highest): the strikes the exchange
+    // priced beyond it at the entry are on offer, so the call 1 % away is 86,600, and 2 % away 87,400
+    const both = SavedDefinition.parse({ ...byPct, moveSide: undefined });
+    const beyond = await backtestSaved(deps, row(both), { from: day(23), to: day(23) });
+    expect(beyond.trades.map((x) => x.legs.map((l) => [l.kind, l.strike]))).toEqual([[["put", 84_800], ["call", 86_600]]]);
+    const further = await backtestSaved(deps, row(SavedDefinition.parse({ ...both, legs: [{ kind: "call", side: "sell", by: "pct", value: 2 }] })), { from: day(23), to: day(23) });
+    expect(further.trades.map((x) => x.legs.map((l) => l.strike))).toEqual([[87_400]]);
+    // where the exchange priced nothing beyond the recording, nothing is assumed: the nearest recorded strike, or no trade
+    const unlisted = { db: t.db, source: source((symbol) => /^MARK:[CP]-BTC-8(6[6-9]|[7-9]\d)\d\d-/.test(symbol)), now: () => NOW };
+    await t.db.delete(markCandles);
+    const capped = await backtestSaved(unlisted, row(both), { from: day(23), to: day(23) });
+    expect(capped.trades.map((x) => x.legs.map((l) => [l.kind, l.strike]))).toEqual([[["put", 84_800], ["call", 86_400]]]);
+    const off = await backtestSaved(unlisted, row(SavedDefinition.parse({ ...both, legs: [{ kind: "call", side: "sell", by: "pct", value: 2 }] })), { from: day(23), to: day(23) });
+    expect(off.noEntry).toEqual({ "Its strikes are not among the ones listed at the entry": 1 });
+    // (a strategy whose strikes are not listed is the strategy not fitting, as for the engine: not a day without prices)
+    expect(off.notes.some((n) => n.includes("had no usable price"))).toBe(false);
+    // a leg counted in strikes where the exchange lists the strikes beyond the recording on a wider step than the
+    // grid: four candidates in five are empty, and the count goes on to the strikes that are there (86,400 the last
+    // recorded; 87,000, 88,000 and 89,000 priced beyond), so five strikes out is 87,000
+    await t.db.delete(markCandles);
+    const wide = { db: t.db, source: source((symbol) => /^MARK:[CP]-BTC-8(6[6-9]|[7-9]\d)\d\d-/.test(symbol) && !/-8[7-9]000-/.test(symbol)), now: () => NOW };
+    const counted = await backtestSaved(wide, row(SavedDefinition.parse({ ...both, legs: [{ kind: "call", side: "sell", by: "strikes", value: 5 }] })), { from: day(23), to: day(23) });
+    expect(counted.noEntry).toEqual({});
+    expect(counted.trades.map((x) => x.legs.map((l) => l.strike))).toEqual([[87_000]]);
     // a premium so small that thirty strikes out are still dearer: no nearer strike is sold in its place
     const tiny = await backtestSaved(deps, row(SavedDefinition.parse({ ...EVENING, legs: [{ kind: "put", side: "sell", by: "premium", value: 0.2 }] })), { from: day(21), to: day(21) });
     expect(tiny.trades).toEqual([]);
@@ -254,6 +278,8 @@ describe("HC-TR-288 a saved strategy backtested in the app", () => {
   it("HC-TR-288 a weekly strategy enters on its day only and its figures are a week's; conditions that are not met, strikes off the ladder and an expiry out of range are counted, with nothing downloaded", async () => {
     const src = source();
     const deps = { db: t.db, source: src, now: () => NOW };
+    // (nothing kept from the tests above: what is asked of the venue below is counted)
+    await t.db.delete(markCandles);
     // Monday the 21st, the expiry of the 26th: one trade in the week, on hourly prices, held to its settlement
     const weekly = await backtestSaved(deps, row(SavedDefinition.parse({ ...EVENING, cadence: "weekly", weekdayUtc: 1, minDte: 4, maxDte: 6, exits: {} })), { from: day(21), to: day(25) });
     expect(weekly.trades.map((x) => [x.entryAt, x.expiry, x.reason])).toEqual([[new Date(Date.UTC(2026, 8, 21, 16)).toISOString(), day(26), "expired"]]);
@@ -262,13 +288,20 @@ describe("HC-TR-288 a saved strategy backtested in the app", () => {
     // the price is never above its own flat average
     const trend = await backtestSaved(deps, row(SavedDefinition.parse({ ...EVENING, conditions: { sma: { days: 3, side: "above" } } })), { from: day(21), to: day(22) });
     expect(trend.noEntry).toEqual({ [skipText("noSignal")]: 2 });
+    // (nothing but the spot is asked for on days whose conditions are not met)
+    expect(src.calls.slice(asked).every((c) => c.symbol === "MARK:BTCUSD")).toBe(true);
+    const quiet = src.calls.length;
     const far = await backtestSaved(deps, row(SavedDefinition.parse({ ...EVENING, legs: [{ kind: "put", side: "sell", by: "pct", value: 20 }] })), { from: day(21), to: day(21) });
-    expect(far.noEntry).toEqual({ "Its strikes are not on the recorded ladder": 1 });
+    expect(far.noEntry).toEqual({ "Its strikes are not among the ones listed at the entry": 1 });
+    // (conditions that are not met ask the venue nothing; strikes far beyond the recording are looked for, a set number of them)
+    // 20 % away: twenty-five candidates beyond each end, puts only, on each of the bars tried (kept after the first)
+    const looked = src.calls.length;
+    expect(looked - quiet).toBe(2 * 25);
     const near = await backtestSaved(deps, row(SavedDefinition.parse({ ...EVENING, maxDte: 0.6 })), { from: day(21), to: day(21) });
     expect(near.noEntry).toEqual({ "No expiry in its range on that day": 1 });
     const none = await backtestSaved(deps, row(SavedDefinition.parse({ ...EVENING, minDte: 30, maxDte: 40 })), { from: day(21), to: day(21) });
     expect(none.noEntry).toEqual({ [skipText("noExpiry")]: 1 });
-    expect(src.calls.length).toBe(asked);
+    expect(src.calls.length).toBe(looked);
     expect([trend, far, near, none].every((x) => x.figures === null && x.trades.length === 0)).toBe(true);
   });
 
@@ -381,7 +414,7 @@ describe("HC-TR-288 the backtest in the app through the admin routes", () => {
     const far = await create("Strikes off the ladder", { ...EVENING, legs: [{ kind: "put", side: "sell", by: "pct", value: 20 }] });
     await post(`${BASE}/${far.id}/backtests`, { from: day(21), to: day(21) });
     const empty = await ended(far.id);
-    expect(empty).toMatchObject({ status: "done", figures: null, trades: [], noEntry: { "Its strikes are not on the recorded ladder": 1 } });
+    expect(empty).toMatchObject({ status: "done", figures: null, trades: [], noEntry: { "Its strikes are not among the ones listed at the entry": 1 } });
     const none = await post(`${BASE}/${far.id}/backtests/${empty.id}/use`);
     expect([none.status, await why(none)]).toEqual([409, SAVED_REFUSALS.backtestEmpty]);
     expect((await post(`${BASE}/${far.id}/backtests/bt_nothing/use`)).status).toBe(404);
