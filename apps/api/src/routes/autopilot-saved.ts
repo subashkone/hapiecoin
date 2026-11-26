@@ -9,11 +9,15 @@
  *   POST   /v1/admin/autopilot-strategies/{id}/publish     to paper (HC-TR-271)
  *   POST   /v1/admin/autopilot-strategies/{id}/retire      no new entries (HC-TR-273)
  *   DELETE /v1/admin/autopilot-strategies/{id}             only one that never traded and is not on paper (HC-TR-273)
+ *   GET    /v1/admin/autopilot-strategies/{id}/backtests            its latest runs of the backtest in the app (HC-TR-288)
+ *   POST   /v1/admin/autopilot-strategies/{id}/backtests            start a run on its settings as they are (HC-TR-288)
+ *   POST   /v1/admin/autopilot-strategies/{id}/backtests/{run}/use  put a run's figures on the strategy (HC-TR-288)
  */
-import { SavedStrategy, SavedStrategyCreate, SavedStrategyList, SavedStrategyPatch } from "@hapiecoin/schema";
+import { SavedBacktestRun, SavedBacktestStart, SavedStrategy, SavedStrategyCreate, SavedStrategyList, SavedStrategyPatch } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { auditFrom } from "../audit.js";
 import { type SavedResult, createSaved, deleteSaved, duplicateSaved, listSaved, publishSaved, retireSaved, savedById, updateSaved } from "../autopilot-saved.js";
+import { runsOf, startRun, useRun } from "../saved-backtest-runs.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireAdmin } from "../security/guards.js";
@@ -120,6 +124,54 @@ export function registerAutopilotSavedRoutes(app: OpenAPIHono<AppEnv>, deps: App
       if (!gone.ok) throw errors.conflict(gone.why);
       await auditFrom(c, db)({ action: "admin.autopilot_strategy.delete", target: `autopilot_strategy:${id}`, before });
       return c.json({ deleted: true as const }, 200);
+    },
+  );
+
+  // ---- the backtest in the app (ADR-144) ----
+  const RunParam = z.object({ id: z.string().min(1).max(64), run: z.string().min(1).max(64) });
+  const found = async (id: string): Promise<SavedStrategy> => {
+    const s = await savedById(db, id);
+    if (!s) throw errors.notFound("Strategy");
+    return s;
+  };
+
+  app.openapi(
+    createRoute({ method: "get", path: `${BASE}/{id}/backtests`, tags: ["admin"], summary: "The latest runs of the backtest in the app on a saved strategy (HC-TR-288)", security: cookieAuth, middleware: admin, request: { params: IdParam }, responses: { 200: jsonContent(z.object({ items: z.array(SavedBacktestRun) }), "Runs, newest first"), 401: errorResponses[401], 403: errorResponses[403], 404: errorResponses[404] } }),
+    async (c) => c.json({ items: await runsOf(db, await found(c.req.valid("param").id), now().getTime()) }, 200),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: `${BASE}/{id}/backtests`,
+      tags: ["admin"],
+      summary: "Start a backtest of a saved strategy on its settings as they are: public prices are read, nothing is placed (HC-TR-288)",
+      security: cookieAuth,
+      middleware: admin,
+      request: { params: IdParam, body: { content: { "application/json": { schema: SavedBacktestStart } }, required: true } },
+      responses: { 202: jsonContent(SavedBacktestRun, "The run as it starts"), ...refusals, 503: errorResponses[503] },
+    }),
+    async (c) => {
+      const strategy = await found(c.req.valid("param").id);
+      const body = c.req.valid("json");
+      if (!deps.markSource) throw errors.unavailable("The exchange's price history is not available on this server");
+      const started = await startRun({ db, source: deps.markSource, now: () => now().getTime(), logger: deps.logger }, strategy, body, currentUser(c).id);
+      if (!started.ok) throw errors.conflict(started.why);
+      await auditFrom(c, db)({ action: "admin.autopilot_strategy.backtest", target: `autopilot_strategy:${strategy.id}`, after: { run: started.run.id, ...body } });
+      return c.json(started.run, 202);
+    },
+  );
+
+  app.openapi(
+    createRoute({ method: "post", path: `${BASE}/{id}/backtests/{run}/use`, tags: ["admin"], summary: "Put a finished run's figures on the strategy, marked as computed in the app (HC-TR-288)", security: cookieAuth, middleware: admin, request: { params: RunParam }, responses: { 200: jsonContent(SavedStrategy, "The strategy with the figures"), ...refusals } }),
+    async (c) => {
+      const { id, run } = c.req.valid("param");
+      const strategy = await found(id);
+      const result = await useRun(db, strategy, run, now());
+      if (!result) throw errors.notFound("Finished backtest");
+      const s = settled(result);
+      await auditFrom(c, db)({ action: "admin.autopilot_strategy.backtest_use", target: `autopilot_strategy:${id}`, before: { backtest: strategy.backtest }, after: { run, backtest: s.backtest } });
+      return c.json(s, 200);
     },
   );
 }

@@ -11,7 +11,7 @@
  */
 import { z } from "zod";
 import { Id } from "./accounts.js";
-import { IsoDateTime, Underlying } from "./primitives.js";
+import { IsoDate, IsoDateTime, Underlying } from "./primitives.js";
 
 /** How a leg's strike is chosen: listed strikes from the money, per cent of the spot away, or the option priced nearest a premium. */
 export const SAVED_LEG_BY = ["strikes", "pct", "premium"] as const;
@@ -215,7 +215,7 @@ export function savedPlaybookOf(row: { id: string; name: string; summary: string
     name: row.name,
     summary: row.summary,
     rationale: row.summary,
-    evidence: b ? { claim: `${usd(b.mean)} a ${b.per} on ${b.samples} trades, ${b.positivePct} % of them positive, worst ${usd(b.worst)} (USD, figures entered by hand).`, source: b.basis } : { claim: "No backtest entered.", source: "none" },
+    evidence: b ? { claim: `${usd(b.mean)} a ${b.per} on ${b.samples} trades, ${b.positivePct} % of them positive, worst ${usd(b.worst)} (USD, ${b.run ? `backtested in the app on ${b.run.resolution === "5m" ? "5-minute" : "hourly"} prices, ${b.run.from} to ${b.run.to}` : "figures entered by hand"}).`, source: b.basis } : { claim: "No backtest entered.", source: "none" },
     template: {
       name: row.name,
       category: "Neutral",
@@ -252,6 +252,13 @@ export const SavedAudience = z.enum(SAVED_AUDIENCES);
 export type SavedAudience = z.infer<typeof SavedAudience>;
 
 /** The backtest of these settings, entered by hand from the research scripts (ADR-141 point 7): USD per trade at the strategy's size. */
+/** The spacing of the recorded prices a backtest in the app steps through (ADR-144): 5 minutes for a daily strategy, an hour for the others. */
+export const SAVED_BACKTEST_RESOLUTIONS = ["5m", "1h"] as const;
+export const SavedBacktestResolution = z.enum(SAVED_BACKTEST_RESOLUTIONS);
+export type SavedBacktestResolution = z.infer<typeof SavedBacktestResolution>;
+/** What figures computed in the app carry beside the numbers (ADR-144): the run, its period, its prices and what it could not do. Absent: typed by hand. */
+export const SavedBacktestOrigin = z.strictObject({ id: Id, from: IsoDate, to: IsoDate, resolution: SavedBacktestResolution, notes: z.array(z.string().max(400)).max(20) });
+export type SavedBacktestOrigin = z.infer<typeof SavedBacktestOrigin>;
 export const SavedBacktest = z.strictObject({
   mean: z.number().min(-1_000_000).max(1_000_000),
   per: z.enum(["day", "week", "trade"]),
@@ -260,8 +267,62 @@ export const SavedBacktest = z.strictObject({
   samples: z.number().int().min(1).max(100_000),
   /** Where the figures come from: the script, the period, the costs counted. */
   basis: z.string().trim().min(1).max(300),
+  /** ADR-144: set by the server when the figures are a run of the app's own backtest; never accepted from a form. */
+  run: SavedBacktestOrigin.optional(),
 });
 export type SavedBacktest = z.infer<typeof SavedBacktest>;
+/** Figures as an admin types them: the numbers and their source, never the mark of a run. */
+export const SavedBacktestTyped = SavedBacktest.omit({ run: true });
+export type SavedBacktestTyped = z.infer<typeof SavedBacktestTyped>;
+
+/** One trade of a backtest run (ADR-144): what was entered, how it ended, and what it made before and after fees. USD. */
+export const SavedBacktestTrade = z.strictObject({
+  asset: Underlying,
+  entryAt: IsoDateTime,
+  closedAt: IsoDateTime,
+  expiry: IsoDate,
+  spot: z.number(),
+  legs: z.array(z.strictObject({ kind: z.enum(["call", "put"]), side: z.enum(["buy", "sell"]), strike: z.number(), lots: z.number().int(), price: z.number() })),
+  gross: z.number(),
+  fees: z.number(),
+  net: z.number(),
+  /** How the trade ended: expired, squared_off, stopped or target, as a paper trade's close reason. */
+  reason: z.string(),
+  /** Each exit in order: when, which rule (or "settled"), and the trade's P&L before fees right after it. */
+  events: z.array(z.strictObject({ at: IsoDateTime, kind: z.string(), pnl: z.number() })),
+  barsSkipped: z.number().int(),
+});
+export type SavedBacktestTrade = z.infer<typeof SavedBacktestTrade>;
+export const SAVED_BACKTEST_STATES = ["running", "done", "failed"] as const;
+/** A run of the backtest in the app on a saved strategy's settings (ADR-144). Paper arithmetic only: nothing is placed anywhere. */
+export const SavedBacktestRun = z.strictObject({
+  id: Id,
+  strategyId: z.string(),
+  status: z.enum(SAVED_BACKTEST_STATES),
+  /** Entry days looked at so far, of all in the period. */
+  progress: z.strictObject({ done: z.number().int(), total: z.number().int() }),
+  from: IsoDate,
+  to: IsoDate,
+  resolution: SavedBacktestResolution,
+  /** The figures, once done and when at least one trade was made. */
+  figures: SavedBacktestTyped.nullable(),
+  /** Days on which nothing was entered, by reason. */
+  noEntry: z.record(z.string(), z.number().int()),
+  barsJudged: z.number().int(),
+  barsSkipped: z.number().int(),
+  /** What the figures do not include, in sentences the screen shows with them. */
+  notes: z.array(z.string()),
+  trades: z.array(SavedBacktestTrade),
+  error: z.string().nullable(),
+  /** Whether the strategy still has the settings this run tested: only then can its figures be used. */
+  current: z.boolean(),
+  createdAt: IsoDateTime,
+  finishedAt: IsoDateTime.nullable(),
+});
+export type SavedBacktestRun = z.infer<typeof SavedBacktestRun>;
+/** POST /v1/admin/autopilot-strategies/{id}/backtests: the period is optional; the server chooses one the recorded history covers. */
+export const SavedBacktestStart = z.strictObject({ from: IsoDate.optional(), to: IsoDate.optional() });
+export type SavedBacktestStart = z.infer<typeof SavedBacktestStart>;
 
 const Name = z.string().trim().min(1).max(60);
 const Summary = z.string().trim().min(1).max(300);
@@ -276,7 +337,7 @@ export type SavedStrategyCreate = z.infer<typeof SavedStrategyCreate>;
  * strategy that has traded are saved as a new version; on one that has not, they clear its backtest.
  */
 export const SavedStrategyPatch = z
-  .strictObject({ name: Name.optional(), summary: Summary.optional(), definition: SavedDefinition.optional(), backtest: SavedBacktest.nullable().optional(), audience: SavedAudience.optional(), userIds: Ids.optional(), planIds: Ids.optional() })
+  .strictObject({ name: Name.optional(), summary: Summary.optional(), definition: SavedDefinition.optional(), backtest: SavedBacktestTyped.nullable().optional(), audience: SavedAudience.optional(), userIds: Ids.optional(), planIds: Ids.optional() })
   .refine((p) => Object.keys(p).length > 0, { message: "Nothing to change" });
 export type SavedStrategyPatch = z.infer<typeof SavedStrategyPatch>;
 
@@ -324,6 +385,9 @@ export const SAVED_REFUSALS = {
   notDraft: "Only a draft or a backtested strategy can be published",
   notPaper: "Only a strategy on paper can be retired",
   retired: "A retired strategy cannot be changed: duplicate it",
+  backtestRunning: "A backtest of this strategy is already running",
+  backtestStale: "The settings changed since this backtest ran: run it again",
+  backtestEmpty: "This backtest made no trade: there are no figures to use",
   onPaper: "It is on paper: retire it before deleting it",
   unknownUser: "No such user",
   unknownPlan: "No such plan",

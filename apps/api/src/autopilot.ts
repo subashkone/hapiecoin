@@ -75,7 +75,7 @@ const DAY_MS = 86_400_000;
 /** What a strategy Autopilot opens is named after: its playbook, then this. */
 export const AUTOPILOT_NAME_SUFFIX = " · Autopilot";
 /** A playbook entered by the clock enters once per window: not again within this long of its last entry. */
-const CLOCK_ONCE_MS = 6 * 3_600_000;
+export const CLOCK_ONCE_MS = 6 * 3_600_000;
 /** Inside the playbook's entry window: from its first hour, before its second (UTC), on its day of the week when it has one. */
 export const inWindow = (c: PlaybookClock, nowMs: number): boolean => {
   const d = new Date(nowMs);
