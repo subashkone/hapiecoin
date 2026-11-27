@@ -104,6 +104,7 @@ The owner's decision (26 Nov 2026): the server starts with the whole local datab
 9. The laptop's database is not changed by any of this: it is the fallback until the server is seen working.
 
 ### 6.4 Update
+0. `sh deploy/test-release.sh <full commit id>` (ADR-153): the new version's migrations on a fresh copy of the live data in the test database `hapiecoin_test`, with the app left running. Go on only after `test-release PASSED`.
 1. `sh deploy/backup.sh` (a dump before every release). If it does not end with `backup ok`, stop here.
 2. Set `RELEASE` in `deploy/.env` to the new commit of `main`. Its images exist once the checks passed. Look at the e2e of that commit yourself before choosing it: the image job does not wait for the e2e, so a commit whose e2e failed for a real reason has images too.
 3. `docker compose ... pull`, then `up -d`. The api applies new migrations as it starts; the site is away for a minute or two.
@@ -121,3 +122,9 @@ The database is no longer on the server, so `docker compose ... down -v` cannot 
 - **`BETTER_AUTH_SECRET`**: everyone signs in again.
 - **Gate password**: write a new line to `deploy/basic-auth.caddy`, `docker compose ... restart caddy`.
 - **Registry token**: `docker login ghcr.io` again.
+
+### 6.7 The research login and the test database (ADR-153)
+- **Once**: create the database `hapiecoin_test` in the database server (`az postgres flexible-server db create --resource-group rg-hapiecoin --server-name hapiecoin-db --name hapiecoin_test`); copy `deploy/` to the server again (`research-role.sh`, `test-release.sh`, the changed `restore.sh`).
+- **The research login**: `sh deploy/research-role.sh`, typing its password twice (letters and digits, 24 or more). It prints the tables research can and cannot read. Run it again to change the password, and after any release that adds a table. Allow the address research connects from in the database's firewall.
+- **Before each release**: §6.4 step 0.
+- Tried on 27 Nov 2026 on a throwaway PostgreSQL 17 whose owner was not a superuser: research read `strategies`, `users` and the marks; was refused `sessions`, `broker_credentials` and `payments`, a delete, a create table (also after switching its read-only default off) and the test database; a 35-second query was cut off. `test-release.sh` passed with the live row counts unchanged and no container left behind; a commit with no image and an address not ending in `/hapiecoin` were refused. Not tried: either script against the real database, and a release that actually applies a migration (the one image at hand had none to apply).

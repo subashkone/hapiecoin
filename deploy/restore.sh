@@ -21,6 +21,21 @@ ENV_FILE="${ENV_FILE:-$HERE/.env}"
 # One name is read from the settings file; it is not sourced, so nothing else in it reaches this shell.
 DATABASE_URL="$(sed -n 's/^DATABASE_URL=//p' "$ENV_FILE" | tail -n 1)"
 [ -n "$DATABASE_URL" ] || { echo "restore: DATABASE_URL is not set in $ENV_FILE" >&2; exit 1; }
+# TARGET=test loads the dump into the test database beside the live one (hapiecoin_test, same server, same
+# login) and never touches the live database: test-release.sh uses it. The app may stay up, because nothing
+# that runs uses the test database, and nothing is dumped first, because a test copy is not worth keeping.
+TARGET="${TARGET:-live}"
+if [ "$TARGET" = "test" ]; then
+  LIVE_URL="$DATABASE_URL"
+  DATABASE_URL="$(printf '%s' "$LIVE_URL" | sed 's|/hapiecoin\(?[^/]*\)\{0,1\}$|/hapiecoin_test\1|')"
+  case "$DATABASE_URL" in
+    "$LIVE_URL") echo "restore: DATABASE_URL does not end in /hapiecoin, so the test database's address cannot be worked out. Nothing was changed." >&2; exit 1 ;;
+    */hapiecoin_test|*/hapiecoin_test\?*) ;;
+    *) echo "restore: the test database's address did not come out right. Nothing was changed." >&2; exit 1 ;;
+  esac
+elif [ "$TARGET" != "live" ]; then
+  echo "restore: TARGET is live or test" >&2; exit 1
+fi
 export DATABASE_URL
 
 compose() { docker compose -f "$HERE/compose.prod.yml" --env-file "$ENV_FILE" "$@"; }
@@ -39,6 +54,7 @@ fi
 # The API migrates and writes as soon as it starts: it must be down for the whole restore. A restarting
 # container counts as up. A compose error here stops the script (no output is thrown away).
 for state in running restarting; do
+  [ "$TARGET" = "test" ] && break
   if [ -n "$(compose ps -q --status "$state" api)" ]; then
     echo "restore: the api is $state. Stop the app first: docker compose ... stop caddy web api gateway ingest" >&2
     exit 1
@@ -66,8 +82,10 @@ if [ "$TABLES" != "0" ]; then
     echo "restore: the database already has $TABLES tables. To replace everything in it, run again with FORCE=1." >&2
     exit 1
   fi
-  echo "restore: FORCE=1. Taking a dump of what is there before dropping it"
-  ENV_FILE="$ENV_FILE" sh "$HERE/backup.sh"
+  if [ "$TARGET" = "live" ]; then
+    echo "restore: FORCE=1. Taking a dump of what is there before dropping it"
+    ENV_FILE="$ENV_FILE" sh "$HERE/backup.sh"
+  fi
   echo "restore: dropping the $TABLES existing tables"
   # Object by object, not `drop schema public`: on a managed server the public schema is not ours to drop.
   psql_q "set client_min_messages = warning; do \$\$ declare r record; begin

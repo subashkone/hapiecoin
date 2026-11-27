@@ -61,7 +61,12 @@ The settings file holds, by name: `APP_DOMAIN`, `WS_DOMAIN`, `DATABASE_URL`, `BE
 ## 4. Releasing a new version
 
 1. The change is merged to `main`. GitHub builds the images once the code checks pass (typecheck, lint, unit tests, build). They are built even when the e2e is red, so **look at the e2e result of that commit yourself** before choosing it.
-2. On the server:
+2. On the server, try the new version on a copy of the live data first (section 6a). Go on only when it says `test-release PASSED`:
+   ```
+   cd /opt/hapiecoin/deploy
+   sh test-release.sh <full commit id>
+   ```
+3. Then release:
    ```
    cd /opt/hapiecoin/deploy
    sh backup.sh
@@ -69,7 +74,7 @@ The settings file holds, by name: `APP_DOMAIN`, `WS_DOMAIN`, `DATABASE_URL`, `BE
    docker compose -f compose.prod.yml --env-file .env pull
    docker compose -f compose.prod.yml --env-file .env up -d
    ```
-3. The site is away for a minute or two. Then check: every service healthy (`docker compose ... ps`), sign-in works, a paper trade shows its marks.
+4. The site is away for a minute or two. Then check: every service healthy (`docker compose ... ps`), sign-in works, a paper trade shows its marks.
 
 If the change touched a file in `deploy/`, copy that folder to the server again first (the repository is private, so the server cannot fetch it). If the change needs a new setting, add the line to `.env` by hand.
 
@@ -99,26 +104,39 @@ Development is as before: `pnpm db:up`, `pnpm dev`, against the local database. 
 
 - **Autopilot is still switched on in the local data.** Running the local app makes the laptop trade on paper too, apart from the server, and sends every alert twice if both use the same Telegram bot. Switch it off locally or accept that knowingly.
 - **The local app sends real mail** through the same Resend account.
-- **The real paper-trade record is now on the server.** The local database stopped collecting on 27 Nov 2026. Research that reads it sees nothing newer (section 7).
+- **The real paper-trade record is now on the server.** The local database stopped collecting on 27 Nov 2026. Research reads the live database through its own read-only login (section 6b).
+
+## 6a. The test database (ADR-153)
+
+A second database, `hapiecoin_test`, sits beside the live one in the same database server. Nothing that runs uses it. One command on the server tries a release on it:
+
+```
+sh /opt/hapiecoin/deploy/test-release.sh <full commit id of main>
+```
+
+It takes a fresh dump of the live database, loads it into the test database (replacing what was there), starts that commit's api against the test database alone (trading off, background jobs off, no Redis, no Telegram, no port open) so that it applies its migrations there, and says whether it came up healthy and how many migrations it applied. The live database is only read; the running app is not touched.
+
+- `test-release PASSED` means the new version's database changes apply to a copy of the real data and the api starts on the result. It does not open the screens.
+- `test-release FAILED` prints the api's last lines. Do not release that commit.
+- Avoid it at a settlement or while Autopilot is entering: it shares the database server's two CPUs with the live app for a few minutes.
+
+## 6b. Research access to the live database (ADR-153)
+
+For the review of what the strategies did: the users, the trades placed, the capital used, the profit and loss.
+
+- A database login `research` that can only read. It has no right to change, add or delete anything, and none to create anything.
+- It reads every table except `sessions`, `accounts`, `verifications`, `two_factors`, `passkeys`, `broker_credentials` (sign-in material and the encrypted exchange keys) and `payments`. It cannot connect to the test database.
+- By default its transactions are read-only, a query is cut off after 30 seconds and it holds at most 3 connections. The first two are defaults the login could switch off for itself; what truly stops a write is that it was never given the right.
+- It is created, and its password changed, by `sh /opt/hapiecoin/deploy/research-role.sh` on the server; the owner types the password. **Run it again after a release that adds a table**: a new table is not readable until then, on purpose.
+- Its address is the live one with the login and password changed: `postgres://research:<password>@hapiecoin-db.postgres.database.azure.com:5432/hapiecoin?sslmode=require`. The password is the owner's to hand to the research session; it is not written in the repository.
+- The database's firewall must allow the address research connects from. A home address changes: when research stops connecting, the rule is updated to the new address (Azure portal, `hapiecoin-db`, Networking).
+- Known costs: the live database is reachable from one more place, and research shares its two CPUs. Large queries stay away from settlement times.
 
 ## 7. Planned, not built
 
-Decided by the owner on 27 Nov 2026. Nothing below exists yet; each is built from a plan the owner agrees to first.
+Decided by the owner on 27 Nov 2026. Nothing below exists yet.
 
-### 7.1 Research reads the live database
-For the daily review of paper trades after each settlement.
-
-- A database user `research` that can only read, limited to a 30-second query and three connections, so it cannot change anything or hold up live trading.
-- It is kept out of the tables that hold sign-in and secret material: `sessions`, `accounts`, `verifications`, `two_factors`, `passkeys`, `broker_credentials`. Whether `payments` and `users` are also hidden is the owner's open choice (suggested: hide `payments`, allow `users`).
-- A firewall rule on the database for the laptop's address. That address changes; the rule is updated when it does.
-- Known costs: the live database is reachable from one more place, and research shares its two CPUs. Large queries are kept away from settlement times.
-
-### 7.2 A test database before each release
-- A second database, `hapiecoin_test`, inside the same database server (a few cents a month of storage).
-- One command on the server that takes a fresh dump of the live database, loads it into the test database, starts the new version's api against the test database alone (trading off, background jobs off) so that it applies its migrations there, reports whether it came up healthy, and stops it.
-- A pass means the new version's database changes apply to a copy of the real data and the api starts on the result. It does not click through the screens; a test site of its own is a later step.
-
-### 7.3 Watching the server
+### 7.1 Watching the server
 - An outside monitor (UptimeRobot's free plan was the pick: 50 monitors, every 5 minutes, a phone app) on `https://ws.hapiecoin.com/healthz`, alerting when the text `"socket":"open"` is missing, and on `https://app.hapiecoin.com/manifest.webmanifest`.
 - Neither watches the api or the stop engine, which sit behind the gate. A public health address for those is a later change.
 - An error tracker (the app needs only `ERROR_SINK_DSN`).
@@ -127,7 +145,7 @@ For the daily review of paper trades after each settlement.
 
 The copy runs with `TRADING_DISABLED=true` and its signed calls go to the exchange's testnet. Before that changes:
 
-1. **Stops, targets and Autopilot run on the server.** While it is down none of them fires. The monitor in 7.3 comes first.
+1. **Stops, targets and Autopilot run on the server.** While it is down none of them fires. The monitor in 7.1 comes first.
 2. **Each trader whitelists `20.222.225.36`** at the exchange for their API key.
 3. **Two money checks are unverified against the real exchange**: the margin estimate (GAPS #109) and the shape of the exchange's fill data. The owner trades a small size alone first.
 4. **`TRADING_DISABLED` stops new live trades, not a close or a cancel** on a strategy that is already live (GAPS #186 j).
