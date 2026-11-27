@@ -1,0 +1,1 @@
+ALTER TABLE "strategies" ADD COLUMN "autopilot_entry_complete_at" timestamp with time zone;

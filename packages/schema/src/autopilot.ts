@@ -71,6 +71,10 @@ export type AutopilotRunKind = z.infer<typeof AutopilotRunKind>;
 
 /** The figures of the structure at the moment of the line, in USD for the playbook's size; absent on a skip with no structure. */
 export const AutopilotRunDetail = z.strictObject({
+  /** ADR-148: "live" on the lines of an entry made with real orders under a mandate; absent on every paper line. */
+  mode: z.literal("live").optional(),
+  /** ADR-148: the mandate a live entry was made under. */
+  mandateId: z.string().optional(),
   spot: DecimalString.optional(),
   expiry: z.string().optional(),
   /** Whole days from the pass to the structure's expiry. */

@@ -14,7 +14,7 @@ import { MANDATE_ENDED_BY_TRADER, MANDATE_PAUSED_BY_TRADER, MANDATE_REFUSALS, MA
 import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { mayUseSaved } from "./autopilot-saved.js";
 import type { Db } from "./db/client.js";
-import { autopilotMandates, autopilotSavedStrategies, brokerCredentials, brokers, users } from "./db/schema.js";
+import { autopilotMandates, autopilotSavedStrategies, brokerCredentials, brokers, strategies, users } from "./db/schema.js";
 import { activeSubscription } from "./entitlements.js";
 import { newId } from "./routes/shared.js";
 
@@ -181,6 +181,9 @@ export async function stepMandate(db: Db, userId: string, id: string, step: Step
       const [s] = await tx.select().from(autopilotSavedStrategies).where(eq(autopilotSavedStrategies.id, row.strategyId)).for("update");
       const refusal = liveRefusalOf(s);
       if (refusal !== null) return { ok: false as const, why: refusal };
+      // ADR-148: a live entry that never completed is squared off before anything new may be entered
+      const [stuck] = await tx.select({ id: strategies.id }).from(strategies).where(and(eq(strategies.autopilotMandateId, row.id), eq(strategies.status, "live"), isNull(strategies.autopilotEntryCompleteAt))).limit(1);
+      if (stuck) return { ok: false as const, why: MANDATE_REFUSALS.incompleteEntry };
       // the audience is checked again: a trader taken out of it, or whose plan lapsed, does not resume
       if (!usableBy(s!, userId, await traderOf(tx, userId, now))) return { ok: false as const, why: MANDATE_REFUSALS.notUsable };
       set = { state: "active", pausedAt: null, pauseReason: null };

@@ -59,7 +59,8 @@ export async function paperRecordOf(db: Pick<Db, "select">, strategy: Pick<Saved
     .where(eq(autopilotRuns.playbookId, strategy.id))
     .orderBy(asc(autopilotRuns.at), asc(autopilotRuns.id));
   // (an entry whose trade row is gone, deleted with its account, has nothing left to count)
-  const entries = rows.filter((r) => r.kind === "entered" && r.status !== null);
+  // (ADR-148: a trade entered live under a mandate is not paper: it is no part of the paper record)
+  const entries = rows.filter((r) => r.kind === "entered" && r.status !== null && r.detail.mode !== "live");
   const taken = new Map<string, { n: number; first: number }>();
   for (const r of entries) {
     const had = taken.get(r.userId);

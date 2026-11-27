@@ -269,6 +269,12 @@ export async function savedStillOnPaper(tx: Pick<Db, "select">, id: string): Pro
   return rows.length > 0;
 }
 /** What `enter` throws when it is not: the pass moves on, as it does when another pass took the key. */
+/** ADR-148: whether the strategy is on paper AND approved for live, read with the live trade's own write (the row is held while it is). */
+export async function savedStillApproved(tx: Pick<Db, "select">, id: string): Promise<boolean> {
+  const [row] = await tx.select({ stage: autopilotSavedStrategies.stage, approval: autopilotSavedStrategies.approval }).from(autopilotSavedStrategies).where(eq(autopilotSavedStrategies.id, id)).for("share");
+  return row !== undefined && row.stage === "paper" && row.approval !== null;
+}
+
 export const SAVED_WITHDRAWN = "saved strategy withdrawn before its entry";
 
 // ---- the engine's side ----------------------------------------------------------------------------------------------
