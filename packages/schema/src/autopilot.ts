@@ -71,6 +71,10 @@ export type AutopilotRunKind = z.infer<typeof AutopilotRunKind>;
 
 /** The figures of the structure at the moment of the line, in USD for the playbook's size; absent on a skip with no structure. */
 export const AutopilotRunDetail = z.strictObject({
+  /** ADR-148: "live" on the lines of an entry made with real orders under a mandate; absent on every paper line. */
+  mode: z.literal("live").optional(),
+  /** ADR-148: the mandate a live entry was made under. */
+  mandateId: z.string().optional(),
   spot: DecimalString.optional(),
   expiry: z.string().optional(),
   /** Whole days from the pass to the structure's expiry. */
@@ -128,7 +132,13 @@ export type AutopilotRun = z.infer<typeof AutopilotRun>;
  * GET /v1/autopilot: the trader's settings and the newest log lines, and (ADR-142, HC-TR-279) the saved strategies
  * they may use or have used; absent when there is none, which is every trader until an admin publishes one.
  */
-export const AutopilotView = z.strictObject({ settings: AutopilotSettings, runs: z.array(AutopilotRun), saved: z.array(SavedCard).optional() });
+export const AutopilotView = z.strictObject({
+  settings: AutopilotSettings,
+  runs: z.array(AutopilotRun),
+  saved: z.array(SavedCard).optional(),
+  /** ADR-149 (HC-TR-310): whether this server enters live trades at all (the operator's switch, ADR-148). Absent reads as false. */
+  liveAvailable: z.boolean().optional(),
+});
 export type AutopilotView = z.infer<typeof AutopilotView>;
 
 // ---- results (ADR-111): what the trades Autopilot opened came to ----------------------------------------------------

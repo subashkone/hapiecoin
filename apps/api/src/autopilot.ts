@@ -46,9 +46,10 @@ import {
   toDecimal,
 } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
-import { and, asc, desc, eq, gte, like, lt, lte, max, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, like, lt, lte, max, ne, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
-import { SAVED_WITHDRAWN, type SavedCatalogue, isSavedId, savedCardsFor, savedCatalogue, savedStillOnPaper, usableSavedIds } from "./autopilot-saved.js";
+import { liveOpenIds } from "./autopilot-mandate.js";
+import { SAVED_WITHDRAWN, type SavedCatalogue, isSavedId, savedCardsFor, savedCatalogue, savedStillApproved, savedStillOnPaper, usableSavedIds } from "./autopilot-saved.js";
 import { dayOf, eodDaysCached } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
 import { autopilotRuns, autopilotSettings, brokers, instrumentMarks, ivSnapshots, strategies, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
@@ -66,7 +67,44 @@ export interface AutopilotDeps {
   maxOpen?: number | undefined;
   /** HC-TR-257: the venue's public margin parameters; absent, a trade is entered without a margin figure. */
   marginInputs?: MarginInputsSource | undefined;
+  /**
+   * ADR-148 (HC-TR-299): the live entry, handed in only when the server switch allows it. Absent (the default, and
+   * every test of the paper engine), no line below it runs and every entry is the paper entry it always was.
+   */
+  live?: LiveHook | undefined;
 }
+
+/** What the engine hands the live entry for one trader, strategy and coin whose paper entry would be taken now. */
+export interface LiveEntryContext {
+  trader: { userId: string; role: "user" | "admin" };
+  key: { userId: string; playbookId: string; venue: Venue; asset: Underlying };
+  playbook: Playbook;
+  at: Date;
+  /** The trader's units of the coin per lot, as the engine valued the trade. */
+  lotSize: string;
+  /** The structure and its plan priced again with other lots per trade (the mandate's). */
+  priceWith(lots: number): { result: ProposalResult; plan: AutopilotPlan | null };
+  /** The margin estimate of a priced structure at the snapshot's spot, or null. */
+  marginOf(proposal: PlaybookProposal): Promise<string | null>;
+  /** The venue symbol of each leg, in the proposal's order. */
+  symbolsOf(proposal: PlaybookProposal): string[];
+  /**
+   * Open the trade as LIVE: the strategy row, its legs and the log line in one transaction, under the same
+   * one-at-a-time index as a paper trade, and only while the strategy is still published and approved. No exit is
+   * written: `armExits` writes them once every leg has filled.
+   */
+  open(proposal: PlaybookProposal, plan: AutopilotPlan, live: { brokerId: string; accountId: string; mandateId: string }, marginEstimate: string | null): Promise<{ id: string; armExits(): Promise<void> }>;
+  /** Write a skip line for this key (once per change of reason). */
+  skip(reason: string, detail?: AutopilotRunDetail): Promise<void>;
+  detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null): AutopilotRunDetail;
+}
+/** "paper": this trader holds no mandate that applies, enter on paper as always. "handled": entered live or skipped; no paper entry on this pass. */
+export type LiveHook = (ctx: LiveEntryContext) => Promise<"paper" | "handled">;
+/** What the log says of an entry taken on its conditions, and (ADR-150) of one sold again after a take. */
+export const ENTERED_REASON = "Its entry conditions were met on the latest prices";
+export const SOLD_AGAIN_REASON = "Sold again on the same expiry after its take";
+/** A saved strategy that lost its approval between the gate and the write (ADR-148). */
+export const SAVED_NOT_APPROVED = "saved strategy no longer approved for live at its entry";
 
 /** A snapshot older than this is not a price to enter at (two missed five-minute passes). */
 export const AUTOPILOT_MAX_MARK_AGE_MS = 12 * 60_000;
@@ -193,7 +231,9 @@ export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLo
   const lock = p.clock?.lock;
   // a floor that rounds to nothing is no floor: the trade would close at once when armed
   if (lock !== undefined && credit * lock.floor < 0.01) return null;
-  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null, legBuyBackAt: p.clock?.legBuyBackAt ?? null, legBuyBackShare: p.clock?.legBuyBackShare ?? null };
+  // ADR-150: a playbook may count its take after the fee of its entry (half of the round trip): the level is raised by it
+  const afterFee = p.clock?.takeAfterEntryFee === true ? fees / 2 : 0;
+  return { fees, targetUsd: take === undefined ? null : credit * take + afterFee, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null, legBuyBackAt: p.clock?.legBuyBackAt ?? null, legBuyBackShare: p.clock?.legBuyBackShare ?? null };
 }
 
 /**
@@ -310,7 +350,7 @@ async function skip(db: Db, k: Key, reason: string, detail: AutopilotRunDetail, 
  * Autopilot closes such a row out here, dated by its last leg, so it neither counts as held nor skips the cool-down.
  */
 async function openTrades(db: Db, k: Key, at: Date): Promise<{ id: string; structure: string }[]> {
-  const rows = await db.select({ id: strategies.id, structure: strategies.autopilotStructure }).from(strategies).where(and(tradeKey(k), eq(strategies.status, "paper"))).orderBy(asc(strategies.createdAt), asc(strategies.id));
+  const rows = await db.select({ id: strategies.id, structure: strategies.autopilotStructure }).from(strategies).where(and(tradeKey(k), inArray(strategies.status, ["paper", "live"]))).orderBy(asc(strategies.createdAt), asc(strategies.id)); // ADR-148: a live trade holds the key like a paper one
   const held: { id: string; structure: string }[] = [];
   for (const row of rows) {
     const legs = await db.select({ side: strategyLegs.side, kind: strategyLegs.kind, strike: strategyLegs.strike, expiry: strategyLegs.expiry, status: strategyLegs.status }).from(strategyLegs).where(eq(strategyLegs.strategyId, row.id)).orderBy(asc(strategyLegs.position));
@@ -417,6 +457,50 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               const unitsPerLot = Number(own?.lotSizes[asset] ?? venueLots[asset]);
               const { result, plan } = live ? pricedFor(unitsPerLot) : { result: null, plan: null };
               const open = await openTrades(deps.db, k, at);
+              // ADR-150 (HC-TR-312): a playbook that sells again. When the newest trade of this trader, playbook, coin
+              // and EXPIRY closed by its profit take within the last `withinHours`, and that expiry is still far
+              // enough away, a new structure is sold on that same expiry at this snapshot's spot, on this pass and at
+              // any hour. Only a take does it: a trade that ended by its stops, by hand or at settlement leads to
+              // nothing here. An expiry is sold at most `maxPerExpiry` times. Built-in playbooks only: a saved
+              // strategy has its own checks (its audience, the live hook) which this path does not make.
+              if (p.clock?.sellAgain && !isSavedId(p.id) && live && broker && (await hasPlan(t))) {
+                const { minDte, withinHours, maxPerExpiry } = p.clock.sellAgain;
+                const recent = await deps.db.select({ id: strategies.id, status: strategies.status, closeReason: strategies.closeReason, closedAt: strategies.closedAt, structure: strategies.autopilotStructure }).from(strategies).where(tradeKey(k)).orderBy(desc(strategies.startedAt), desc(strategies.createdAt), desc(strategies.id)).limit(60);
+                // (a structure names the expiry of each of its legs: a strangle has one)
+                const expiryOf = (structure: string | null): string | null => /:(\d{4}-\d{2}-\d{2})/.exec(structure ?? "")?.[1] ?? null;
+                const seen = new Set<string>();
+                let handled = false;
+                for (const row of recent) {
+                  const expiry = expiryOf(row.structure);
+                  if (expiry === null || seen.has(expiry)) continue;
+                  seen.add(expiry); // `row` is the newest trade of this expiry
+                  const sinceMs = row.closedAt === null ? -1 : nowMs - row.closedAt.getTime();
+                  if (row.status !== "archived" || row.closeReason !== "target" || sinceMs < 0 || sinceMs > withinHours * 3_600_000) continue;
+                  if (daysToExpiryOf(calendar, nowMs, expiry) < minDte || open.some((o) => expiryOf(o.structure) === expiry)) continue;
+                  const said = async (why: string, detail: AutopilotRunDetail = {}) => {
+                    if (await skip(deps.db, k, `Not sold again after its take: ${why}`, detail, at)) report.skipped += 1;
+                  };
+                  handled = true;
+                  const sales = recent.filter((x) => expiryOf(x.structure) === expiry).length;
+                  const r = proposalFor(p, days, { unitsPerLot, calendar, spotBefore: null, only: { expiry, minDte } });
+                  if (sales >= maxPerExpiry) await said(`this expiry has been sold ${sales} times, the most for one expiry`);
+                  else if (!r.ok) await said(r.reason === "noExpiry" ? "the newest snapshot has no prices for that expiry" : `${skipText(r.reason).charAt(0).toLowerCase()}${skipText(r.reason).slice(1)}`);
+                  else if (r.proposal.legs.some((l) => !(Number(l.price) > 0))) await said("a leg of the structure has no price", detailOf(r.proposal, null, nowMs));
+                  else {
+                    const again = clockPlanFor(p, r.proposal, unitsPerLot, adapter.feeRule);
+                    if (!again) await said("the premium collected is smaller than the fees", detailOf(r.proposal, null, nowMs));
+                    else {
+                      const lotSize = String(own?.lotSizes[asset] ?? venueLots[asset]);
+                      const margin = await entryMargin(deps.marginInputs, asset, venue, r.proposal.legs.map((l) => ({ kind: l.kind, side: l.side, symbol: adapter.symbols.formatOption(l.kind as "call" | "put", asset, l.strike, l.expiry), lots: l.lots, price: l.price })), lotSize, r.proposal.spot);
+                      const { id } = await enter(deps.db, k, p, r.proposal, again, "own", broker.id, at, margin, undefined, SOLD_AGAIN_REASON);
+                      deps.logger.info({ userId: t.userId, playbookId: p.id, venue, asset, strategyId: id, after: row.id }, "autopilot sold again after a take");
+                      report.entered += 1;
+                    }
+                  }
+                  break;
+                }
+                if (handled) continue;
+              }
               if (open.length > 0) {
                 if (!result?.ok) continue; // holding, and the playbook has no entry to weigh on this pass
                 // the very structure a trade holds is never entered twice: a clearly better price for it is written down
@@ -443,7 +527,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
               else if (!plan) await no(isSavedId(p.id) && p.exits ? (savedPlanRefusal(p, result.proposal, unitsPerLot, adapter.feeRule) ?? "No plan on these prices") : p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
-              else if (open.length >= maxOpen) await no(maxOpen === 1 ? "Holds a trade already: one at a time for a strategy and coin" : `Holds ${maxOpen} trades already, the most for one strategy and coin`, detailOf(result.proposal, plan, nowMs));
+              else if ((p.clock?.sellAgain ? open.filter((o) => o.structure.includes(`:${result.proposal.expiry}`)) : open).length >= maxOpen) await no(maxOpen === 1 ? "Holds a trade already: one at a time for a strategy and coin" : `Holds ${maxOpen} trades already, the most for one strategy and coin`, detailOf(result.proposal, plan, nowMs));
               else {
                 // the newest entry or close of the key, whichever trade it was: one entry per cool-down, and none right after a close.
                 // By the clock: once per window, counted from the last entry (yesterday's trade settled only hours ago).
@@ -456,6 +540,36 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                 else {
                   // a playbook entered by the clock runs on its own exits whatever the card says (ADR-112)
                   const style: AutopilotExitStyle = p.clock ? "own" : wanted.exit === "own" ? "trail" : wanted.exit;
+                  const lotSize = String(own?.lotSizes[asset] ?? venueLots[asset]);
+                  const marginOf = (proposal: PlaybookProposal) =>
+                    entryMargin(deps.marginInputs, asset, venue, proposal.legs.map((l) => ({ kind: l.kind, side: l.side, symbol: adapter.symbols.formatOption(l.kind as "call" | "put", asset, l.strike, l.expiry), lots: l.lots, price: l.price })), lotSize, proposal.spot);
+                  // ADR-148 (HC-TR-299): with the server switch on, a saved strategy this trader signed a mandate for is
+                  // entered live instead, or not at all on this pass; without the hook nothing here runs
+                  if (deps.live && isSavedId(p.id)) {
+                    const handled = await deps.live({
+                      trader: t,
+                      key: k,
+                      playbook: p,
+                      at,
+                      lotSize,
+                      priceWith: (lots) => {
+                        const q: Playbook = { ...p, lots };
+                        const r = proposalFor(q, days, { unitsPerLot, calendar, spotBefore });
+                        return { result: r, plan: r.ok ? savedPlanFor(q, r.proposal, unitsPerLot, adapter.feeRule) : null };
+                      },
+                      marginOf,
+                      symbolsOf: (proposal) => proposal.legs.map((l) => adapter.symbols.formatOption(l.kind as "call" | "put", asset, l.strike, l.expiry)),
+                      open: async (proposal, livePlan, liveOn, margin) => {
+                        const opened = await enter(deps.db, k, p, proposal, livePlan, style, liveOn.brokerId, at, margin, liveOn);
+                        return { id: opened.id, armExits: () => opened.armExits() };
+                      },
+                      skip: async (reason, detail = {}) => {
+                        if (await skip(deps.db, k, reason, detail, at)) report.skipped += 1;
+                      },
+                      detailOf: (proposal, livePlan) => detailOf(proposal, livePlan, nowMs, style),
+                    });
+                    if (handled === "handled") continue;
+                  }
                   // HC-TR-257: the margin of the sold options at the snapshot's spot and marks, under today's percent of each contract
                   const marginEstimate = await entryMargin(
                     deps.marginInputs,
@@ -465,14 +579,14 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                     String(own?.lotSizes[asset] ?? venueLots[asset]),
                     result.proposal.spot,
                   );
-                  const id = await enter(deps.db, k, p, result.proposal, plan, style, broker.id, at, marginEstimate);
+                  const { id } = await enter(deps.db, k, p, result.proposal, plan, style, broker.id, at, marginEstimate);
                   deps.logger.info({ userId: t.userId, playbookId: p.id, venue, asset, strategyId: id }, "autopilot entered a paper trade");
                   report.entered += 1;
                 }
               }
             } catch (e) {
               const reason = errorText(e);
-              if (reason.includes(OPEN_UQ) || reason.includes(SAVED_WITHDRAWN)) continue; // another pass opened this key's trade a moment ago, or the saved strategy was withdrawn
+              if (reason.includes(OPEN_UQ) || reason.includes(SAVED_WITHDRAWN) || reason.includes(SAVED_NOT_APPROVED)) continue; // another pass opened this key's trade a moment ago, or the saved strategy was withdrawn (or, for a live entry, lost its approval)
               report.failed += 1;
               deps.logger.warn({ userId: t.userId, playbookId: p.id, venue, asset, reason }, "autopilot pass failed for a trader");
             }
@@ -499,14 +613,23 @@ async function noteBetterEntry(db: Db, k: Key, openId: string, fresh: PlaybookPr
   return true;
 }
 
-/** Open the paper strategy, its legs at the snapshot's marks, its exits, and the log line: all or nothing. */
-async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, plan: AutopilotPlan, exit: AutopilotExitStyle, brokerId: string, at: Date, marginEstimate: string | null = null): Promise<string> {
+/**
+ * Open the paper strategy, its legs at the snapshot's marks, its exits, and the log line: all or nothing.
+ *
+ * With `live` (ADR-148, only ever passed by the live entry): the row is opened as LIVE under the mandate's account, the
+ * approval is checked again with the write, and NO exit is written; the caller arms them with `armExits` once every
+ * leg has filled at the exchange. Without it, this is the paper entry it always was.
+ */
+async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, plan: AutopilotPlan, exit: AutopilotExitStyle, brokerId: string, at: Date, marginEstimate: string | null = null, live?: { accountId: string; mandateId: string }, reason: string = ENTERED_REASON): Promise<{ id: string; armExits(): Promise<void> }> {
   const codec = getVenue(k.venue).symbols;
   const id = newId("strat");
-  const detail = detailOf(proposal, plan, at.getTime(), exit);
+  const detail: AutopilotRunDetail = live ? { ...detailOf(proposal, plan, at.getTime(), exit), mode: "live", mandateId: live.mandateId } : detailOf(proposal, plan, at.getTime(), exit);
+  let exits: (typeof strategyRules.$inferInsert)[] = [];
   await db.transaction(async (tx) => {
     // ADR-142: a saved strategy is entered only while it is still published, checked with the trade's own write
     if (isSavedId(p.id) && !(await savedStillOnPaper(tx, p.id))) throw new Error(SAVED_WITHDRAWN);
+    // ADR-148: a live entry also needs the approval to stand at the moment of the write
+    if (live && !(await savedStillApproved(tx, p.id))) throw new Error(SAVED_NOT_APPROVED);
     await tx.insert(strategies).values({
       id,
       userId: k.userId,
@@ -514,10 +637,11 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
       name: `${p.name.slice(0, MAX_STRATEGY_NAME - AUTOPILOT_NAME_SUFFIX.length)}${AUTOPILOT_NAME_SUFFIX}`,
       asset: k.asset,
       venue: k.venue,
-      status: "paper",
-      tradingMode: "paper",
+      status: live ? "live" : "paper",
+      tradingMode: live ? "live" : "paper",
       templateName: typeof p.template === "string" ? p.template : p.name,
       brokerId,
+      ...(live ? { accountId: live.accountId, autopilotMandateId: live.mandateId, realizedPnl: "0" } : {}),
       tags: ["autopilot"],
       startedAt: at,
       autopilotPlaybookId: p.id,
@@ -536,11 +660,13 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
         symbol: codec.formatOption(l.kind as "call" | "put", k.asset, l.strike, l.expiry), // a futures leg never reaches here
         lots: l.lots,
         price: l.price,
-        entryPrice: l.price,
+        // a live leg is not held until the exchange fills it: no entry price and no opening time until then, which is
+        // what the rules engine, the settler and the books read as "never filled" (the fill writes both)
+        entryPrice: live ? null : l.price,
         iv: l.iv === undefined ? null : String(l.iv),
         status: "open" as const,
         position,
-        openedAt: at,
+        openedAt: live ? null : at,
       })),
     );
     const rule = (values: Pick<typeof strategyRules.$inferInsert, "kind" | "trigger" | "value" | "thresholdUsd"> & Partial<typeof strategyRules.$inferInsert>) => ({ id: newId("rule"), strategyId: id, scope: "strategy" as const, channels: ["push", "telegram"], state: "armed" as const, createdAt: at, updatedAt: at, ...values });
@@ -585,11 +711,18 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     }
     if (plan.stopUsd !== null) rules.push(rule({ kind: "stop", trigger: "money", value: toDecimal(plan.stopUsd, 2), thresholdUsd: toDecimal(-plan.stopUsd, 2) }));
     if (plan.timeStopDte !== null) rules.push(rule({ kind: "time", trigger: "dte", value: String(plan.timeStopDte), thresholdUsd: String(plan.timeStopDte) }));
-    if (rules.length) await tx.insert(strategyRules).values(rules); // a winged strangle is held to settlement: no rule at all
-    await tx.insert(autopilotRuns).values({ ...k, kind: "entered", reason: "Its entry conditions were met on the latest prices", strategyId: id, detail, at });
+    // (a live entry's exits wait until its legs have filled: an exit on a leg the exchange never opened must not fire)
+    if (live) exits = rules;
+    else if (rules.length) await tx.insert(strategyRules).values(rules); // a winged strangle is held to settlement: no rule at all
+    await tx.insert(autopilotRuns).values({ ...k, kind: "entered", reason, strategyId: id, detail, at });
   });
-  await writeAudit(db, { actorId: null, action: "autopilot.enter", target: `strategy:${id}`, before: null, after: { userId: k.userId, playbookId: p.id, venue: k.venue, asset: k.asset, exit, ...detail } });
-  return id;
+  await writeAudit(db, { actorId: null, action: live ? "autopilot.enter_live" : "autopilot.enter", target: `strategy:${id}`, before: null, after: { userId: k.userId, playbookId: p.id, venue: k.venue, asset: k.asset, exit, ...detail } });
+  return {
+    id,
+    armExits: async () => {
+      if (exits.length) await db.insert(strategyRules).values(exits);
+    },
+  };
 }
 
 // ---- the trader's side: settings and the log ----------------------------------------------------------------------
@@ -623,13 +756,17 @@ export async function saveAutopilotSettings(db: Db, userId: string, next: Autopi
 }
 
 export const AUTOPILOT_RUNS_SHOWN = 200;
-export async function autopilotView(db: Db, userId: string, at: Date = new Date()): Promise<AutopilotView> {
+export async function autopilotView(db: Db, userId: string, at: Date = new Date(), liveAvailable = false): Promise<AutopilotView> {
   const rows = await db.select().from(autopilotRuns).where(eq(autopilotRuns.userId, userId)).orderBy(desc(autopilotRuns.at), desc(autopilotRuns.id)).limit(AUTOPILOT_RUNS_SHOWN);
   const runs: AutopilotRun[] = rows.map((r) => ({ id: String(r.id), at: r.at.toISOString(), playbookId: r.playbookId, venue: r.venue, asset: r.asset, kind: r.kind, reason: r.reason, strategyId: r.strategyId, detail: r.detail }));
   const settings = await autopilotSettingsOf(db, userId);
   // ADR-142: the saved strategies this trader may use, and the ones they have traded
-  const saved = await savedCardsFor(db, userId, at);
-  return { settings, runs, ...(saved.length > 0 ? { saved } : {}) };
+  const cards = await savedCardsFor(db, userId, at);
+  // ADR-149: a card says whether a mandate could be signed for it (usable by this trader, and allowed to trade live)
+  const open = await liveOpenIds(db, cards.filter((c) => c.usable).map((c) => c.id));
+  // (each field is sent only when true, so a view without live reads exactly as it did before)
+  const saved = cards.map((c) => (open.has(c.id) ? { ...c, liveOpen: true } : c));
+  return { settings, runs, ...(saved.length > 0 ? { saved } : {}), ...(liveAvailable ? { liveAvailable: true } : {}) };
 }
 
 // ---- results (ADR-111; HC-TR-223): what the trades Autopilot opened came to -----------------------------------------
@@ -681,6 +818,7 @@ export async function autopilotResults(db: Db, userId: string): Promise<Autopilo
   const bands = new Map<AutopilotDteBand, Tally>(AUTOPILOT_DTE_BANDS.map((b) => [b, emptyTally()]));
   const trades: AutopilotClosedTrade[] = [];
   for (const e of entries) {
+    if (e.detail.mode === "live") continue; // ADR-148: these are the PAPER results; a live trade is read on the Live tab
     const exit = e.detail.exit ?? "trail";
     const key = `${e.playbookId}|${e.asset}|${exit}`;
     let row = rows.get(key);

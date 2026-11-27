@@ -75,6 +75,13 @@ const RawEnv = z.object({
   DELTA_TRADING_REST_URL: z.url().optional(),
   /** Global kill switch: "1" / "true" refuses every live placement (ADR-025). */
   TRADING_DISABLED: z.string().optional(),
+  /**
+   * ADR-148 (HC-TR-299): whether Autopilot may enter a trade with real orders for a trader who signed a mandate.
+   * "off" (the default) keeps it on paper for everyone. "testnet" allows it only while the trading host is one of the
+   * exchange's NAMED testnet hosts: the config refuses to load with "testnet" against any other host (the real exchange,
+   * a proxy, an IP). There is no value that allows production.
+   */
+  AUTOPILOT_LIVE: z.enum(["off", "testnet"]).default("off"),
   TRADING_MAX_NOTIONAL_USD: z.coerce.number().positive().default(100_000),
   TRADING_MAX_LEGS: z.coerce.number().int().min(1).max(10).default(10),
   TRADING_MARK_BAND_PCT: z.coerce.number().min(0).max(50).default(5),
@@ -143,6 +150,8 @@ export interface Config {
   /** Venues whose public market data the jobs read, in the order given (ADR-070). */
   apiVenues: Venue[];
   trading: { disabled: boolean; maxNotionalUsd: number; maxLegs: number; markBandPct: number; reconcileMs: number };
+  /** ADR-148: true only when AUTOPILOT_LIVE is "testnet" and the trading host is a named testnet host. */
+  autopilotLive: boolean;
   egressIp: string;
   /** Milliseconds between IV history snapshots; 0 = off (ADR-056). */
   ivSnapshotMs: number;
@@ -198,6 +207,32 @@ export interface LoadConfigOptions {
 
 /** The hosts that are the real exchange (ADR-092). Everything else, including a proxy or a local mock, is treated as a testnet. */
 const REAL_TRADING_HOSTS = new Set(["api.india.delta.exchange", "api.delta.exchange"]);
+
+/** The exchange's testnet hosts live Autopilot may trade on (Delta Exchange India's "Demo Account" API). */
+export const AUTOPILOT_TESTNET_HOSTS: ReadonlySet<string> = new Set(["cdn-ind.testnet.deltaex.org"]);
+
+/**
+ * ADR-148 (HC-TR-299): the switch read against the trading host. The label of ADR-092 calls every host that is not a
+ * known real one "testnet", which is right for a warning label and wrong for a permission: a proxy in front of the real
+ * exchange would pass. So this is an ALLOW-list of exact host names, over https; anything else with "testnet" set is a
+ * configuration error said at startup, never a silent "off" and never an order. `allowLoopback` is the test harness's
+ * local mock host and is true under NODE_ENV=test only.
+ */
+export function autopilotLiveOf(value: "off" | "testnet", tradingUrl: string, allowLoopback = false): boolean {
+  if (value === "off") return false;
+  const parsed = (): URL | null => {
+    try {
+      return new URL(tradingUrl);
+    } catch {
+      return null;
+    }
+  };
+  const url = parsed();
+  const named = url !== null && url.protocol === "https:" && AUTOPILOT_TESTNET_HOSTS.has(url.host);
+  const loopback = allowLoopback && url !== null && (url.hostname === "127.0.0.1" || url.hostname === "localhost");
+  if (!named && !loopback) throw new Error(`AUTOPILOT_LIVE=testnet is refused: the trading host is not one of the named testnet hosts (${[...AUTOPILOT_TESTNET_HOSTS].join(", ")}). Live Autopilot is built for the testnet only`);
+  return true;
+}
 
 /** HC-SH-138 (ADR-092): name the venue private calls go to. Production only when the trading host is a real exchange host and does not say testnet or demo; anything else (the Delta testnets, a local mock, a proxy) is the testnet, so the label errs toward warning. */
 export function tradingEnvOf(tradingUrl: string): { deltaTradingEnv: "testnet" | "production"; deltaTradingHost: string } {
@@ -320,6 +355,7 @@ export function loadConfig(
     venueRestUrls: { delta_india: e.DELTA_REST_URL, deribit: e.DERIBIT_REST_URL },
     apiVenues,
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
+    autopilotLive: autopilotLiveOf(e.AUTOPILOT_LIVE, e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL, e.NODE_ENV === "test"),
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
     dayPnlMs: e.DAY_PNL_MS,

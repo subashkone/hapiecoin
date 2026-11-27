@@ -267,6 +267,20 @@
       "when": 1795715821343,
       "tag": "0037_brave_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795740552954,
+      "tag": "0038_mysterious_the_executioner",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795741634757,
+      "tag": "0039_dapper_kulan_gath",
+      "breakpoints": true
     }
   ]
 }

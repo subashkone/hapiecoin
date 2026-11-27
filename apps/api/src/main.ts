@@ -6,6 +6,7 @@ import { historyTargets, startEodHistoryBackfill } from "./chain-eod-history.js"
 import { spacedSource } from "./mark-candles.js";
 import { startPlaybookRecords } from "./playbooks.js";
 import { runAutopilot } from "./autopilot.js";
+import { liveEntryHook, sweepIncompleteLive } from "./autopilot-live.js";
 import { runProposals } from "./proposals.js";
 import { MemoryLeaderLock, RedisLeaderLock } from "./leader.js";
 import type { AppDeps } from "./routes/shared.js";
@@ -142,7 +143,20 @@ if (config.ivSnapshotMs !== 0)
                 // ADR-108: the same snapshot decides the paper entries of the traders who switched Autopilot on; a
                 // failure here must not take the snapshotter's hook (the alerts and proposals above) down with it
                 try {
-                  const pass = await runAutopilot({ db: deps.db, logger, marginInputs: deps.marginInputs }, config.apiVenues);
+                  // ADR-148: the live entry exists for the engine only while the server switch allows it (off by default;
+                  // "testnet" and a trading host that is not a real exchange). Off, the engine is handed nothing and
+                  // every entry is on paper. On, an entry a pass did not finish is found first and pauses its mandate.
+                  // A sweep that cannot run takes the live entry out of this pass (paper goes on) and says so.
+                  let liveNow = config.autopilotLive;
+                  if (liveNow) {
+                    try {
+                      await sweepIncompleteLive(deps, new Date());
+                    } catch (e) {
+                      liveNow = false;
+                      logger.warn({ reason: e instanceof Error ? e.message : String(e) }, "autopilot: the sweep for unfinished live entries failed; no live entry on this pass");
+                    }
+                  }
+                  const pass = await runAutopilot({ db: deps.db, logger, marginInputs: deps.marginInputs, ...(liveNow ? { live: liveEntryHook(deps) } : {}) }, config.apiVenues);
                   if (pass.entered || pass.noted || pass.failed) logger.info(pass, "autopilot pass");
                 } catch (e) {
                   logger.warn({ reason: e instanceof Error ? e.message : String(e) }, "autopilot pass failed");

@@ -471,7 +471,7 @@ export type SavedStrategyList = z.infer<typeof SavedStrategyList>;
  * the ones they can no longer switch on but have traded or still hold in their settings, so that a trade, a log line
  * and a result keep their name.
  */
-export const SavedCard = z.strictObject({ id: z.string(), version: z.number().int().positive(), name: z.string(), summary: z.string(), definition: SavedDefinition, backtest: SavedBacktest.nullable(), usable: z.boolean() });
+export const SavedCard = z.strictObject({ id: z.string(), version: z.number().int().positive(), name: z.string(), summary: z.string(), definition: SavedDefinition, backtest: SavedBacktest.nullable(), usable: z.boolean(), /** ADR-149 (HC-TR-310): true when this trader could sign a mandate for it (it may trade live and is theirs to use). Says nothing of who approved it or of its paper record. Absent reads as false. */ liveOpen: z.boolean().optional() });
 export type SavedCard = z.infer<typeof SavedCard>;
 
 /** What the admin routes answer when a step is refused. */

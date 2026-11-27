@@ -198,9 +198,9 @@ function BuiltInTable({ rows, onCopy }: { rows: typeof BUILT_IN; onCopy: (p: Pla
                   <td className="num whitespace-nowrap py-1.5 pr-2 text-right" data-testid="builtin-backtest">
                     {back ? (
                       <>
-                        <div className={back.mean > 0 ? "text-profit" : back.mean < 0 ? "text-loss" : undefined}>{signed(back.mean)} a {back.per}</div>
+                        <div className={back.mean > 0 ? "text-profit" : back.mean < 0 ? "text-loss" : undefined}>{signed(back.mean)} {back.per === "expiry" ? "an" : "a"} {back.per}</div>
                         <div className="micro">{back.positivePct} % won · worst {signed(back.worst)}</div>
-                        <div className="micro">{back.basis ?? `${back.samples} ${back.per}s tested`}</div>
+                        <div className="micro">{back.basis ?? `${back.samples} ${back.per === "expiry" ? "expirie" : back.per}s tested`}</div>
                       </>
                     ) : <span className="text-muted-foreground">Recorded per coin, on the Autopilot page</span>}
                   </td>

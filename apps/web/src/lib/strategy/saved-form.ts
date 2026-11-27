@@ -391,7 +391,10 @@ function wholeSentences(text: string, max: number): string {
  * (ADR-143) becomes a strategy that may enter at any time of day, once per expiry, with the built-in exits on the
  * whole trade; what differs from the built-in one is said in the notes. Anything else says why not.
  */
+export const SELL_AGAIN_NO_COPY = "It sells the same expiry again after each take, which a saved strategy cannot do yet: a copy would be another strategy under its name";
 export function savedFormFromBuiltIn(p: Playbook): { ok: true; form: SavedForm; notes: string[] } | { ok: false; why: string } {
+  // ADR-150: a copy that left the sell-again out would not be this strategy
+  if (p.clock?.sellAgain) return { ok: false, why: SELL_AGAIN_NO_COPY };
   const c = p.clock;
   if (c && !(c.venues.length === 1 && c.venues[0] === "delta_india")) return { ok: false, why: "It trades on another exchange than Delta Exchange India." };
   const legs: LegForm[] = [];

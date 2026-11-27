@@ -11,10 +11,10 @@
  * its audit line in the same transaction: the step and its line stand or fall together.
  */
 import { MANDATE_ENDED_BY_TRADER, MANDATE_PAUSED_BY_TRADER, MANDATE_REFUSALS, MANDATE_STATEMENTS, type Mandate, type MandateSign, SavedDefinition, savedLossCapped } from "@hapiecoin/schema";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { mayUseSaved } from "./autopilot-saved.js";
 import type { Db } from "./db/client.js";
-import { autopilotMandates, autopilotSavedStrategies, brokerCredentials, brokers, users } from "./db/schema.js";
+import { autopilotMandates, autopilotSavedStrategies, brokerCredentials, brokers, strategies, users } from "./db/schema.js";
 import { activeSubscription } from "./entitlements.js";
 import { newId } from "./routes/shared.js";
 
@@ -46,6 +46,17 @@ export function liveRefusalOf(s: StrategyRow | undefined): string | null {
   if (!savedLossCapped(parsed.data.legs)) return MANDATE_REFUSALS.notCapped;
   if (hasHeldExit(parsed.data)) return MANDATE_REFUSALS.heldExit;
   return null;
+}
+
+/**
+ * ADR-149 (HC-TR-310): of these saved strategies, the ones that may trade live at all (on paper, approved, loss
+ * limited, no exit held on live, settings readable). What a trader's card is told: that one fact, and nothing of who
+ * approved it or on which record.
+ */
+export async function liveOpenIds(db: Pick<Db, "select">, ids: readonly string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await db.select().from(autopilotSavedStrategies).where(inArray(autopilotSavedStrategies.id, [...ids]));
+  return new Set(rows.filter((r) => liveRefusalOf(r) === null).map((r) => r.id));
 }
 
 type Trader = { role: "user" | "admin"; active: boolean; planId: string | null };
@@ -181,6 +192,9 @@ export async function stepMandate(db: Db, userId: string, id: string, step: Step
       const [s] = await tx.select().from(autopilotSavedStrategies).where(eq(autopilotSavedStrategies.id, row.strategyId)).for("update");
       const refusal = liveRefusalOf(s);
       if (refusal !== null) return { ok: false as const, why: refusal };
+      // ADR-148: a live entry that never completed is squared off before anything new may be entered
+      const [stuck] = await tx.select({ id: strategies.id }).from(strategies).where(and(eq(strategies.autopilotMandateId, row.id), eq(strategies.status, "live"), isNull(strategies.autopilotEntryCompleteAt))).limit(1);
+      if (stuck) return { ok: false as const, why: MANDATE_REFUSALS.incompleteEntry };
       // the audience is checked again: a trader taken out of it, or whose plan lapsed, does not resume
       if (!usableBy(s!, userId, await traderOf(tx, userId, now))) return { ok: false as const, why: MANDATE_REFUSALS.notUsable };
       set = { state: "active", pausedAt: null, pauseReason: null };
