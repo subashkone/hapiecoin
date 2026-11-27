@@ -149,13 +149,11 @@ jobs:
   # wss://ws.example.com). Without that variable the web image is built with a placeholder and never pushed.
   docker:
     name: images (api, gateway, ingest, web)
-    # Always after the checks pass. On a pull request the images are built whatever the e2e says (a stale
-    # picture must not hide a broken Dockerfile); on main nothing is published unless the e2e passed too.
-    needs: [checks, e2e]
-    if: >-
-      always() && needs.checks.result == 'success' &&
-      (github.event_name == 'pull_request' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.e2e.result == 'success'))
+    # Only after the checks pass (typecheck, lint, unit tests, build, budget). The e2e is not required: its
+    # picture step goes red on a stale baseline, and that must not hold back a release (the owner's decision,
+    # 27 Nov 2026). Whoever sets RELEASE on the server looks at the e2e of that commit first (docs/deploy.md).
+    needs: [checks]
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

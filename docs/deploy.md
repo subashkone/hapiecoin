@@ -101,7 +101,7 @@ The owner's decision (26 Nov 2026): the server starts with the whole local datab
 
 ### 6.4 Update
 1. `sh deploy/backup.sh` (a dump before every release). If it does not end with `backup ok`, stop here.
-2. Set `RELEASE` in `deploy/.env` to the new commit of `main`. The whole CI run of that commit must be green; the image job runs only after the checks and the e2e pass.
+2. Set `RELEASE` in `deploy/.env` to the new commit of `main`. Its images exist once the checks passed. Look at the e2e of that commit yourself before choosing it: the image job does not wait for the e2e, so a commit whose e2e failed for a real reason has images too.
 3. `docker compose ... pull`, then `up -d`. The api applies new migrations as it starts; the site is away for a minute or two.
 4. The release check (§6.2 step 9).
 
