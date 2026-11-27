@@ -20,7 +20,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 
 ## C. Go-live and business
 12a. ✅ (PR #153) The public home page as HapieCoin's own, with pictures of the product; plans marked coming soon behind one switch (ADR-140, HC-PB-070, GAPS #177); the switch as a deploy-time setting and the end-to-end fixes on branch fix/plans-sale-switch. The owner's order, changed 25 Nov 2026 after the merge: research and mocks for the Autopilot strategy builder (39x) first, then deployment (13)
-13. ⬜ Deployment (docs/deploy.md) — waits on the hosting provider choice; then DNS, Resend, Razorpay live keys, Telegram bot token
+13. 🟡 Deployment of a private copy (docs/deploy.md §6, ADR-148, HC-SH-144, GAPS #183): the repo half is on branch `chore/deploy-private-copy` (four Dockerfiles, the server compose file, backup and restore, the image job pushing to GitHub's registry, the runbook). Decided: OVHcloud VPS-2 in Singapore, `hapiecoin.com`, the local database restored once at go-live. Waits on: the web image's first build on GitHub, OVHcloud's identity check, the domain, the Resend account. Razorpay live keys are not needed for the private copy
 14. ⬜ Delta Exchange India partnership conversation (broker-pays or affiliate; reuses the referral / commission machinery)
 15. ⬜ Free tier vs. Pro split tuned to the competitor anchor (₹392–800 / month); education funnel (English + Hindi) tied to paper trading
 16. ⬜ Paid-data analytics rows — only with the user's go-ahead on spend

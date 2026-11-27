@@ -1,0 +1,144 @@
+# HapieCoin on one server (docs/deploy.md). The server builds nothing: GitHub builds the four images on every
+# merge to main and the server pulls the ones named by RELEASE. Run from the repository root on the server:
+#   docker compose -f deploy/compose.prod.yml --env-file deploy/.env pull
+#   docker compose -f deploy/compose.prod.yml --env-file deploy/.env up -d
+# Only Caddy is reachable from outside (80, 443). Everything else talks on the private network.
+# Values come from deploy/.env (copy deploy/env.example; the real file is never committed).
+name: hapiecoin-prod
+
+x-restart: &restart
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  caddy:
+    <<: *restart
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN}
+      WS_DOMAIN: ${WS_DOMAIN:?set WS_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # written on the server by the runbook: the user name and password hash of the private gate
+      - ./basic-auth.caddy:/etc/caddy/basic-auth.caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 128m
+    depends_on: [web, gateway]
+
+  web:
+    <<: *restart
+    # Built for one deployment: the feed address and the plans switch are fixed inside the image (ci.yml).
+    image: ghcr.io/${IMAGE_OWNER:?set IMAGE_OWNER}/hapiecoin-web:${RELEASE:?set RELEASE}
+    mem_limit: 1g
+    networks:
+      # A fixed address: the API believes the visitor's address in the forwarded headers only from this one.
+      default: { ipv4_address: 172.30.0.10 }
+    depends_on:
+      api: { condition: service_healthy }
+
+  api:
+    <<: *restart
+    image: ghcr.io/${IMAGE_OWNER}/hapiecoin-api:${RELEASE}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://hapiecoin:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/hapiecoin
+      REDIS_URL: redis://redis:6379
+      WEB_URL: https://${APP_DOMAIN}
+      BETTER_AUTH_URL: https://${APP_DOMAIN}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+      CREDENTIALS_ENC_KEY: ${CREDENTIALS_ENC_KEY:?set CREDENTIALS_ENC_KEY}
+      CREDENTIALS_ENC_KEYS_PREVIOUS: ${CREDENTIALS_ENC_KEYS_PREVIOUS:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:?set RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM:?set EMAIL_FROM}
+      METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN}
+      RELEASE: ${RELEASE}
+      # Requests reach the API through the web container (the same-origin /v1 and /api/auth rewrites), so that
+      # is the one peer whose forwarded headers are believed. Both spellings of the same address.
+      TRUSTED_PROXY_IPS: 172.30.0.10,::ffff:172.30.0.10
+      # The server's public IPv4: the address a trader whitelists at the exchange for an API key.
+      EGRESS_IP: ${EGRESS_IP:?set EGRESS_IP}
+      # The private copy places no live orders: Autopilot and paper trading need none.
+      TRADING_DISABLED: ${TRADING_DISABLED:-true}
+      # Where signed (private) exchange calls go. Never defaulted: a copy restored from another machine must
+      # name the same exchange environment as the keys stored in its database (docs/deploy.md §6.3).
+      DELTA_TRADING_REST_URL: ${DELTA_TRADING_REST_URL:?set DELTA_TRADING_REST_URL}
+      API_VENUES: ${API_VENUES:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      ERROR_SINK_DSN: ${ERROR_SINK_DSN:-}
+    mem_limit: 1g
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  gateway:
+    <<: *restart
+    image: ghcr.io/${IMAGE_OWNER}/hapiecoin-gateway:${RELEASE}
+    environment:
+      WEB_URL: https://${APP_DOMAIN}
+      REDIS_URL: redis://redis:6379
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      RELEASE: ${RELEASE}
+      GATEWAY_VENUES: ${GATEWAY_VENUES:-}
+      ERROR_SINK_DSN: ${ERROR_SINK_DSN:-}
+      # The gateway counts sockets by the peer's address and reads no forwarded header, so behind Caddy every
+      # visitor is one address: the cap is for the whole copy, not per visitor (GAPS #183).
+      MAX_CONNECTIONS_PER_IP: ${MAX_CONNECTIONS_PER_IP:-2000}
+    mem_limit: 512m
+    depends_on:
+      redis: { condition: service_healthy }
+
+  ingest:
+    <<: *restart
+    image: ghcr.io/${IMAGE_OWNER}/hapiecoin-ingest:${RELEASE}
+    environment:
+      REDIS_URL: redis://redis:6379
+      COINGECKO_API_KEY: ${COINGECKO_API_KEY:-}
+    mem_limit: 512m
+    depends_on:
+      redis: { condition: service_healthy }
+
+  postgres:
+    <<: *restart
+    # The same pinned image as development (docker-compose.yml, GAPS #30).
+    image: timescale/timescaledb:latest-pg17@sha256:bc8527e62f70f0766b29515077965025872fabb5349db421565f69ee273baf2d
+    environment:
+      POSTGRES_USER: hapiecoin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: hapiecoin
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    mem_limit: 2g
+    healthcheck:
+      # over TCP: on a new volume the image first runs a socket-only server, which is not ready for use
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U hapiecoin -d hapiecoin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          # addresses given out by Docker come from the upper half, so the fixed one above is never taken
+          ip_range: 172.30.0.128/25
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

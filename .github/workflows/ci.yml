@@ -142,12 +142,48 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # The four images the server runs (docs/deploy.md). On a pull request they are built only, so a broken
+  # Dockerfile shows before the merge. On a merge to main they are built, tagged by the commit and pushed to
+  # GitHub's registry; the server only pulls. The web image is built for one deployment, because the feed address
+  # is fixed inside the browser bundle: it comes from the repository variable GATEWAY_PUBLIC_URL (for example
+  # wss://ws.example.com). Without that variable the web image is built with a placeholder and never pushed.
   docker:
-    name: images build (api, gateway)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: images (api, gateway, ingest, web)
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    # no image of a commit whose checks or e2e failed
+    needs: [checks, e2e]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GATEWAY_PUBLIC_URL: ${{ vars.GATEWAY_PUBLIC_URL }}
+      PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f apps/api/Dockerfile -t hapiecoin-api:ci .
-      - run: docker build -f apps/gateway/Dockerfile -t hapiecoin-gateway:ci .
+      - name: registry path (lower case)
+        run: echo "REGISTRY=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - run: docker build -f apps/api/Dockerfile -t "$REGISTRY/hapiecoin-api:$GITHUB_SHA" .
+      - run: docker build -f apps/gateway/Dockerfile -t "$REGISTRY/hapiecoin-gateway:$GITHUB_SHA" .
+      - run: docker build -f apps/ingest/Dockerfile -t "$REGISTRY/hapiecoin-ingest:$GITHUB_SHA" .
+      - name: web image
+        run: >
+          docker build -f apps/web/Dockerfile
+          --build-arg "NEXT_PUBLIC_GATEWAY_URL=${GATEWAY_PUBLIC_URL:-wss://ws.example.invalid}"
+          --build-arg NEXT_PUBLIC_PLANS_ON_SALE=false
+          -t "$REGISTRY/hapiecoin-web:$GITHUB_SHA" .
+      - name: image sizes
+        run: docker images --format '{{.Repository}} {{.Size}}' | grep hapiecoin-
+      - name: sign in to the registry
+        if: env.PUSH == 'true'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: push
+        if: env.PUSH == 'true'
+        run: |
+          for name in api gateway ingest; do docker push "$REGISTRY/hapiecoin-$name:$GITHUB_SHA"; done
+          if [ -n "$GATEWAY_PUBLIC_URL" ]; then
+            docker push "$REGISTRY/hapiecoin-web:$GITHUB_SHA"
+          else
+            echo "::warning::GATEWAY_PUBLIC_URL is not set: the web image was built with a placeholder and not pushed"
+          fi
