@@ -1,13 +1,14 @@
 #!/bin/sh
-# Restore a database dump into the server's database (docs/deploy.md): the one-time copy of the owner's local
-# database at go-live, or a backup after a failure. Run on the server:
+# Load a database dump into the database named by DATABASE_URL in deploy/.env (docs/deploy.md): the one-time
+# copy of the owner's local database at go-live, or a dump from backup.sh. Run on the server:
 #   sh /opt/hapiecoin/deploy/restore.sh /path/to/hapiecoin-<stamp>.dump
 # It refuses to run while the API is up, and refuses a database that already has tables unless FORCE=1 is set.
-# FORCE=1 replaces everything in the server's database with the dump: the file is checked first, a backup of
-# what is there is taken (backup.sh), and only then is the old content dropped.
+# FORCE=1 replaces everything in the database with the dump: the file is checked first, a dump of what is
+# there is taken (backup.sh), and only then are the old tables dropped.
 # The restore is one transaction: either the whole dump arrives or nothing does.
-# The dump is the custom format written by backup.sh. On the machine the data comes from (docs/deploy.md §6.3):
-#   docker exec hapiecoin-postgres pg_dump -U hapiecoin -d hapiecoin -Fc -f /tmp/hapiecoin-local.dump
+# The database is a managed PostgreSQL without the TimescaleDB extension (ADR-152), so a dump taken from the
+# development database must leave that extension out (docs/deploy.md §6.3):
+#   docker exec hapiecoin-postgres pg_dump -U hapiecoin -d hapiecoin -Fc --exclude-extension=timescaledb -f /tmp/hapiecoin-local.dump
 #   docker cp hapiecoin-postgres:/tmp/hapiecoin-local.dump .
 set -eu
 
@@ -16,8 +17,18 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # ENV_FILE: the settings file, deploy/.env unless a trial names another
 ENV_FILE="${ENV_FILE:-$HERE/.env}"
 
+[ -f "$ENV_FILE" ] || { echo "restore: no settings file at $ENV_FILE" >&2; exit 1; }
+# One name is read from the settings file; it is not sourced, so nothing else in it reaches this shell.
+DATABASE_URL="$(sed -n 's/^DATABASE_URL=//p' "$ENV_FILE" | tail -n 1)"
+[ -n "$DATABASE_URL" ] || { echo "restore: DATABASE_URL is not set in $ENV_FILE" >&2; exit 1; }
+export DATABASE_URL
+
 compose() { docker compose -f "$HERE/compose.prod.yml" --env-file "$ENV_FILE" "$@"; }
-psql_q() { compose exec -T postgres psql -h 127.0.0.1 -U hapiecoin -d hapiecoin -v ON_ERROR_STOP=1 -qAt "$@"; }
+# The PostgreSQL tools run in a throwaway container of the server's own version. The address (it holds the
+# password) is handed over in the environment, never on a command line. PG_DOCKER_ARGS is for trials.
+# shellcheck disable=SC2086
+pg() { docker run --rm -i ${PG_DOCKER_ARGS:-} -e DATABASE_URL postgres:17-alpine "$@"; }
+psql_q() { pg sh -c 'psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -qAt -c "$1"' sh "$1"; }
 
 [ -f "$DUMP" ] || { echo "restore: no such file: $DUMP" >&2; exit 1; }
 if [ "$(wc -c < "$DUMP")" -lt 10000 ]; then
@@ -34,40 +45,51 @@ for state in running restarting; do
   fi
 done
 
-# Over TCP, not the socket: on a new volume the image first runs a socket-only server that is then restarted.
-if ! compose exec -T postgres pg_isready -h 127.0.0.1 -U hapiecoin -d hapiecoin >/dev/null; then
-  echo "restore: the database is not ready. Start it and wait: docker compose ... up -d --wait postgres" >&2
+if ! psql_q "select 1" >/dev/null; then
+  echo "restore: the database does not answer. Check DATABASE_URL and that this server's address is allowed in the database's firewall." >&2
   exit 1
 fi
 
 # The file must be a readable dump before anything is dropped.
-if ! compose exec -T postgres pg_restore -l < "$DUMP" >/dev/null; then
+if ! pg pg_restore -l < "$DUMP" >/dev/null; then
   echo "restore: $DUMP is not a readable dump (cut short in the copy?). Nothing was changed." >&2
   exit 1
 fi
+if pg pg_restore -l < "$DUMP" | grep -q "EXTENSION - timescaledb"; then
+  echo "restore: $DUMP carries the TimescaleDB extension, which this database does not have. Take the dump again with --exclude-extension=timescaledb. Nothing was changed." >&2
+  exit 1
+fi
 
-TABLES="$(psql_q -c "select count(*) from information_schema.tables where table_schema in ('public','drizzle')")"
+TABLES="$(psql_q "select count(*) from information_schema.tables where table_schema in ('public','drizzle') and table_type = 'BASE TABLE'")"
 if [ "$TABLES" != "0" ]; then
   if [ "${FORCE:-0}" != "1" ]; then
     echo "restore: the database already has $TABLES tables. To replace everything in it, run again with FORCE=1." >&2
     exit 1
   fi
-  echo "restore: FORCE=1. Backing up what is there before dropping it"
+  echo "restore: FORCE=1. Taking a dump of what is there before dropping it"
   ENV_FILE="$ENV_FILE" sh "$HERE/backup.sh"
   echo "restore: dropping the $TABLES existing tables"
-  psql_q -c "drop schema if exists drizzle cascade; drop schema public cascade; create schema public;"
+  # Object by object, not `drop schema public`: on a managed server the public schema is not ours to drop.
+  psql_q "set client_min_messages = warning; do \$\$ declare r record; begin
+    for r in select tablename from pg_tables where schemaname = 'public' loop
+      execute format('drop table if exists public.%I cascade', r.tablename); end loop;
+    for r in select sequencename from pg_sequences where schemaname = 'public' loop
+      execute format('drop sequence if exists public.%I cascade', r.sequencename); end loop;
+    for r in select t.typname from pg_type t join pg_namespace n on n.oid = t.typnamespace
+             where n.nspname = 'public' and t.typtype = 'e' loop
+      execute format('drop type if exists public.%I cascade', r.typname); end loop;
+  end \$\$; drop schema if exists drizzle cascade;"
 fi
 
 echo "restore: loading $DUMP"
-# --no-owner: the dump's objects become the server role's, whatever role made them.
-if ! compose exec -T postgres pg_restore -h 127.0.0.1 -U hapiecoin -d hapiecoin \
-    --no-owner --no-privileges --exit-on-error --single-transaction < "$DUMP"; then
+# --no-owner: the dump's objects become this role's, whatever role made them.
+if ! pg sh -c 'pg_restore -d "$DATABASE_URL" --no-owner --no-privileges --exit-on-error --single-transaction' < "$DUMP"; then
   echo "restore FAILED: pg_restore stopped on an error (above). The transaction was rolled back: nothing arrived." >&2
   exit 1
 fi
 
-AFTER="$(psql_q -c "select count(*) from information_schema.tables where table_schema = 'public'")"
-MIGRATIONS="$(psql_q -c "select count(*) from drizzle.__drizzle_migrations")"
+AFTER="$(psql_q "select count(*) from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'")"
+MIGRATIONS="$(psql_q "select count(*) from drizzle.__drizzle_migrations")"
 if [ "$AFTER" = "0" ]; then
   echo "restore FAILED: no tables arrived" >&2
   exit 1
