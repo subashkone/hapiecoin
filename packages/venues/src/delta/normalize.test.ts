@@ -187,7 +187,11 @@ describe("[VENUES] toInstrument", () => {
     // HC-TR-257: the margin percent and its scaling are carried when the venue lists them, as strings or numbers, and absent otherwise
     expect("initialMarginPct" in perp).toBe(false);
     expect("initialMarginScalingFactor" in perp).toBe(false);
-    expect(toInstrument({ ...PERP, initial_margin: "0.5", initial_margin_scaling_factor: "0.000002" })).toMatchObject({ initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002" });
+    expect(toInstrument({ ...PERP, initial_margin: "0.5", initial_margin_scaling_factor: "0.000002", max_leverage_notional: "100000" })).toMatchObject({ initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002", maxLeverageNotional: "100000" });
+    expect("maxLeverageNotional" in perp).toBe(false);
+    // HC-TR-295: a threshold that is not a decimal is left out; the product is still listed
+    expect("maxLeverageNotional" in toInstrument({ ...PERP, initial_margin: "0.5", max_leverage_notional: "N/A" })).toBe(false);
+    expect(toInstrument({ ...PERP, initial_margin: "0.5", max_leverage_notional: 200000 })).toMatchObject({ maxLeverageNotional: "200000" });
     expect(toInstrument({ ...PERP, initial_margin: 5, initial_margin_scaling_factor: null })).toMatchObject({ initialMarginPct: "5" });
     expect("initialMarginScalingFactor" in toInstrument({ ...PERP, initial_margin: 5, initial_margin_scaling_factor: null })).toBe(false);
 

@@ -167,12 +167,23 @@ export function toInstrument(product: RawProduct): Instrument {
     // HC-TR-257: only when the venue lists them, so a record without them is the same object as before
     ...(optDecimal(product.initial_margin) !== null ? { initialMarginPct: optDecimal(product.initial_margin)! } : {}),
     ...(optDecimal(product.initial_margin_scaling_factor) !== null ? { initialMarginScalingFactor: optDecimal(product.initial_margin_scaling_factor)! } : {}),
+    // HC-TR-295: an estimate-only field; a value that is not a decimal is left out, never a reason to lose the product list
+    ...(softDecimal(product.max_leverage_notional) !== null ? { maxLeverageNotional: softDecimal(product.max_leverage_notional)! } : {}),
   };
 }
 
 function optDecimal(value: string | number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   return typeof value === "number" ? numberToDecimal(value) : canonDecimal(value);
+}
+
+/** `optDecimal`, but a value that is not a decimal answers null where `optDecimal` throws. */
+function softDecimal(value: string | number | null | undefined): string | null {
+  try {
+    return optDecimal(value);
+  } catch {
+    return null;
+  }
 }
 
 function optFraction(value: string | number | null | undefined): number | null {

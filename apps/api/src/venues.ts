@@ -83,7 +83,7 @@ export function createVenueClients(config: Pick<Config, "apiVenues" | "venueRest
         hit.list.catch(() => productsAt.delete(venue)); // a failed read is not kept for the minute
       }
       const params = new Map<string, MarginParams>();
-      for (const i of await hit.list) if (i.underlying === asset && i.initialMarginPct !== undefined) params.set(i.symbol, { contractValue: i.contractValue, initialMarginPct: i.initialMarginPct, initialMarginScalingFactor: i.initialMarginScalingFactor });
+      for (const i of await hit.list) if (i.underlying === asset && i.initialMarginPct !== undefined) params.set(i.symbol, { contractValue: i.contractValue, initialMarginPct: i.initialMarginPct, initialMarginScalingFactor: i.initialMarginScalingFactor, maxLeverageNotional: i.maxLeverageNotional });
       // a caller that holds the spot (Autopilot's snapshot) costs no ticker read
       return { spot: spot ?? (await liveSpot(asset, venue)), params };
     },

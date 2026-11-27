@@ -6,7 +6,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type MindfulPreview, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, futuresMarginUsd, getVenue, getVenueCore, roundToTick, shortOptionMarginUsd, type VenueOrder } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, futuresMarginUsd, getVenue, getVenueCore, marginThresholdMissing, roundToTick, shortOptionMarginUsd, type VenueOrder } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
@@ -146,11 +146,12 @@ export function unsizedLegs(legs: readonly PlanLeg[]): LivePreviewLeg[] {
 }
 
 /** Contracts, product state and current mark for each leg through the executor of `venue` (ADR-070: the caller names the strategy venue, never a default); reasons collect what would block a placement. */
-export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[]; unestimatedShorts: string[]; unestimatedFutures: string[]; futures: number; premiumDebit: number }> {
+export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[]; unestimatedShorts: string[]; unestimatedFutures: string[]; noThreshold: string[]; futures: number; premiumDebit: number }> {
   const reasons: string[] = [];
   const out: LivePreviewLeg[] = [];
   const unestimatedShorts: string[] = []; // sold options the venue gave no margin parameters or spot for (HC-TR-192)
   const unestimatedFutures: string[] = []; // futures the venue gave no margin parameters or price for (HC-TR-196)
+  const noThreshold: string[] = []; // margined legs whose product lists a scaling factor and no threshold for it (HC-TR-295)
   let futures = 0;
   let premiumDebit = 0; // premium the option legs pay (+) or receive (−), USD; a future moves none (HC-TR-196)
   const client = deps.tradingFor(venue); // ADR-070
@@ -177,10 +178,13 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
     // estimate too and its notional is never counted as premium (a hedge of 0.35 BTC used to read as a $28,000 debit).
     const isOption = product.contractType === "call_options" || product.contractType === "put_options";
     const marginEstimate = isFuture
-      ? futuresMarginUsd({ contracts, contractValue: product.contractValue, price, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor })
+      ? futuresMarginUsd({ contracts, contractValue: product.contractValue, price, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor, maxLeverageNotional: product.maxLeverageNotional })
       : l.side === "sell" && isOption
-        ? shortOptionMarginUsd({ contracts, contractValue: product.contractValue, spot, mark, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor })
+        ? shortOptionMarginUsd({ contracts, contractValue: product.contractValue, spot, mark, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor, maxLeverageNotional: product.maxLeverageNotional })
         : null;
+    // HC-TR-295: reported like the others, and `preview()` always refuses on it: the venue HAS margin data for this leg,
+    // so its missing figure must never fall through to "the older wallet rules alone decide"
+    if ((isFuture || (l.side === "sell" && isOption)) && marginEstimate === null && marginThresholdMissing(product)) noThreshold.push(l.symbol);
     if (l.side === "sell" && isOption && marginEstimate === null) unestimatedShorts.push(l.symbol);
     // reported, not refused here: `preview()` decides (as it does for the shorts), because an adjustment re-plans its adds
     // AFTER its exits have filled and a ticker blip there must not strand the position behind a refusal
@@ -189,7 +193,7 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
     if (!isFuture) premiumDebit += (l.side === "buy" ? 1 : -1) * Number(notional);
     out.push({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts, contractValue: product.contractValue, productState: product.state, mark, notional, marginEstimate });
   }
-  return { legs: out, reasons, unestimatedShorts, unestimatedFutures, futures, premiumDebit };
+  return { legs: out, reasons, unestimatedShorts, unestimatedFutures, noThreshold, futures, premiumDebit };
 }
 
 /**
@@ -218,7 +222,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
   const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
   // a wrong or data-only venue asks nobody: the legs are listed unsized and the reasons above already say why
-  const none = { reasons: [], unestimatedShorts: [], unestimatedFutures: [], futures: 0, premiumDebit: 0 };
+  const none = { reasons: [], unestimatedShorts: [], unestimatedFutures: [], noThreshold: [], futures: 0, premiumDebit: 0 };
   const exitPlan = wrongVenue ? { legs: unsizedLegs(exits), ...none } : await planLegs(deps, exits, lotSize, strategy.venue);
   const plan = wrongVenue ? { legs: unsizedLegs(legs), ...none } : await planLegs(deps, legs, lotSize, strategy.venue);
   reasons.push(...exitPlan.reasons, ...plan.reasons);
@@ -234,9 +238,15 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   // a figure that covers only some of the margined legs would read as the whole: when the venue priced one and not another, say so and refuse
   // HC-TR-196: a linear leg has no worst-loss figure to fall back on, so an ENTRY into a future the venue gave no margin
   // parameters or price for is refused outright, before anything is sent; an exit (reduce-only) is never refused for margin
-  if (plan.unestimatedFutures.length) reasons.push(`The margin for ${plan.unestimatedFutures.join(", ")} could not be estimated (no margin parameters or price from the exchange); nothing was sent`);
+  // HC-TR-295: a leg whose product lists a scaling factor and no threshold is refused whatever else is in the placement
+  // (a sold option alone used to pass here with no margin check at all), and is named with its own cause
+  const noThreshold = new Set(plan.noThreshold);
+  if (noThreshold.size) reasons.push(`The margin for ${plan.noThreshold.join(", ")} could not be estimated (the exchange lists a margin scaling factor and no size threshold for it); nothing was sent`);
+  const otherFutures = plan.unestimatedFutures.filter((s) => !noThreshold.has(s));
+  const otherShorts = plan.unestimatedShorts.filter((s) => !noThreshold.has(s));
+  if (otherFutures.length) reasons.push(`The margin for ${otherFutures.join(", ")} could not be estimated (no margin parameters or price from the exchange); nothing was sent`);
   const marginedLegs = plan.futures > 0 ? "the short and futures legs" : "the short legs";
-  if (marginRequired !== null && plan.unestimatedShorts.length) reasons.push(`Margin could not be estimated for ${plan.unestimatedShorts.join(", ")} (no margin parameters or spot from the exchange); nothing was sent`);
+  if (marginRequired !== null && otherShorts.length) reasons.push(`Margin could not be estimated for ${otherShorts.join(", ")} (no margin parameters or spot from the exchange); nothing was sent`);
   let available: string | null = null;
   let availableAsset: string | null = null;
   let marginUsed: string | null = null;

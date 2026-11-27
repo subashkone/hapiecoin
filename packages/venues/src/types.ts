@@ -44,8 +44,10 @@ export interface Instrument {
   tradingStatus: string | null;
   /** Initial margin percent of the underlying as the venue lists it for this contract today ("1" = 1 %); absent when it lists none (HC-TR-257). */
   initialMarginPct?: string | undefined;
-  /** Percent added per contract of size; absent when the venue lists none. */
+  /** Percent added per USD of position above `maxLeverageNotional`; absent when the venue lists none. */
   initialMarginScalingFactor?: string | undefined;
+  /** The position size in USD up to which the margin percent stays flat; absent when the venue lists none (HC-TR-295). */
+  maxLeverageNotional?: string | undefined;
 }
 
 export interface Greeks {
