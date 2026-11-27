@@ -23,7 +23,7 @@ export const lockMessage = (retryAfterSec: number): string => `Too many wrong co
 const failKey = (userId: string) => `2fa:fail:user:${userId}`;
 
 /** The resolver's flag when present; a session user built without it is read from the table, so omission never switches the step-up off. */
-async function authenticatorOn(deps: AppDeps, user: SessionUser): Promise<boolean> {
+export async function authenticatorOn(deps: AppDeps, user: SessionUser): Promise<boolean> {
   if (user.twoFactorEnabled !== undefined) return user.twoFactorEnabled;
   const [row] = await deps.db.select({ on: users.twoFactorEnabled }).from(users).where(eq(users.id, user.id)).limit(1);
   return row?.on === true;
