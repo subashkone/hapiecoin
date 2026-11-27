@@ -347,8 +347,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 43", "Weekly · 21", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 33}`, "ETH · 34", "XAUT · 5"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 43", "Weekly · 21", "Monthly · 16"]); // HC-TR-311: one more ETH monthly
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 34}`, "ETH · 35", "XAUT · 5"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -418,7 +418,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 43, 21, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 43, 21, 16]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
@@ -757,6 +757,30 @@ describe("HC-TR-266 the Autopilot screen: the ETH strangle with wings and a trai
     expect(how).toContain("+2.30 a day on 105 days, 90 % of days positive, worst day -34.0, with fill costs");
     // a winged trade with no take keeps its own words
     expect(card("eth-evening-strangle-wings-near").textContent).toContain("Wings cap the loss, held to expiry");
+  });
+});
+
+describe("HC-TR-311 the Autopilot screen: the ETH monthly strangle that sells again after its take", () => {
+  it("HC-TR-311 HC-TR-312 its card says in words that a take is followed by a new sale on the same expiry, that a stop is not, where that ends, and that its figures are counted per expiry; the monthly beside it says none of it", async () => {
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+    const cardOf = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
+    const again = cardOf("eth-monthly-strangle-12pct-near-take-35-sell-again");
+    expect(again.textContent).toContain("ETH monthly 12 %, 1 month out, take 35 % and sell again");
+    expect(again.textContent).toContain("Enters on the first evening a month-end expiry is 30 to 44 days out; after each take, again on the same expiry at once, until 7 days before it settles");
+    const how = within(again).getByTestId("autopilot-card-how").textContent;
+    expect(how).toContain("The whole trade is closed once it is up by 35 % of the premium collected after the fee of its entry.");
+    expect(how).toContain("After that take, and only after a take, a new trade is sold at once on the same expiry at the spot of that moment, with the same exits, as long as the expiry is at least 7 days away, within 24 hours of the take, and at most 8 times on one expiry. A take after one option was stopped still counts; a trade that ends with both options stopped, by hand or at settlement is not followed by another.");
+    expect(how).toContain("Each sale is its own trade in the lists, and the figures here count every sale of one expiry together.");
+    // the figures say what they are: per expiry, ten of them, hourly prices
+    expect(within(again).getByTestId("autopilot-card-backtest").textContent).toContain("an expiry");
+    expect(within(again).getByTestId("autopilot-card-basis").textContent).toBe("10 expiries, each with every strangle sold on it counted together (2.6 on average), 6 positive; hourly prices");
+    // the "take half" monthly beside it is as it was
+    const half = within(cardOf("eth-monthly-strangle-12pct-near-take-half")).getByTestId("autopilot-card-how").textContent;
+    expect(half).toContain("The whole trade is closed once it is up by 50 % of the premium collected. ");
+    expect(half).not.toContain("sold at once");
+    expect(half).not.toContain("after the fee of its entry");
+    expect(within(cardOf("eth-monthly-strangle-12pct-near-take-half")).getByTestId("autopilot-card-backtest").textContent).toContain("a trade");
   });
 });
 

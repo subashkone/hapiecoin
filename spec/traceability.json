@@ -9589,6 +9589,36 @@
   "evidence": "ADR-149 (27 Nov 2026): packages/schema/src/autopilot.ts (liveAvailable), autopilot-saved.ts (liveOpen), apps/api/src/autopilot.ts autopilotView, apps/api/src/autopilot-mandate.ts liveOpenIds, apps/api/src/routes/autopilot.ts; tests: apps/api/src/autopilot-mandate.test.ts HC-TR-310"
  },
  {
+  "id": "HC-TR-311",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot strategy: ETH monthly 12 %, 1 month out, take 35 % and sell again (paper)",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) + integration (api, real Postgres) + component (web)",
+  "acceptance": "A built-in paper strategy beside the five ETH monthly ones: on the first evening a month-end expiry is 30 to 44 days out it sells an ETH call and put 12 % from the spot, 100 lots; each sold option is bought back if its price doubles; the whole trade is closed once it is up by 35 % of its premium after the fee of its entry. Its card says what its figures rest on: ten expiries, counted per expiry with every strangle sold on it together, hourly prices. Paper only: a built-in strategy never trades live",
+  "evidence": "ADR-150 (27 Nov 2026): packages/pricing/src/playbooks.ts (ALT_MONTHLY_AGAIN_PLAYBOOKS, sellAgain, takeAfterEntryFee, proposalFor only), apps/api/src/autopilot.ts (the sell-again rule, clockPlanFor), apps/web/src/components/autopilot/AutopilotPage.tsx; tests: packages/pricing/src/playbooks.test.ts HC-TR-311, apps/api/src/autopilot.test.ts HC-TR-311 HC-TR-312, apps/web/src/components/autopilot/autopilot-page.test.tsx HC-TR-311"
+ },
+ {
+  "id": "HC-TR-312",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot: a strategy that sells the same expiry again after its take",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api, real Postgres)",
+  "acceptance": "For a strategy that says so (one today), when its trade closed by its profit take Autopilot sells a new one on the same expiry at the spot of that moment, with the same stop and take, on its next pass and at any hour, as long as the expiry is at least 7 days away and the take is no more than 24 hours old. Only a take does it: a trade that ended with both options stopped, by hand or at settlement is followed by nothing. One sale for one take, at most 8 sales on one expiry, and one open trade per expiry, so this month's strangle does not keep the next month's first sale out. The log line of such an entry reads \"Sold again on the same expiry after its take\"; when the sale cannot be made the log says so with the reason. Every other strategy is sold once per expiry and holds one trade at a time, as before. The strategy cannot be copied as a saved one, and the admin is told why",
+  "evidence": "ADR-150 (27 Nov 2026): packages/pricing/src/playbooks.ts (ALT_MONTHLY_AGAIN_PLAYBOOKS, sellAgain, takeAfterEntryFee, proposalFor only), apps/api/src/autopilot.ts (the sell-again rule, clockPlanFor), apps/web/src/components/autopilot/AutopilotPage.tsx; tests: packages/pricing/src/playbooks.test.ts HC-TR-311, apps/api/src/autopilot.test.ts HC-TR-311 HC-TR-312, apps/web/src/components/autopilot/autopilot-page.test.tsx HC-TR-311"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

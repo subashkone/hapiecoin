@@ -100,6 +100,9 @@ export interface LiveEntryContext {
 }
 /** "paper": this trader holds no mandate that applies, enter on paper as always. "handled": entered live or skipped; no paper entry on this pass. */
 export type LiveHook = (ctx: LiveEntryContext) => Promise<"paper" | "handled">;
+/** What the log says of an entry taken on its conditions, and (ADR-150) of one sold again after a take. */
+export const ENTERED_REASON = "Its entry conditions were met on the latest prices";
+export const SOLD_AGAIN_REASON = "Sold again on the same expiry after its take";
 /** A saved strategy that lost its approval between the gate and the write (ADR-148). */
 export const SAVED_NOT_APPROVED = "saved strategy no longer approved for live at its entry";
 
@@ -228,7 +231,9 @@ export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLo
   const lock = p.clock?.lock;
   // a floor that rounds to nothing is no floor: the trade would close at once when armed
   if (lock !== undefined && credit * lock.floor < 0.01) return null;
-  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null, legBuyBackAt: p.clock?.legBuyBackAt ?? null, legBuyBackShare: p.clock?.legBuyBackShare ?? null };
+  // ADR-150: a playbook may count its take after the fee of its entry (half of the round trip): the level is raised by it
+  const afterFee = p.clock?.takeAfterEntryFee === true ? fees / 2 : 0;
+  return { fees, targetUsd: take === undefined ? null : credit * take + afterFee, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null, legBuyBackAt: p.clock?.legBuyBackAt ?? null, legBuyBackShare: p.clock?.legBuyBackShare ?? null };
 }
 
 /**
@@ -452,6 +457,50 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               const unitsPerLot = Number(own?.lotSizes[asset] ?? venueLots[asset]);
               const { result, plan } = live ? pricedFor(unitsPerLot) : { result: null, plan: null };
               const open = await openTrades(deps.db, k, at);
+              // ADR-150 (HC-TR-312): a playbook that sells again. When the newest trade of this trader, playbook, coin
+              // and EXPIRY closed by its profit take within the last `withinHours`, and that expiry is still far
+              // enough away, a new structure is sold on that same expiry at this snapshot's spot, on this pass and at
+              // any hour. Only a take does it: a trade that ended by its stops, by hand or at settlement leads to
+              // nothing here. An expiry is sold at most `maxPerExpiry` times. Built-in playbooks only: a saved
+              // strategy has its own checks (its audience, the live hook) which this path does not make.
+              if (p.clock?.sellAgain && !isSavedId(p.id) && live && broker && (await hasPlan(t))) {
+                const { minDte, withinHours, maxPerExpiry } = p.clock.sellAgain;
+                const recent = await deps.db.select({ id: strategies.id, status: strategies.status, closeReason: strategies.closeReason, closedAt: strategies.closedAt, structure: strategies.autopilotStructure }).from(strategies).where(tradeKey(k)).orderBy(desc(strategies.startedAt), desc(strategies.createdAt), desc(strategies.id)).limit(60);
+                // (a structure names the expiry of each of its legs: a strangle has one)
+                const expiryOf = (structure: string | null): string | null => /:(\d{4}-\d{2}-\d{2})/.exec(structure ?? "")?.[1] ?? null;
+                const seen = new Set<string>();
+                let handled = false;
+                for (const row of recent) {
+                  const expiry = expiryOf(row.structure);
+                  if (expiry === null || seen.has(expiry)) continue;
+                  seen.add(expiry); // `row` is the newest trade of this expiry
+                  const sinceMs = row.closedAt === null ? -1 : nowMs - row.closedAt.getTime();
+                  if (row.status !== "archived" || row.closeReason !== "target" || sinceMs < 0 || sinceMs > withinHours * 3_600_000) continue;
+                  if (daysToExpiryOf(calendar, nowMs, expiry) < minDte || open.some((o) => expiryOf(o.structure) === expiry)) continue;
+                  const said = async (why: string, detail: AutopilotRunDetail = {}) => {
+                    if (await skip(deps.db, k, `Not sold again after its take: ${why}`, detail, at)) report.skipped += 1;
+                  };
+                  handled = true;
+                  const sales = recent.filter((x) => expiryOf(x.structure) === expiry).length;
+                  const r = proposalFor(p, days, { unitsPerLot, calendar, spotBefore: null, only: { expiry, minDte } });
+                  if (sales >= maxPerExpiry) await said(`this expiry has been sold ${sales} times, the most for one expiry`);
+                  else if (!r.ok) await said(r.reason === "noExpiry" ? "the newest snapshot has no prices for that expiry" : `${skipText(r.reason).charAt(0).toLowerCase()}${skipText(r.reason).slice(1)}`);
+                  else if (r.proposal.legs.some((l) => !(Number(l.price) > 0))) await said("a leg of the structure has no price", detailOf(r.proposal, null, nowMs));
+                  else {
+                    const again = clockPlanFor(p, r.proposal, unitsPerLot, adapter.feeRule);
+                    if (!again) await said("the premium collected is smaller than the fees", detailOf(r.proposal, null, nowMs));
+                    else {
+                      const lotSize = String(own?.lotSizes[asset] ?? venueLots[asset]);
+                      const margin = await entryMargin(deps.marginInputs, asset, venue, r.proposal.legs.map((l) => ({ kind: l.kind, side: l.side, symbol: adapter.symbols.formatOption(l.kind as "call" | "put", asset, l.strike, l.expiry), lots: l.lots, price: l.price })), lotSize, r.proposal.spot);
+                      const { id } = await enter(deps.db, k, p, r.proposal, again, "own", broker.id, at, margin, undefined, SOLD_AGAIN_REASON);
+                      deps.logger.info({ userId: t.userId, playbookId: p.id, venue, asset, strategyId: id, after: row.id }, "autopilot sold again after a take");
+                      report.entered += 1;
+                    }
+                  }
+                  break;
+                }
+                if (handled) continue;
+              }
               if (open.length > 0) {
                 if (!result?.ok) continue; // holding, and the playbook has no entry to weigh on this pass
                 // the very structure a trade holds is never entered twice: a clearly better price for it is written down
@@ -478,7 +527,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
               else if (!plan) await no(isSavedId(p.id) && p.exits ? (savedPlanRefusal(p, result.proposal, unitsPerLot, adapter.feeRule) ?? "No plan on these prices") : p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
-              else if (open.length >= maxOpen) await no(maxOpen === 1 ? "Holds a trade already: one at a time for a strategy and coin" : `Holds ${maxOpen} trades already, the most for one strategy and coin`, detailOf(result.proposal, plan, nowMs));
+              else if ((p.clock?.sellAgain ? open.filter((o) => o.structure.includes(`:${result.proposal.expiry}`)) : open).length >= maxOpen) await no(maxOpen === 1 ? "Holds a trade already: one at a time for a strategy and coin" : `Holds ${maxOpen} trades already, the most for one strategy and coin`, detailOf(result.proposal, plan, nowMs));
               else {
                 // the newest entry or close of the key, whichever trade it was: one entry per cool-down, and none right after a close.
                 // By the clock: once per window, counted from the last entry (yesterday's trade settled only hours ago).
@@ -571,7 +620,7 @@ async function noteBetterEntry(db: Db, k: Key, openId: string, fresh: PlaybookPr
  * approval is checked again with the write, and NO exit is written; the caller arms them with `armExits` once every
  * leg has filled at the exchange. Without it, this is the paper entry it always was.
  */
-async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, plan: AutopilotPlan, exit: AutopilotExitStyle, brokerId: string, at: Date, marginEstimate: string | null = null, live?: { accountId: string; mandateId: string }): Promise<{ id: string; armExits(): Promise<void> }> {
+async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, plan: AutopilotPlan, exit: AutopilotExitStyle, brokerId: string, at: Date, marginEstimate: string | null = null, live?: { accountId: string; mandateId: string }, reason: string = ENTERED_REASON): Promise<{ id: string; armExits(): Promise<void> }> {
   const codec = getVenue(k.venue).symbols;
   const id = newId("strat");
   const detail: AutopilotRunDetail = live ? { ...detailOf(proposal, plan, at.getTime(), exit), mode: "live", mandateId: live.mandateId } : detailOf(proposal, plan, at.getTime(), exit);
@@ -665,7 +714,7 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     // (a live entry's exits wait until its legs have filled: an exit on a leg the exchange never opened must not fire)
     if (live) exits = rules;
     else if (rules.length) await tx.insert(strategyRules).values(rules); // a winged strangle is held to settlement: no rule at all
-    await tx.insert(autopilotRuns).values({ ...k, kind: "entered", reason: "Its entry conditions were met on the latest prices", strategyId: id, detail, at });
+    await tx.insert(autopilotRuns).values({ ...k, kind: "entered", reason, strategyId: id, detail, at });
   });
   await writeAudit(db, { actorId: null, action: live ? "autopilot.enter_live" : "autopilot.enter", target: `strategy:${id}`, before: null, after: { userId: k.userId, playbookId: p.id, venue: k.venue, asset: k.asset, exit, ...detail } });
   return {
