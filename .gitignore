@@ -43,3 +43,6 @@ Thumbs.db
 
 # TypeScript incremental build caches
 *.tsbuildinfo
+
+# The private gate of a deployment: written on the server, never committed (docs/deploy.md §6.2)
+deploy/basic-auth.caddy

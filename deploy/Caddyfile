@@ -1,0 +1,29 @@
+# HapieCoin reverse proxy. Caddy gets and renews the certificates for both names by itself once their DNS
+# records point at this server.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	# The private gate: while the app has no way to close sign-up, the whole site asks for one more user name
+	# and password before anything loads. The file holds one line, `<user> <hash from caddy hash-password>`,
+	# and is written on the server (docs/deploy.md). Remove this block for a public launch.
+	# The install manifest and its icons are left outside the gate: a browser fetches a manifest without the
+	# password, and they hold nothing but the name and the pictures.
+	@gated not path /manifest.webmanifest /icons/* /icon.svg
+	basic_auth @gated {
+		import /etc/caddy/basic-auth.caddy
+	}
+	# The API takes the visitor's address from the forwarded headers (rate limits, audit). Caddy writes
+	# X-Forwarded-For itself; these two are dropped so a visitor cannot name an address of their own choosing.
+	request_header -CF-Connecting-IP
+	request_header -X-Real-IP
+	reverse_proxy web:3000
+}
+
+# The live price feed (WebSocket) and its /healthz. Public market data only; the gateway accepts browsers from
+# the app's own address alone.
+{$WS_DOMAIN} {
+	# The gateway's /metrics is for a scraper on the private network, never for the internet.
+	@metrics path /metrics
+	respond @metrics 404
+	reverse_proxy gateway:3002
+}

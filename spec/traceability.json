@@ -2124,6 +2124,21 @@
   "evidence": "ADR-109 (21 Nov 2026): apps/web/src/components/header/AppHeader.tsx (TABS), shell/CommandPalette.tsx, chrome/PortfolioBar.tsx (bar-autopilot), trading/PaperPanel.tsx (card-autopilot); tests: autopilot-page.test.tsx HC-SH-143, AppHeader.test.tsx HC-SH-143, shell.test.tsx HC-SH-143"
  },
  {
+  "id": "HC-SH-144",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "route": "/desk",
+  "screen": "Shared chrome · routes",
+  "feature": "A private copy starts on one server from images GitHub builds, and a database dump restores into an empty server",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "manual (image run, dump and restore trial); CI image job",
+  "acceptance": "deploy/compose.prod.yml pulls the four images named by RELEASE; Caddy is the only public door, with a password gate; the api migrates as it starts; deploy/backup.sh writes a dump and deploy/restore.sh loads one into an empty database, refusing while the api runs",
+  "evidence": "ADR-151, GAPS #186 (26 Nov 2026): apps/web/Dockerfile, apps/ingest/Dockerfile, deploy/compose.prod.yml, deploy/Caddyfile, deploy/backup.sh, deploy/restore.sh, .github/workflows/ci.yml (docker job), docs/deploy.md §6; tried by hand with dummy settings: api, gateway and ingest images built, api healthy from the compose file, dump and restore with equal row counts in 42 tables; the web image and the gate are not tried yet"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
