@@ -6,6 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { AUTOPILOT_PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
+import { MANDATE_CONFIRM_MESSAGE, MANDATE_REFUSALS, type Mandate, MandateSign } from "@hapiecoin/schema";
 import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedApproval, type SavedApprovalView, SavedApprove, type SavedBacktestRun, SavedBacktestStart, type SavedBacktestTrade, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedApprovalChecks, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
@@ -154,6 +155,12 @@ export interface MockState {
   /** Approval for live (ADR-145): the paper record a test gives a strategy (an empty one otherwise), and the users who hold the approver permission. */
   savedPaper: Record<string, Pick<SavedApprovalView, "record" | "trades" | "skips">>;
   savedApprovers: string[];
+  /** ADR-147: every trader's mandates for live Autopilot, each with its owner. */
+  mandates: (Mandate & { userId: string })[];
+  /** ADR-148: the server's switch for live Autopilot, as the view reports it. */
+  autopilotLive: boolean;
+  /** Test knob: the mandates read does not answer. */
+  mandatesDown: boolean;
   /** Coupons and payments (ADR-034); checkout answers in "mock" mode, confirm accepts the signature "mock-sig". */
   coupons: Coupon[];
   payments: (Payment & { userId: string; couponId: string | null })[];
@@ -284,7 +291,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], savedBacktests: [], savedBacktestReads: 1, savedBacktestSource: true, savedPaper: {}, savedApprovers: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], savedBacktests: [], savedBacktestReads: 1, savedBacktestSource: true, savedPaper: {}, savedApprovers: [], mandates: [], autopilotLive: false, mandatesDown: false, coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
@@ -740,13 +747,86 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   // ADR-108: the trader's Autopilot settings and log; the mock keeps what is saved and never trades by itself
   // ADR-142 (HC-TR-279): the saved strategies a trader may use, and the ones they have traded
   const savedUsable = (acc: Account, x: SavedStrategy): boolean => x.stage === "paper" && (acc.user.role === "admin" || (x.audience === "users" ? x.userIds.includes(acc.user.id) : x.audience === "plans" && acc.subscription !== null && x.planIds.includes(acc.subscription.planId)));
+  // ADR-147, ADR-149: what lets a strategy trade live at all, and so take a mandate
+  const liveRefusal = (x: SavedStrategy | undefined): string | null => {
+    if (!x || x.stage !== "paper" || x.approval === null) return MANDATE_REFUSALS.notApproved;
+    if (!savedLossCapped(x.definition.legs)) return MANDATE_REFUSALS.notCapped;
+    const e = x.definition.exits;
+    if (e.ladder !== undefined || e.legBuyBackAt !== undefined || e.legBuyBackShare !== undefined) return MANDATE_REFUSALS.heldExit;
+    return null;
+  };
+  const liveOpen = (acc: Account, x: SavedStrategy): boolean => savedUsable(acc, x) && liveRefusal(x) === null;
   const autopilotViewOf = (acc: Account): AutopilotView => {
     const traded = new Set(acc.strategies.map((x) => x.autopilotPlaybookId));
     const saved = state.savedStrategies.filter((x) => savedUsable(acc, x) || ((x.stage === "paper" || x.stage === "retired") && traded.has(x.id))).map((x) => ({ id: x.id, version: x.version, name: x.name, summary: x.summary, definition: x.definition, backtest: x.backtest, usable: savedUsable(acc, x) }));
-    return { ...acc.autopilot, ...(saved.length > 0 ? { saved } : {}) };
+    // ADR-149: a card says a mandate could be signed for it; the view says whether this server enters live trades (each only when true, as the server sends them)
+    const cards = saved.map((card) => (liveOpen(acc, state.savedStrategies.find((x) => x.id === card.id)!) ? { ...card, liveOpen: true } : card));
+    return { ...acc.autopilot, ...(cards.length > 0 ? { saved: cards } : {}), ...(state.autopilotLive ? { liveAvailable: true } : {}) };
   };
   v1.get("/autopilot", (c) => c.json(autopilotViewOf(current(c)!)));
   v1.get("/autopilot/results", (c) => c.json(current(c)!.autopilotResults));
+  // ---- the mandate for live Autopilot (ADR-147): a record; the mock places nothing either ----
+  const mandateOut = (acc: Account, m: Mandate & { userId: string }): Mandate => {
+    const rest: Partial<Mandate & { userId: string }> = { ...m };
+    delete rest.userId; // the owner is the mock's own bookkeeping: the server sends none
+    const x = state.savedStrategies.find((r) => r.id === m.strategyId);
+    return { ...(rest as Mandate), standing: m.state !== "ended" && m.accountId !== null && liveRefusal(x) === null && x !== undefined && savedUsable(acc, x) };
+  };
+  const mineOf = (acc: Account) => state.mandates.filter((m) => m.userId === acc.user.id);
+  v1.get("/autopilot/mandates", (c) => (state.mandatesDown ? err(c, 503, "UNAVAILABLE", "Try again in a moment") : c.json({ items: mineOf(current(c)!).map((m) => mandateOut(current(c)!, m)) })));
+  v1.post("/autopilot/mandates", async (c) => {
+    const acc = current(c)!;
+    const parsed = MandateSign.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION_FAILED", parsed.error.issues[0]?.message ?? "Invalid mandate");
+    const body = parsed.data;
+    if (body.confirm.trim().toUpperCase() !== "LIVE") return err(c, 400, "VALIDATION_FAILED", MANDATE_CONFIRM_MESSAGE);
+    if (!acc.twoFactor?.enabled) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.needsAuthenticator);
+    const refused = secondFactorRefusal(c);
+    if (refused) return refused;
+    // (like the route: live trading must be part of the plan; the month's count is not read at signing)
+    if (acc.subscription === null && acc.user.role !== "admin") return err(c, 403, "UPGRADE_REQUIRED", "Live trading is not included in your current plan. Upgrade to unlock it.");
+    const x = state.savedStrategies.find((r) => r.id === body.strategyId);
+    if (!x || x.stage === "draft" || x.stage === "backtested" || !savedUsable(acc, x)) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.notUsable);
+    const why = liveRefusal(x);
+    if (why) return err(c, 409, "CONFLICT", why);
+    const account = acc.credentials.find((k) => k.id === body.accountId);
+    if (!account) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.noAccount);
+    if (!(x.definition.venues as readonly string[]).includes(acc.brokers.find((b) => b.id === account.brokerId)?.venue ?? "")) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.wrongVenue);
+    if (body.lots > x.definition.lots) return err(c, 409, "CONFLICT", `${MANDATE_REFUSALS.tooManyLots} (${x.definition.lots})`);
+    if (body.maxOpen > x.definition.assets.length) return err(c, 409, "CONFLICT", `${MANDATE_REFUSALS.tooManyOpen} (${x.definition.assets.length})`);
+    if (mineOf(acc).some((m) => m.strategyId === x.id && m.state !== "ended")) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.signedAlready);
+    const m: Mandate & { userId: string } = { id: `mnd_${state.mandates.length + 1}`, userId: acc.user.id, strategyId: x.id, strategyName: x.name, version: x.version, accountId: account.id, accountLabel: account.label, lots: body.lots, maxCapitalUsd: body.maxCapitalUsd, dayLossLimitUsd: body.dayLossLimitUsd, weekLossLimitUsd: body.weekLossLimitUsd, maxOpen: body.maxOpen, state: "active", standing: true, signedAt: nowIso(), pausedAt: null, pauseReason: null, endedAt: null, endReason: null };
+    state.mandates.unshift(m);
+    return c.json(mandateOut(acc, m), 201);
+  });
+  for (const step of ["pause", "resume", "end"] as const)
+    v1.post(`/autopilot/mandates/:id/${step}`, (c) => {
+      const acc = current(c)!;
+      // like the route: resuming asks for the authenticator and its code before anything about the mandate is said
+      if (step === "resume") {
+        if (!acc.twoFactor?.enabled) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.needsAuthenticator);
+        const refused = secondFactorRefusal(c);
+        if (refused) return refused;
+      }
+      const m = mineOf(acc).find((r) => r.id === c.req.param("id"));
+      if (!m) return err(c, 404, "NOT_FOUND", "Mandate not found");
+      if (m.state === "ended") return err(c, 409, "CONFLICT", MANDATE_REFUSALS.ended);
+      if (step === "end") Object.assign(m, { state: "ended", endedAt: nowIso(), endReason: "Ended by you" });
+      else if (step === "pause") {
+        if (m.state !== "active") return err(c, 409, "CONFLICT", MANDATE_REFUSALS.notActive);
+        Object.assign(m, { state: "paused", pausedAt: nowIso(), pauseReason: "Paused by you" });
+      } else {
+        if (m.state !== "paused") return err(c, 409, "CONFLICT", MANDATE_REFUSALS.notPaused);
+        const x = state.savedStrategies.find((r) => r.id === m.strategyId);
+        const why = liveRefusal(x);
+        if (why) return err(c, 409, "CONFLICT", why);
+        // (a pause the server made for an entry that did not complete holds until that trade is squared off)
+        if ((m.pauseReason ?? "").startsWith("Live entry incomplete")) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.incompleteEntry);
+        if (!x || !savedUsable(acc, x)) return err(c, 409, "CONFLICT", MANDATE_REFUSALS.notUsable);
+        Object.assign(m, { state: "active", pausedAt: null, pauseReason: null });
+      }
+      return c.json(mandateOut(acc, m));
+    });
   v1.put("/autopilot", async (c) => {
     const acc = current(c)!;
     const parsed = AutopilotSettings.safeParse(await c.req.json());

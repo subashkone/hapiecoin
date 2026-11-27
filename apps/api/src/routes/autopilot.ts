@@ -26,7 +26,7 @@ export function registerAutopilotRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps,
     }),
     async (c) => {
       c.header("Cache-Control", "private, no-store");
-      return c.json(await autopilotView(deps.db, currentUser(c).id, now()), 200);
+      return c.json(await autopilotView(deps.db, currentUser(c).id, now(), deps.config.autopilotLive), 200);
     },
   );
 
@@ -64,7 +64,7 @@ export function registerAutopilotRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps,
       const saved = await saveAutopilotSettings(deps.db, me.id, body, now());
       if (!saved.ok) throw errors.badRequest(saved.why);
       await auditFrom(c, deps.db)({ action: "autopilot.settings", target: `user:${me.id}`, before, after: body });
-      return c.json(await autopilotView(deps.db, me.id, now()), 200);
+      return c.json(await autopilotView(deps.db, me.id, now(), deps.config.autopilotLive), 200);
     },
   );
 }

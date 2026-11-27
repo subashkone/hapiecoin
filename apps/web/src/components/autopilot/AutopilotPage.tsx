@@ -6,14 +6,18 @@
 // search narrow every view.
 // Paper only. Figures in USD are shown in the trader's display currency.
 import { type Playbook, type PlaybookCadence, playbookCadence } from "@hapiecoin/pricing";
-import { AUTOPILOT_CHOSEN_EXIT_STYLES, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type PlaybookStatus, type Strategy } from "@hapiecoin/schema";
+import { AUTOPILOT_CHOSEN_EXIT_STYLES, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type Mandate, type PlaybookStatus, type SavedCard, type Strategy } from "@hapiecoin/schema";
 import { Badge, Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Switch, cn, toast } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { StopPaperDialog } from "@/components/trading/StopPaperDialog";
+import { TradingEnvTag } from "@/components/trading/TradingEnvTag";
+import { MandateDialog } from "./MandateDialog";
+import { MandateLine, mandateView } from "./MandateLine";
 import { AutopilotResultsPanel, count, dayOf } from "./AutopilotResultsPanel";
 import { AUTOPILOT_POLL_MS, useAutopilot, useAutopilotResults, useSaveAutopilot } from "@/lib/api/autopilot";
+import { useMandates } from "@/lib/api/autopilot-mandate";
 import { recordFor, usePlaybookRecords } from "@/lib/api/playbooks";
 import { strategyFetchers, strategyKeys, useStopStrategy, useStrategies } from "@/lib/api/strategies";
 import { fmtDateTime, fmtExpiry, fmtStrike } from "@/lib/format";
@@ -30,6 +34,8 @@ import { usePaperBook } from "@/lib/strategy/usePaper";
 export { exitTags, istClock, moveWords };
 const NONE: never[] = [];
 const ASSETS = ["BTC", "ETH", "XAUT"] as const;
+const NO_CARDS: readonly SavedCard[] = [];
+const NO_MANDATES: readonly Mandate[] = [];
 type Coin = (typeof ASSETS)[number];
 // ADR-116: the strategies by how often they trade, in the order of the list; a family with no strategy is not shown
 const CADENCE: Record<PlaybookCadence, { tab: string; title: string; note: string }> = {
@@ -133,6 +139,16 @@ export function AutopilotPage() {
   // the built-in strategies (never the control), the ones entered by the clock (ADR-112), and beside them the saved
   // ones the server says this trader may use (ADR-142, HC-TR-279)
   const catalogue = useMemo(() => catalogueOf(view.data?.saved), [view.data?.saved]);
+  // HC-TR-308, HC-TR-309 (ADR-149): the trader's mandates for live Autopilot, and whether this server enters live trades
+  // at all. Always read: a mandate outlives its strategy's place in the list (a retired version, a trader taken out of
+  // its audience), and it must still be seen and stopped.
+  const liveAvailable = view.data?.liveAvailable === true;
+  const savedCards = view.data?.saved ?? NO_CARDS;
+  const mandates = useMandates();
+  const mandateList = mandates.data ?? NO_MANDATES;
+  const heldMandates = mandateList.filter((m) => m.state !== "ended");
+  // (the card is kept as it was when the dialog opened: a refusal that takes the strategy off the list is still read)
+  const [signing, setSigning] = useState<SavedCard | null>(null);
 
   // a list that is not read yet, or could not be read, is never shown as "no trades"
   if (view.isPending || strategies.isPending) return <main className="mx-auto max-w-[1280px] px-6 py-8" data-testid="autopilot-page" data-state="loading"><p className="text-xs text-muted-foreground">Loading Autopilot…</p></main>;
@@ -286,6 +302,30 @@ export function AutopilotPage() {
           <Button size="sm" variant="destructive" onClick={() => { setNotClosed([]); setStopAll(true); }} disabled={!settings.enabled && open.length === 0} data-testid="autopilot-stop-all">Stop everything</Button>
         </div>
       </div>
+
+      {mandates.isError ? (
+        <p className="rounded border border-warning bg-warning/5 px-4 py-2 text-xs" role="alert" data-testid="autopilot-mandates-error">Your mandates for live Autopilot could not be read just now, so this screen cannot say whether any strategy trades live for you. It tries again by itself.</p>
+      ) : null}
+      {heldMandates.length > 0 ? (
+        <section className="flex flex-col gap-2 rounded border border-border px-4 py-2 text-xs" aria-label="Live mandates" data-testid="autopilot-live-strip">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <b>Live mandates</b>
+            <TradingEnvTag />
+            {(["live", "waiting", "off", "paused", "not-standing"] as const).map((v) => {
+              const of = heldMandates.filter((m) => mandateView(m, liveAvailable, Boolean(switchedOn(m.strategyId))) === v);
+              const words = v === "live" ? "active" : v === "waiting" ? "signed, live is off" : v === "off" ? "signed, strategy is off" : v === "paused" ? "paused" : "not standing";
+              // the ones that need the trader are named: a count alone does not say where to look
+              return of.length > 0 ? <span key={v} className={v === "paused" || v === "not-standing" ? "text-warning" : undefined} data-testid="autopilot-live-count" data-view={v}>{of.length} {words}{v === "paused" || v === "not-standing" ? `: ${of.map((m) => m.strategyName).join(", ")}` : ""}</span> : null;
+            })}
+            {tab !== "strategies" && heldMandates.some((m) => TRADABLE.some((p) => p.id === m.strategyId)) ? <Button size="sm" variant="outline" onClick={() => setTab("strategies")} data-testid="autopilot-live-show">Show on Strategies</Button> : null}
+          </div>
+          <p className="text-muted-foreground">{liveAvailable ? "A trade entered live is on the Live tab of the desk, not in the paper lists below." : "Live Autopilot is switched off on this server: nothing is entered live."}</p>
+          {/* a mandate whose strategy is no longer in the trader's list (a retired version, a changed audience) has no row to sit under: it is listed here, so it can always be seen and stopped */}
+          {heldMandates.filter((m) => !TRADABLE.some((p) => p.id === m.strategyId)).map((m) => (
+            <MandateLine key={`${m.id}:${m.state}`} mandate={m} liveAvailable={liveAvailable} on={false} named />
+          ))}
+        </section>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-x-6 gap-y-3 rounded border border-border p-4 md:grid-cols-3 xl:grid-cols-6" aria-label="Summary" data-testid="autopilot-summary">
         <div><div className="micro">Open trades</div><div className="num text-lg font-medium" data-testid="autopilot-open-count">{open.length}</div><div className={cn("text-xs", attention ? "text-loss" : "text-muted-foreground")} data-testid="autopilot-attention">{!open.length ? "" : attention ? `■ ${attention} ${attention === 1 ? "needs" : "need"} attention` : "● none needs attention"}</div></div>
@@ -528,6 +568,35 @@ export function AutopilotPage() {
                           );
                         })}
                       </div>
+                      {(() => {
+                        // HC-TR-308: under the row, the mandate held for this strategy; without one, and only where a
+                        // mandate could be signed on a server that enters live trades, the way to sign one (HC-TR-307)
+                        const held = heldMandates.find((m) => m.strategyId === p.id);
+                        const past = mandateList.filter((m) => m.strategyId === p.id && m.state === "ended");
+                        const card = savedCards.find((c) => c.id === p.id);
+                        // the offer needs the mandates to have been READ: a read that failed or has not answered is not "none"
+                        const offer = !held && mandates.isSuccess && liveAvailable && card?.liveOpen === true;
+                        if (!held && past.length === 0 && !offer) return null;
+                        return (
+                          <div className="col-span-full flex flex-col gap-1.5" data-testid="autopilot-card-live">
+                            {/* keyed by the mandate and its state: a panel left open, or a code typed, never carries over to another */}
+                            {held ? <MandateLine key={`${held.id}:${held.state}`} mandate={held} liveAvailable={liveAvailable} on={Boolean(on)} /> : null}
+                            {offer && card ? (
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <Button size="sm" variant="outline" onClick={() => setSigning(card)} data-testid="autopilot-trade-live">Trade live…</Button>
+                                <TradingEnvTag />
+                                <span className="text-muted-foreground">This strategy may trade live for you once you sign a mandate with your limits.{on ? " Until then it trades on paper." : " It is switched off now: nothing is entered for it."}</span>
+                              </div>
+                            ) : null}
+                            {past.length > 0 ? (
+                              <details className="text-xs" data-testid="autopilot-card-past">
+                                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Past mandates ({past.length})</summary>
+                                <div className="mt-1 flex flex-col gap-1.5">{past.map((m) => <MandateLine key={m.id} mandate={m} liveAvailable={liveAvailable} on={Boolean(on)} />)}</div>
+                              </details>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </article>
                   );
                 })}
@@ -565,7 +634,7 @@ export function AutopilotPage() {
                   {logList.slice(0, logLimit).map((r) => (
                     <tr key={r.id} className="border-b border-border align-top last:border-b-0" data-testid="autopilot-run" data-kind={r.kind}>
                       <td className={cn(TD, "num whitespace-nowrap text-muted-foreground")}>{fmtDateTime(r.at)}</td>
-                      <td className={TD}><span className="flex items-center gap-1.5 whitespace-nowrap"><span className="w-3 text-center text-muted-foreground" aria-hidden="true">{KIND_SHAPE[r.kind]}</span><Badge variant={KIND[r.kind].variant}>{KIND[r.kind].label}</Badge></span></td>
+                      <td className={TD}><span className="flex items-center gap-1.5 whitespace-nowrap"><span className="w-3 text-center text-muted-foreground" aria-hidden="true">{KIND_SHAPE[r.kind]}</span><Badge variant={KIND[r.kind].variant}>{KIND[r.kind].label}</Badge>{r.detail.mode === "live" ? <><Badge variant="secondary" className="font-bold" data-testid="autopilot-run-mode" data-mode="live">LIVE</Badge><TradingEnvTag /></> : <Badge variant="outline" data-testid="autopilot-run-mode" data-mode="paper">PAPER</Badge>}</span></td>
                       <td className={cn(TD, "font-medium")}>{nameOf(r.playbookId)} · {r.asset}</td>
                       <td className={cn(TD, "text-muted-foreground")}>{r.reason}{r.detail.dte !== undefined ? ` · ${r.detail.dte}d to expiry` : ""}{r.kind === "entered" && r.detail.capital ? ` · capital ${fmtMoney(r.detail.capital, money)}` : ""}{r.kind === "entered" && r.detail.move ? ` · ${moveWords(r.asset, r.detail.move)}` : ""}</td>
                     </tr>
@@ -578,6 +647,8 @@ export function AutopilotPage() {
           {runs.length > 0 ? <p className="text-xs text-muted-foreground" data-testid="autopilot-log-note">This screen reads Autopilot&apos;s newest {runs.length} log lines; older ones are not shown here.</p> : null}
         </section>
       </div>
+
+      {signing ? <MandateDialog strategy={signing} onOpenChange={(o) => !o && setSigning(null)} /> : null}
 
       {exiting ? <StopPaperDialog open onOpenChange={(o) => !o && setExitId(null)} strategy={exiting} priceOf={(l) => book.priceOf(exiting, l)} total={book.pnlOf(exiting).total} money={money} live={feedLive} onDone={() => setExitId(null)} /> : null}
 

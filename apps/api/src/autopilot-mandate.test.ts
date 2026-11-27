@@ -128,6 +128,38 @@ describe("HC-TR-296 a trader signs a mandate for an approved strategy", () => {
   });
 });
 
+describe("HC-TR-310 what a trader's Autopilot view says about live", () => {
+  it("HC-TR-310 a card says a mandate could be signed for it only when the strategy may trade live, and nothing of its approval; the view says whether this server enters live trades", async () => {
+    const open = await strategy("Card open");
+    const pending = await strategy("Card pending", WINGED, false);
+    const naked = await strategy("Card naked", NAKED);
+    const held = await strategy("Card held", { ...WINGED, exits: { ladder: [30, 60] } });
+    type View = { saved?: { id: string; liveOpen?: boolean; usable: boolean }[]; liveAvailable?: boolean };
+    const view = await json<View>(await t.request("/v1/autopilot", { cookie: trader.cookie }));
+    const card = (id: string) => view.saved!.find((c) => c.id === id)!;
+    expect(card(open.id)).toMatchObject({ usable: true, liveOpen: true });
+    for (const s of [pending, naked, held]) expect("liveOpen" in card(s.id), s.name).toBe(false);
+    // the card carries no approval: who approved, when and on which record stay the admin's
+    expect(Object.keys(card(open.id)).sort()).toEqual(["backtest", "definition", "id", "liveOpen", "name", "summary", "usable", "version"]);
+    // the harness has the switch off: the field is absent, which reads as "not available"
+    expect("liveAvailable" in view).toBe(false);
+    const { autopilotView } = await import("./autopilot.js");
+    expect((await autopilotView(t.db, trader.id, new Date(), true)).liveAvailable).toBe(true);
+    // a strategy the trader traded once and may no longer use still has a card (it is theirs to read): it is not open
+    // for live, though it is approved and loss limited
+    const lost = await strategy("Card lost");
+    await t.db.insert(strategies).values({ id: "strat_card_lost", userId: trader.id, name: "Card lost · Autopilot", asset: "BTC", venue: "delta_india", status: "archived", tradingMode: "paper", autopilotPlaybookId: lost.id, startedAt: new Date(), closedAt: new Date() });
+    await t.db.update(autopilotSavedStrategies).set({ userIds: [plain.id] }).where(eq(autopilotSavedStrategies.id, lost.id));
+    const mine = await json<View>(await t.request("/v1/autopilot", { cookie: trader.cookie }));
+    expect(mine.saved!.find((c) => c.id === lost.id)).toMatchObject({ usable: false });
+    expect("liveOpen" in mine.saved!.find((c) => c.id === lost.id)!).toBe(false);
+    // withdrawn: the card closes again
+    await withdraw(open.id);
+    const after = await json<View>(await t.request("/v1/autopilot", { cookie: trader.cookie }));
+    expect("liveOpen" in after.saved!.find((c) => c.id === open.id)!).toBe(false);
+  });
+});
+
 describe("HC-TR-297 what a signing is refused for", () => {
   it("HC-TR-297 the typed word, the authenticator and its code come first: a wrong word, an account without the authenticator, a missing or wrong code", async () => {
     const s = await strategy("Words");

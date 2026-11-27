@@ -132,7 +132,13 @@ export type AutopilotRun = z.infer<typeof AutopilotRun>;
  * GET /v1/autopilot: the trader's settings and the newest log lines, and (ADR-142, HC-TR-279) the saved strategies
  * they may use or have used; absent when there is none, which is every trader until an admin publishes one.
  */
-export const AutopilotView = z.strictObject({ settings: AutopilotSettings, runs: z.array(AutopilotRun), saved: z.array(SavedCard).optional() });
+export const AutopilotView = z.strictObject({
+  settings: AutopilotSettings,
+  runs: z.array(AutopilotRun),
+  saved: z.array(SavedCard).optional(),
+  /** ADR-149 (HC-TR-310): whether this server enters live trades at all (the operator's switch, ADR-148). Absent reads as false. */
+  liveAvailable: z.boolean().optional(),
+});
 export type AutopilotView = z.infer<typeof AutopilotView>;
 
 // ---- results (ADR-111): what the trades Autopilot opened came to ----------------------------------------------------

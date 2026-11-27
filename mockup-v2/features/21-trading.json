@@ -2950,5 +2950,53 @@
     "how": "The 85 built-in strategies never trade live. A paper entry is written exactly as before. A live trade is left out of the strategy's paper record and of the trader's paper results",
     "evidence": "ADR-148 (27 Nov 2026): apps/api/src/autopilot-live.ts, apps/api/src/autopilot.ts (the live hook, enter), apps/api/src/config.ts (AUTOPILOT_LIVE), apps/api/src/main.ts, apps/api/drizzle/0038_mysterious_the_executioner.sql, 0039_dapper_kulan_gath.sql; tests: apps/api/src/autopilot-live.test.ts HC-TR-306",
     "test": "integration (api, real Postgres, fake venue)"
+  },
+  {
+    "id": "HC-TR-307",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot: signing a mandate on the Autopilot screen",
+    "how": "In the row of a saved strategy that may trade live for this trader, \"Trade live…\" opens a dialog: the exchange account (only those on the strategy's exchange), lots per trade (at most the strategy's), trades open at once, the most capital, the loss limit for the day and for the week in whole US dollars, the four statements in full, the typed LIVE word and the authenticator code. The line beside the button names the first thing still missing, and otherwise says that signing places no order. A refusal is shown in the server's words and the code is never kept after one. Without the authenticator, or without a connected exchange account, the dialog says what to do first and shows no form. The offer appears only while the server enters live trades",
+    "evidence": "ADR-149 (27 Nov 2026): apps/web/src/components/autopilot/MandateDialog.tsx, MandateLine.tsx, AutopilotPage.tsx, apps/web/src/lib/api/autopilot-mandate.ts, apps/web/test/mock-api.ts; tests: apps/web/src/components/autopilot/autopilot-mandate.test.tsx HC-TR-307",
+    "test": "component (web, mock API)"
+  },
+  {
+    "id": "HC-TR-308",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot: the mandate under a strategy's row",
+    "how": "A strategy the trader holds a mandate for shows it under its row: LIVE · active only when a live entry can be taken (the server enters live trades and the strategy is switched on); otherwise \"Mandate signed · strategy is off\" or \"Mandate signed · live is off\" with the reason; PAUSED with its reason in full; NOT STANDING (no new live entries: no longer approved or no longer theirs); with the account, lots, open trades, capital and loss limits, and the TESTNET tag. Pause is one click, Resume asks for the authenticator code, End asks once more. A mandate paused for an entry that did not complete says what to do (check the exchange, square the trade off on the Live tab). Ended mandates stay under \"Past mandates\", and a new one can be signed. A mandate whose strategy has left the trader's list is listed by name above the summary, where it can still be stopped",
+    "evidence": "ADR-149 (27 Nov 2026): apps/web/src/components/autopilot/MandateDialog.tsx, MandateLine.tsx, AutopilotPage.tsx, apps/web/src/lib/api/autopilot-mandate.ts, apps/web/test/mock-api.ts; tests: apps/web/src/components/autopilot/autopilot-mandate.test.tsx HC-TR-308",
+    "test": "component (web, mock API)"
+  },
+  {
+    "id": "HC-TR-309",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot: live told apart from paper",
+    "how": "Every line of the Autopilot log carries a PAPER or LIVE chip, a live one with the TESTNET tag. With a mandate held, a strip above the summary counts the mandates by state, names the paused and not-standing ones, and says that a trade entered live is on the Live tab of the desk, not in the paper lists. LIVE is a plain bold chip, never green and never amber. If the mandates cannot be read the screen says so and offers nothing. Without a mandate nothing about live appears",
+    "evidence": "ADR-149 (27 Nov 2026): apps/web/src/components/autopilot/MandateDialog.tsx, MandateLine.tsx, AutopilotPage.tsx, apps/web/src/lib/api/autopilot-mandate.ts, apps/web/test/mock-api.ts; tests: apps/web/src/components/autopilot/autopilot-mandate.test.tsx HC-TR-309",
+    "test": "component (web, mock API)"
+  },
+  {
+    "id": "HC-TR-310",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot: what the Autopilot view says about live",
+    "how": "The trader's Autopilot view says, for each saved strategy, whether a mandate could be signed for it (it may trade live and is theirs to use), and whether this server enters live trades at all. It says nothing of who approved a strategy, when, or its paper record. Both are sent only when true, so a view without live is exactly what it was",
+    "evidence": "ADR-149 (27 Nov 2026): packages/schema/src/autopilot.ts (liveAvailable), autopilot-saved.ts (liveOpen), apps/api/src/autopilot.ts autopilotView, apps/api/src/autopilot-mandate.ts liveOpenIds, apps/api/src/routes/autopilot.ts; tests: apps/api/src/autopilot-mandate.test.ts HC-TR-310",
+    "test": "integration (api, real Postgres)"
   }
 ]
