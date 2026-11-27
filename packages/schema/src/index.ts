@@ -24,4 +24,5 @@ export * from "./playbooks.js";
 export * from "./proposals.js";
 export * from "./autopilot.js";
 export * from "./autopilot-saved.js";
+export * from "./autopilot-mandate.js";
 export * from "./ops.js";

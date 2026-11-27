@@ -90,6 +90,18 @@ export function upgradeRequired(message: string): HttpError {
   return new HttpError(403, "UPGRADE_REQUIRED", message);
 }
 
+/**
+ * Throw unless `key` is part of the user's plan at all; also refuses a deactivated account. The month's count is not
+ * read: for a step that uses nothing itself (signing a mandate, HC-TR-297), where `assertEntitled` would refuse a
+ * trader who has used the month up.
+ */
+export async function assertIncluded(deps: AppDeps, userId: string, key: LimitKey, now = new Date()): Promise<void> {
+  const [u] = await deps.db.select({ active: users.active }).from(users).where(eq(users.id, userId)).limit(1);
+  if (u && !u.active) throw new HttpError(403, "ACCOUNT_DEACTIVATED", "Your account has been deactivated. Contact support.");
+  const { effective, entitlements } = await entitlementsFor(deps, userId, now);
+  if (!entitlements.find((x) => x.key === key)!.included) throw upgradeRequired(`${FEATURE_NAMES[key]} is not included in your ${effective.plan?.name ?? "current"} plan. Upgrade to unlock it.`);
+}
+
 /** Throw unless the user may use `key` once more this month; also refuses a deactivated account (HC-AD-047). */
 export async function assertEntitled(deps: AppDeps, userId: string, key: LimitKey, now = new Date()): Promise<void> {
   const [u] = await deps.db.select({ active: users.active }).from(users).where(eq(users.id, userId)).limit(1);

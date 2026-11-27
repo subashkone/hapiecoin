@@ -968,6 +968,45 @@ export const autopilotSavedStrategies = pgTable(
 );
 
 /**
+ * ADR-147 (HC-TR-296): the mandate a trader signs before Autopilot may trade a saved strategy live for them: per
+ * trader, per version of a strategy (a new version is a new row there, so it needs a new mandate) and per exchange
+ * account, with the limits and the statements in the words signed. A RECORD ONLY until the engine's live entry is
+ * built: nothing reads it, and Autopilot trades on paper only. Amounts are whole US dollars the trader typed.
+ */
+export const autopilotMandates = pgTable(
+  "autopilot_mandates",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => autopilotSavedStrategies.id, { onDelete: "restrict" }),
+    /** The exchange account it may trade through; null once that account was removed, which ends the mandate. */
+    accountId: text("account_id").references(() => brokerCredentials.id, { onDelete: "set null" }),
+    lots: integer("lots").notNull(),
+    maxCapitalUsd: integer("max_capital_usd").notNull(),
+    dayLossLimitUsd: integer("day_loss_limit_usd").notNull(),
+    weekLossLimitUsd: integer("week_loss_limit_usd").notNull(),
+    maxOpen: integer("max_open").notNull(),
+    statements: jsonb("statements").$type<Record<string, string>>().notNull(),
+    state: text("state", { enum: ["active", "paused", "ended"] }).notNull().default("active"),
+    signedAt: timestamp("signed_at", { withTimezone: true, mode: "date" }).notNull(),
+    pausedAt: timestamp("paused_at", { withTimezone: true, mode: "date" }),
+    pauseReason: text("pause_reason"),
+    endedAt: timestamp("ended_at", { withTimezone: true, mode: "date" }),
+    endReason: text("end_reason"),
+    ...timestamps,
+  },
+  (t) => [
+    // one mandate that has not ended per trader and strategy: two signings at once cannot both win
+    uniqueIndex("autopilot_mandates_user_strategy_live_uq").on(t.userId, t.strategyId).where(sql`${t.state} <> 'ended'`),
+    index("autopilot_mandates_strategy_idx").on(t.strategyId),
+  ],
+);
+
+/**
  * The exchange's public mark candles as a backtest downloaded them (ADR-144; HC-TR-287): one row per series (an
  * option's `MARK:` symbol, or the perpetual's for the spot) and resolution. `bars` holds the closes, oldest first, as
  * [bar start in seconds, close]; a bar missing inside [fromMs, toMs] does not exist at the venue. Nothing past the
