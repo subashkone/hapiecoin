@@ -92,6 +92,7 @@ export const MANDATE_REFUSALS = {
   needsAuthenticator: "Switch the authenticator on for your account before signing a mandate",
   notActive: "Only an active mandate can be paused",
   accountEnded: "Its exchange account was removed",
+  incompleteEntry: "A trade entered under this mandate did not complete: square that trade off before resuming",
   notPaused: "Only a paused mandate can be resumed",
   ended: "This mandate has ended",
   accountGone: "Its exchange account was removed: sign a new mandate",

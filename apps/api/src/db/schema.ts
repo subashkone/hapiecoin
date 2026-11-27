@@ -347,11 +347,16 @@ export const strategies = pgTable(
     autopilotStructure: text("autopilot_structure"),
     /** HC-TR-257 (ADR-128): the margin estimated at entry, USD decimal; null when nothing was sold, when the venue gave no parameters, and on rows from before it. */
     marginEstimate: text("margin_estimate"),
+    /** ADR-148 (HC-TR-301): the mandate a LIVE Autopilot trade was entered under, so its limits can be counted; null on every paper trade and on a trader's own. A plain id: the mandate table is declared further down and a mandate is never deleted. */
+    autopilotMandateId: text("autopilot_mandate_id"),
+    /** ADR-148 (HC-TR-303): when every leg of a LIVE Autopilot entry had filled and its exits were armed; null until then, and a live entry that stays null is incomplete. Null on every other row. */
+    autopilotEntryCompleteAt: timestamp("autopilot_entry_complete_at", { withTimezone: true, mode: "date" }),
     ...timestamps,
   },
   (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status), index("strategies_autopilot_idx").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset),
     // ADR-110: one open Autopilot trade per trader, playbook, venue, asset and structure, whatever two passes or two leaders do
-    uniqueIndex("strategies_autopilot_open_uq").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset, t.autopilotStructure).where(sql`${t.status} = 'paper' and ${t.autopilotPlaybookId} is not null`),
+    uniqueIndex("strategies_autopilot_open_uq").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset, t.autopilotStructure).where(sql`${t.status} in ('paper', 'live') and ${t.autopilotPlaybookId} is not null`), // ADR-148: a live entry is held to the same one-at-a-time rule
+    index("strategies_autopilot_mandate_idx").on(t.autopilotMandateId),
   ],
 );
 
