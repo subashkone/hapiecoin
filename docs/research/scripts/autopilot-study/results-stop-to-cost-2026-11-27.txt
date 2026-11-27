@@ -1,0 +1,80 @@
+## BTC daily: 111 days (2026-08-08 .. 2026-11-26), each side 1 % away, entered 20 h before settlement; stop 2x on every sold option
+                                                         mean  win   total   worst  worst 3 drawdown        halves armed fired    with   plain
+   the stop alone                                       +8.53  50%    +947   -39.8   -110.6   -126.4     +362/+585     0     0      +0      +0
+   -- armed: both options at or under 50 % of their sale price
+   stop moved to 1x (cost)                              +6.71  54%    +745   -39.8   -106.4    -89.9     +274/+471    61    37    +318    +521
+   stop moved to 1.5x                                   +8.27  51%    +918   -39.8   -106.4    -89.9     +363/+555    61    20     -74     -45
+   stop moved to 0.75x                                  +8.33  59%    +924   -39.8   -106.4    -89.9     +307/+617    61    46    +800    +823
+   -- armed: both options at or under 30 % of their sale price
+   stop moved to 1x (cost)                              +7.43  51%    +825   -39.8   -110.6    -94.9     +240/+585    53    23    +190    +313
+   stop moved to 1.5x                                   +7.96  50%    +883   -39.8   -110.6    -94.9     +334/+549    53    11     -29     +36
+   stop moved to 0.75x                                  +8.07  54%    +896   -39.8   -110.6    -96.6     +257/+639    53    31    +625    +676
+   -- armed: the trade ahead by 50 % of the premium
+   stop moved to 1x (cost)                              +6.14  55%    +681   -39.8   -110.6    -89.9     +286/+395    62    42    +488    +754
+   stop moved to 1.5x                                   +8.15  51%    +905   -39.8   -110.6    -89.9     +355/+550    62    22     -47      -4
+   stop moved to 0.75x                                  +5.60  59%    +621   -39.8   -110.6    -89.9     +184/+438    62    53    +880   +1206
+   -- armed: the trade ahead by 70 % of the premium
+   stop moved to 1x (cost)                              +7.36  51%    +817   -39.8   -110.6    -94.9     +240/+577    54    24    +224    +354
+   stop moved to 1.5x                                   +7.93  50%    +880   -39.8   -110.6    -94.9     +332/+549    54    12     -28     +39
+   stop moved to 0.75x                                  +8.07  54%    +896   -39.8   -110.6    -96.6     +258/+638    54    32    +666    +717
+
+## ETH daily: 111 days (2026-08-08 .. 2026-11-26), each side 1 % away, entered 20 h before settlement; stop 2x on every sold option
+                                                         mean  win   total   worst  worst 3 drawdown        halves armed fired    with   plain
+   the stop alone                                       +3.20  50%    +355   -49.6   -121.9   -101.1     +159/+195     0     0      +0      +0
+   -- armed: both options at or under 50 % of their sale price
+   stop moved to 1x (cost)                              +3.14  57%    +348   -39.3   -105.3   -101.1     +167/+181    60    29    +193    +199
+   stop moved to 1.5x                                   +2.95  56%    +327   -49.6   -121.9   -104.5     +124/+203    60    20     -18      +9
+   stop moved to 0.75x                                  +3.56  59%    +395   -39.3   -105.3   -101.1     +194/+201    60    41    +451    +411
+   -- armed: both options at or under 30 % of their sale price
+   stop moved to 1x (cost)                              +2.76  51%    +306   -49.6   -121.9   -101.1     +135/+171    48    13     +82    +131
+   stop moved to 1.5x                                   +3.10  51%    +344   -49.6   -121.9   -101.1     +165/+178    48     8      +9     +20
+   stop moved to 0.75x                                  +2.98  52%    +331   -49.6   -121.9   -101.1     +153/+178    48    17    +169    +192
+   -- armed: the trade ahead by 50 % of the premium
+   stop moved to 1x (cost)                              +2.83  57%    +314   -39.3   -105.3   -101.1     +166/+149    61    37    +264    +305
+   stop moved to 1.5x                                   +2.71  56%    +301   -49.6   -121.9   -104.5     +115/+186    61    23      +0     +54
+   stop moved to 0.75x                                  +3.10  59%    +344   -39.3   -105.3   -101.1     +188/+156    61    50    +547    +558
+   -- armed: the trade ahead by 70 % of the premium
+   stop moved to 1x (cost)                              +2.72  51%    +302   -49.6   -121.9   -101.1     +120/+182    52    16    +117    +170
+   stop moved to 1.5x                                   +3.14  51%    +348   -49.6   -121.9   -101.1     +165/+183    52     9     +14     +21
+   stop moved to 0.75x                                  +2.85  52%    +316   -49.6   -121.9   -101.1     +140/+176    52    24    +256    +295
+
+## BTC daily: 111 days (2026-08-08 .. 2026-11-26), each side 1 % away, entered 20 h before settlement; stop 3x on every sold option
+                                                         mean  win   total   worst  worst 3 drawdown        halves armed fired    with   plain
+   the stop alone                                      +11.81  65%   +1311  -105.8   -254.2   -185.0     +725/+586     0     0      +0      +0
+   -- armed: both options at or under 50 % of their sale price
+   stop moved to 1x (cost)                              +8.90  67%    +988  -105.8   -232.1   -132.0     +499/+489    81    43    +398    +721
+   stop moved to 1.5x                                  +10.93  64%   +1213  -105.8   -232.1   -136.1     +585/+628    81    23     -64     +34
+   stop moved to 0.75x                                  +9.99  72%   +1109  -105.8   -232.1   -135.2     +514/+595    81    55   +1033   +1235
+   -- armed: both options at or under 30 % of their sale price
+   stop moved to 1x (cost)                             +10.84  67%   +1203  -105.8   -254.2   -185.0     +574/+629    76    26    +222    +330
+   stop moved to 1.5x                                  +11.07  64%   +1228  -105.8   -254.2   -185.0     +636/+592    76    14     -30     +53
+   stop moved to 0.75x                                 +11.07  69%   +1229  -105.8   -254.2   -185.0     +565/+664    76    36    +746    +828
+   -- armed: the trade ahead by 50 % of the premium
+   stop moved to 1x (cost)                              +7.72  70%    +857  -105.8   -237.8   -109.2     +549/+307    84    54    +658   +1112
+   stop moved to 1.5x                                   +9.82  65%   +1090  -105.8   -237.8   -134.8     +590/+500    84    30     -64    +156
+   stop moved to 0.75x                                  +6.87  75%    +763  -105.8   -237.8   -121.8     +473/+290    84    69   +1216   +1764
+   -- armed: the trade ahead by 70 % of the premium
+   stop moved to 1x (cost)                             +10.22  68%   +1134  -105.8   -254.2   -185.0     +538/+596    78    31    +338    +515
+   stop moved to 1.5x                                  +11.17  65%   +1240  -105.8   -254.2   -185.0     +648/+592    78    16     -20     +51
+   stop moved to 0.75x                                 +10.95  70%   +1215  -105.8   -254.2   -185.0     +571/+644    78    40    +840    +937
+
+## ETH daily: 111 days (2026-08-08 .. 2026-11-26), each side 1 % away, entered 20 h before settlement; stop 3x on every sold option
+                                                         mean  win   total   worst  worst 3 drawdown        halves armed fired    with   plain
+   the stop alone                                       +4.61  61%    +512   -49.6   -136.2   -119.9     +273/+238     0     0      +0      +0
+   -- armed: both options at or under 50 % of their sale price
+   stop moved to 1x (cost)                              +4.85  68%    +538   -44.6   -125.9    -94.8     +302/+237    81    40    +267    +240
+   stop moved to 1.5x                                   +4.36  65%    +484   -49.6   -136.2    -94.1     +244/+240    81    29      -4     +23
+   stop moved to 0.75x                                  +4.97  71%    +551   -44.6   -125.9    -93.8     +293/+258    81    58    +655    +615
+   -- armed: both options at or under 30 % of their sale price
+   stop moved to 1x (cost)                              +3.55  60%    +395   -49.6   -136.2   -122.9     +227/+167    63    16    +104    +221
+   stop moved to 1.5x                                   +3.92  59%    +435   -49.6   -136.2   -122.2     +259/+176    63     9      +7     +83
+   stop moved to 0.75x                                  +3.68  61%    +408   -49.6   -136.2   -120.1     +246/+163    63    22    +228    +331
+   -- armed: the trade ahead by 50 % of the premium
+   stop moved to 1x (cost)                              +3.83  68%    +425   -44.6   -125.9    -94.8     +240/+186    81    52    +392    +478
+   stop moved to 1.5x                                   +3.75  65%    +416   -49.6   -136.2    -94.1     +194/+223    81    33     +17    +112
+   stop moved to 0.75x                                  +4.12  71%    +457   -44.6   -125.9    -96.3     +261/+197    81    69    +774    +828
+   -- armed: the trade ahead by 70 % of the premium
+   stop moved to 1x (cost)                              +3.84  64%    +426   -49.6   -136.2   -119.9     +229/+197    71    23    +163    +249
+   stop moved to 1.5x                                   +4.09  61%    +454   -49.6   -136.2   -119.9     +269/+185    71    14     +16     +73
+   stop moved to 0.75x                                  +3.56  65%    +395   -49.6   -136.2   -119.9     +209/+187    71    37    +422    +538
+
