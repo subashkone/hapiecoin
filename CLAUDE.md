@@ -29,6 +29,7 @@ HapieCoin is a crypto options strategy builder for Delta Exchange India (BTC/ETH
 - Product and users: `.claude/memory/productContext.md`
 - Stack, architecture, conventions: `.claude/memory/systemPatterns.md`
 - Where we are, blockers, next steps: `.claude/memory/activeContext.md` (injected at session start; update it with `/checkpoint`)
+- The live copy, releases, the database, who holds what: `docs/OPERATIONS.md` (commands in `docs/deploy.md` §6)
 - Decisions (ADRs): `docs/DECISIONS.md` · Review gaps: `GAPS.md` · Build spec and traceability: `spec/`
 - Reference-only faithful clone of the original: `mockup-clone/` (read-only, hook-enforced) · Improved HapieCoin mock: `mockup-v2/`
 - How this Claude Code setup works: `docs/CLAUDE-SETUP.md`
