@@ -142,6 +142,19 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
     expect(autopilotPlaybookById("nope")).toBeUndefined();
   });
 
+  it("HC-TR-312 a structure can be priced on one named expiry: the same expiry sold again, never another in its place", () => {
+    const strangle = autopilotPlaybookById("evening-strangle-stop-2x")!;
+    const usual = proposalFor(strangle, evening, base);
+    if (!usual.ok) throw new Error(usual.reason);
+    // the expiry it would take anyway, named: the same structure
+    const named = proposalFor(strangle, evening, { ...base, only: { expiry: usual.proposal.expiry, minDte: strangle.minDte } });
+    expect(named).toEqual(usual);
+    // an expiry the day does not list: no entry, and not the usual expiry instead
+    expect(proposalFor(strangle, evening, { ...base, only: { expiry: "2099-01-29", minDte: strangle.minDte } })).toEqual({ ok: false, reason: "noExpiry" });
+    // the named expiry nearer than the floor asked for: no entry either
+    expect(proposalFor(strangle, evening, { ...base, only: { expiry: usual.proposal.expiry, minDte: 400 } })).toEqual({ ok: false, reason: "noExpiry" });
+  });
+
   it("HC-TR-225 the structures on tomorrow's expiry: sold three (or five) strikes out, wings eight (or ten) out, a credit; the naked ones have no maximum loss", () => {
     const placed = (id: string) => {
       const r = proposalFor(autopilotPlaybookById(id)!, evening, base);
