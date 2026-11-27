@@ -26,7 +26,7 @@ ws.hapiecoin.com ──TLS──▶ gateway (WebSocket)                     └�
 Two public hostnames: the app (`hapiecoin.com`) and the feed (`ws.hapiecoin.com`, or `/ws` behind the same proxy if it passes WebSockets). Everything else is private.
 
 ## 3. Steps
-1. **Images.** Done on `chore/deploy-private-copy` (ADR-148): all four Dockerfiles are in the repo. The api, gateway and ingest images were built and run on 26 Nov 2026; the web image has not finished a build yet (the one local attempt ran the laptop out of memory), so its first real build is the one GitHub runs (GAPS #183). The web image runs `next start` on the built workspace, not the `standalone` output.
+1. **Images.** Done on `chore/deploy-private-copy` (ADR-151): all four Dockerfiles are in the repo. The api, gateway and ingest images were built and run on 26 Nov 2026; the web image built on GitHub on 27 Nov 2026 (2.28 GB) and has not been run yet; it is never built on the development laptop (GAPS #186). The web image runs `next start` on the built workspace, not the `standalone` output.
 2. **CI.** `.github/workflows/ci.yml` runs `pnpm ci` (typecheck, lint, coverage, build) plus the bundle budget and the Playwright e2e on every PR (ADR-061). On a pull request the image job builds the four images without pushing them. On every merge to `main` it builds them, tags them with the commit and pushes them to GitHub's registry (`ghcr.io/<owner>/hapiecoin-{api,gateway,ingest,web}`); the web image is pushed only when the repository variable `GATEWAY_PUBLIC_URL` is set, because the feed address is fixed inside it. `smoke.yml` runs the real-API smoke (ADR-055) on manual dispatch. There is no deploy job: a release is run by hand on the server (§6).
 3. **Secrets.** Provider secret store → container env. Never in the repo (CLAUDE.md env list). Generate `BETTER_AUTH_SECRET` and `CREDENTIALS_ENC_KEY` once; rotate the vault key per ADR-054.
 4. **Database.** Managed Postgres with TimescaleDB, or the compose image on a volume with nightly `pg_dump` to object storage; migrations run by the API at boot (single API replica during a deploy, or run `pnpm --filter @hapiecoin/api db:migrate` as a release step).
@@ -46,17 +46,17 @@ Recommendation: **A** for launch. Hetzner has no India region, so DigitalOcean B
 Corrected 25 Nov 2026: this line used to say Delta India is served from AWS Mumbai. Delta's API documentation says its data centres are in AWS Tokyo, and its hosts answer through CloudFront. An India-region server is close to the users, not to the exchange. The current comparison and recommendation are in `docs/research/deployment-providers.md`.
 
 ## 5. Decisions needed from the user
-- Provider and region (§4). Decided 26 Nov 2026: OVHcloud VPS-2 in Singapore, waiting on OVHcloud's identity check (ADR-148).
+- Provider and region (§4). Decided 27 Nov 2026: an Azure virtual machine in Japan East (Tokyo), created that day (ADR-151); OVHcloud VPS-2 stays the fallback when the credit ends.
 - Domain DNS control for `hapiecoin.com` (A/AAAA for the app, `ws.` for the gateway) and who holds the registrar.
 - Resend sending domain verification (SPF/DKIM) and the `RESEND_API_KEY`.
 - Razorpay live keys and the public webhook URL (GAPS #49).
 - Whether to run the smoke job nightly against a staging stack or only before releases.
 
-## 6. Runbook: the private copy on one server (ADR-148, 26 Nov 2026)
+## 6. Runbook: the private copy on one server (ADR-151, 26 Nov 2026)
 
-One server runs everything from `deploy/compose.prod.yml`. The server builds nothing: it pulls the four images GitHub built. Every secret is typed on the server by the owner into `deploy/.env`; none is ever in the repo, in a log or in chat. `TRADING_DISABLED=true` stays set, so this copy cannot open a new live trade. It does not stop a close or a cancel on a live strategy that is already in the database: those still send a signed order to the exchange named by `DELTA_TRADING_REST_URL` (GAPS #183; see §6.3 step 2).
+One server runs everything from `deploy/compose.prod.yml`. The server builds nothing: it pulls the four images GitHub built. Every secret is typed on the server by the owner into `deploy/.env`; none is ever in the repo, in a log or in chat. `TRADING_DISABLED=true` stays set, so this copy cannot open a new live trade. It does not stop a close or a cancel on a live strategy that is already in the database: those still send a signed order to the exchange named by `DELTA_TRADING_REST_URL` (GAPS #186; see §6.3 step 2).
 
-What was tried on 26 Nov 2026, on a laptop with dummy settings: the compose file is valid; the api, gateway and ingest images build; the api starts in production mode from this compose file, applies its migrations and answers `/healthz`; `backup.sh` then `restore.sh` moved a database into an empty one with the same row count in all 42 tables and no error, and the api started on the restored database. After that trial the code review tightened `restore.sh` (one transaction, stop on the first error, the file checked and a backup taken before a forced replace) and the proxy file (the manifest outside the gate, `/metrics` closed on the feed name); those changes have not been run, because Docker on the laptop was down. Not tried yet: the web image, Caddy with the password gate in front of sign-in and the installed app, and anything on a real server (GAPS #183).
+What was tried on 26 Nov 2026, on a laptop with dummy settings: the compose file is valid; the api, gateway and ingest images build; the api starts in production mode from this compose file, applies its migrations and answers `/healthz`; `backup.sh` then `restore.sh` moved a database into an empty one with the same row count in all 42 tables and no error, and the api started on the restored database. After that trial the code review tightened `restore.sh` (one transaction, stop on the first error, the file checked and a backup taken before a forced replace) and the proxy file (the manifest outside the gate, `/metrics` closed on the feed name); those changes have not been run, because Docker on the laptop was down. Not tried yet: the web image, Caddy with the password gate in front of sign-in and the installed app, and anything on a real server (GAPS #186).
 
 ### 6.1 Once, before the server exists
 1. **Repository variable.** In GitHub, repository settings, Actions variables: `GATEWAY_PUBLIC_URL` = `wss://ws.hapiecoin.com`. The next merge to `main` then pushes all four images.
@@ -64,7 +64,7 @@ What was tried on 26 Nov 2026, on a laptop with dummy settings: the compose file
 3. **A read token for the images.** The images are private. Create a GitHub token that can only read packages; it is typed on the server in step 6.2.4.
 
 ### 6.2 First start
-1. **Harden the server** (Ubuntu 24.04): a non-root user with sudo, SSH by key only (`PasswordAuthentication no`, `PermitRootLogin no`), `ufw` allowing 22, 80 and 443 (and 443/udp), `unattended-upgrades` on, Docker Engine with the compose plugin from Docker's own repository.
+1. **Harden the server** (Ubuntu 24.04; on Azure the three ports are also opened in the network security group, and `ufw` on the machine is the second door): a non-root user with sudo, SSH by key only (`PasswordAuthentication no`, `PermitRootLogin no`), `ufw` allowing 22, 80 and 443 (and 443/udp), `unattended-upgrades` on, Docker Engine with the compose plugin from Docker's own repository.
 2. **The four reachability checks.** All four should print 200:
    ```
    curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" https://api.bybit.com/v5/market/time
@@ -113,7 +113,7 @@ Set `RELEASE` back to the previous commit, `pull`, `up -d`. That is enough when 
 Never run `docker compose ... down -v` on the server: `-v` deletes the database volume.
 
 ### 6.6 Rotate a key
-- **Vault key** (ADR-054): put the old `CREDENTIALS_ENC_KEY` into `CREDENTIALS_ENC_KEYS_PREVIOUS`, set the new one, `up -d`; reseal the stored keys with the api's `db:reseal` script, then empty the previous list. The script as named (`tsx src/db/reseal-cli.ts`) cannot run in the production image: `tsx` is a development dependency and the image carries production ones only. The compiled `dist/db/reseal-cli.js` is probably in the image, but running it there (`docker compose ... exec api node dist/db/reseal-cli.js`) is not verified. Do not rotate the vault key on the server until it is (GAPS #183).
+- **Vault key** (ADR-054): put the old `CREDENTIALS_ENC_KEY` into `CREDENTIALS_ENC_KEYS_PREVIOUS`, set the new one, `up -d`; reseal the stored keys with the api's `db:reseal` script, then empty the previous list. The script as named (`tsx src/db/reseal-cli.ts`) cannot run in the production image: `tsx` is a development dependency and the image carries production ones only. The compiled `dist/db/reseal-cli.js` is probably in the image, but running it there (`docker compose ... exec api node dist/db/reseal-cli.js`) is not verified. Do not rotate the vault key on the server until it is (GAPS #186).
 - **`BETTER_AUTH_SECRET`**: everyone signs in again.
 - **Gate password**: write a new line to `deploy/basic-auth.caddy`, `docker compose ... restart caddy`.
 - **Registry token**: `docker login ghcr.io` again.

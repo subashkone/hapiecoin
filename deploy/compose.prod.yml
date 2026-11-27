@@ -85,7 +85,7 @@ services:
       GATEWAY_VENUES: ${GATEWAY_VENUES:-}
       ERROR_SINK_DSN: ${ERROR_SINK_DSN:-}
       # The gateway counts sockets by the peer's address and reads no forwarded header, so behind Caddy every
-      # visitor is one address: the cap is for the whole copy, not per visitor (GAPS #183).
+      # visitor is one address: the cap is for the whole copy, not per visitor (GAPS #186).
       MAX_CONNECTIONS_PER_IP: ${MAX_CONNECTIONS_PER_IP:-2000}
     mem_limit: 512m
     depends_on:

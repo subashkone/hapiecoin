@@ -6,7 +6,7 @@ How to read the marks: **VERIFIED** means read today in the repo, measured today
 
 ## Summary
 
-- **Update 26 Nov 2026: the owner chose Singapore**, because Mumbai has no stock; the decisions are at the end of section 10 and in ADR-148. The line below is the recommendation as first written.
+- **Update 27 Nov 2026: the copy runs on Azure in Tokyo, not on OVHcloud.** The owner has sponsorship credit on Azure, which was not among the providers compared here; the decision is ADR-151. OVHcloud VPS-2 stays the fallback when the credit ends. The line below is the recommendation as first written.
 - **Recommendation: one OVHcloud VPS-2 in Mumbai** (4 vCores, 8 GB, 75 GB), everything on it with Docker Compose, images built by GitHub Actions and pulled by the server. About **INR 1,125 a month with GST** (about USD 12) with no commitment. Runner-up: AWS Lightsail in Mumbai at USD 24 before GST. Details in section 9.
 - **Stock check, 25 Nov 2026 about 17:40 IST: VPS-2 is out of stock in Mumbai.** OVHcloud's own stock service lists every plan of the current range (VPS-1 to VPS-4) as out of stock in Mumbai; VPS-2 is in stock only in Canada and France, VPS-3 also in Singapore. Stock changes, so check again on the order page before deciding; if Mumbai stays empty, the runner-up applies. Details at the end of section 9.
 - **Three findings change the old plan** (`docs/deploy.md`, 11 Sep 2026):
@@ -287,8 +287,8 @@ Why:
 
 **Decided by the owner in chat, 26 to 27 Nov 2026** (not yet an ADR; nothing bought or deployed by this session):
 
-- Region: Singapore instead of Mumbai, because Mumbai is out of stock (section 9) and the reachability test in section 5 passed from Singapore. The order waits on OVHcloud's identity check.
-- Domain: `hapiecoin.com` (found unregistered on 25 Nov 2026 through Verisign's registry lookup). The name HapieCoin stays. To be registered at GoDaddy rather than OVHcloud, because OVHcloud's identity check delays the order; DNS there points at the server.
+- Provider and region, changed on 27 Nov 2026: an Azure virtual machine in Japan East (Tokyo) on the owner's sponsorship credit, `Standard_B4as_v2`, about USD 158 a month at list price (Azure's public price list, 27 Nov 2026). Singapore offers that subscription almost no sizes. From probes in Microsoft's network: Tokyo and Singapore both reach Delta, Bybit, Binance futures, OKX and Deribit; Delta's socket hosts answered in about 15 ms from Tokyo and 215 to 290 ms from Singapore (one or two samples); India had no probe.
+- Domain: `hapiecoin.com` (found unregistered on 25 Nov 2026 through Verisign's registry lookup). The name HapieCoin stays. Registered at GoDaddy on 27 Nov 2026; `app` and `ws` point at the server, and the Resend sending records are in place.
 - Database: the whole local database is restored to the server once at go-live, instead of starting empty. Conditions: the local database must be at a migration that is merged to `main` at that moment; the server needs the same `CREDENTIALS_ENC_KEY` for stored exchange keys to stay readable; Autopilot is on in the local data, so it keeps trading on paper on the server from the first start.
 
 ### 11. Sources (all fetched 25 Nov 2026)
