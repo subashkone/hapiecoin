@@ -45,7 +45,9 @@ services:
     image: ghcr.io/${IMAGE_OWNER}/hapiecoin-api:${RELEASE}
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://hapiecoin:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/hapiecoin
+      # A managed PostgreSQL 17 outside this server (ADR-152): the whole address, password included, comes
+      # from deploy/.env and ends with ?sslmode=require.
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
       REDIS_URL: redis://redis:6379
       WEB_URL: https://${APP_DOMAIN}
       BETTER_AUTH_URL: https://${APP_DOMAIN}
@@ -71,7 +73,6 @@ services:
       ERROR_SINK_DSN: ${ERROR_SINK_DSN:-}
     mem_limit: 1g
     depends_on:
-      postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
   gateway:
@@ -101,24 +102,6 @@ services:
     depends_on:
       redis: { condition: service_healthy }
 
-  postgres:
-    <<: *restart
-    # The same pinned image as development (docker-compose.yml, GAPS #30).
-    image: timescale/timescaledb:latest-pg17@sha256:bc8527e62f70f0766b29515077965025872fabb5349db421565f69ee273baf2d
-    environment:
-      POSTGRES_USER: hapiecoin
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: hapiecoin
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    mem_limit: 2g
-    healthcheck:
-      # over TCP: on a new volume the image first runs a socket-only server, which is not ready for use
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U hapiecoin -d hapiecoin"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
   redis:
     <<: *restart
     image: redis:7-alpine
@@ -139,6 +122,5 @@ networks:
           ip_range: 172.30.0.128/25
 
 volumes:
-  pgdata:
   caddy_data:
   caddy_config:
