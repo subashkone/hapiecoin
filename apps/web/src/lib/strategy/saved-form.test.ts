@@ -3,7 +3,7 @@
 import { AUTOPILOT_PLAYBOOKS, playbookTemplate } from "@hapiecoin/pricing";
 import { type SavedStrategy, savedPlaybookOf } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { FROM_HOURS, LEG_PRESETS, type SavedForm, TREND_COPY_NOTES, emptySavedForm, istClock, istWeekday, sameDefinition, SAVED_NAME_MAX, savedBacktestOf, savedDefinitionOf, savedFormFromBuiltIn, savedFormOf, trendCopyNotes, utcWeekday } from "./saved-form";
+import { FROM_HOURS, LEG_PRESETS, type SavedForm, TREND_COPY_NOTES, emptySavedForm, istClock, istWeekday, sameDefinition, SAVED_NAME_MAX, savedBacktestOf, savedDefinitionOf, SELL_AGAIN_NO_COPY, savedFormFromBuiltIn, savedFormOf, trendCopyNotes, utcWeekday } from "./saved-form";
 
 const form = (over: Partial<SavedForm> = {}): SavedForm => ({ ...emptySavedForm(), name: "Evening strangle", summary: "Sell both sides.", ...over });
 const defOf = (f: SavedForm) => {
@@ -145,8 +145,16 @@ describe("HC-TR-278 a saved strategy back into the form", () => {
 });
 
 describe("HC-TR-280 a built-in strategy as a draft of the admin's own", () => {
-  const clockOnes = AUTOPILOT_PLAYBOOKS.filter((p) => p.clock);
+  // (ADR-150: the one that sells an expiry again cannot be said by a saved strategy, and is refused below)
+  const clockOnes = AUTOPILOT_PLAYBOOKS.filter((p) => p.clock && !p.clock.sellAgain);
   const trendOnes = AUTOPILOT_PLAYBOOKS.filter((p) => !p.clock);
+
+  it("HC-TR-311 the strategy that sells the same expiry again cannot be copied as a saved one: a copy without that would be another strategy under its name", () => {
+    const again = AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.sellAgain);
+    expect(again.map((p) => p.id)).toEqual(["eth-monthly-strangle-12pct-near-take-35-sell-again"]);
+    expect(savedFormFromBuiltIn(again[0]!)).toEqual({ ok: false, why: SELL_AGAIN_NO_COPY });
+    expect(SELL_AGAIN_NO_COPY).toContain("a saved strategy cannot do yet");
+  });
 
   it("HC-TR-280 every built-in strategy entered by the clock can be copied, and the copy is the same strategy: the same entry, legs, conditions and exits", () => {
     expect(clockOnes.map((p) => [p.id, savedFormFromBuiltIn(p)] as const).filter(([, r]) => !r.ok).map(([id, r]) => `${id}: ${r.ok ? "" : r.why}`)).toEqual([]);

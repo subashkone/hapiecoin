@@ -63,6 +63,22 @@ export interface PlaybookClock {
   cadence?: "monthly" | undefined;
   /** ADR-117: one entry per expiry: the window is open on many evenings while the expiry is in range, and a trade that ended early is not taken again. */
   oncePerExpiry?: boolean | undefined;
+  /**
+   * ADR-150: after a trade of this playbook closed by its profit take, a new one is sold on the SAME expiry at the
+   * spot of that moment, with the same exits, on the next pass and at any hour, as long as that expiry is at least
+   * `minDte` days away. Only a take does it: a trade that ended by its stops, by hand or at settlement sells nothing
+   * again. With `oncePerExpiry`: the FIRST sale of an expiry is still taken once. A playbook that sells again holds
+   * one trade per EXPIRY, not one in all: the next month's first sale is not kept out by this month's open trade.
+   * Two bounds keep it to what it means: the new sale is made within `withinHours` of the take (a take found days
+   * later, after an outage or after the strategy was switched off and on, sells nothing), and an expiry is sold at
+   * most `maxPerExpiry` times in all (a price that is wrong cannot sell on every pass).
+   */
+  sellAgain?: { minDte: number; withinHours: number; maxPerExpiry: number } | undefined;
+  /**
+   * ADR-150: the profit take is reached once the trade is ahead by `takeProfitOfCredit` of its premium AFTER the fee
+   * of its entry (the level is raised by that fee). Absent: the level is the share of the premium alone, as it was.
+   */
+  takeAfterEntryFee?: boolean | undefined;
   /** The window as the trader reads it. */
   window: string;
   /** How the entry reads on the card, after "Entered ": when, and on which expiry. */
@@ -591,13 +607,17 @@ const ALT_MONTHLY_RANGES = {
   near: { minDte: 30, maxDte: 44, words: "A month before", days: "30 to 44", label: "1 month out" },
   far: { minDte: 60, maxDte: 75, words: "Two months before", days: "60 to 75", label: "2 months out" },
 } as const;
-type AltMonthly = { range: keyof typeof ALT_MONTHLY_RANGES; sold: number; wing: number | null; key: string; name: string; exit: string; why: string; rule: string; figures: string; legStop: number; take?: number };
+type AltMonthly = { range: keyof typeof ALT_MONTHLY_RANGES; sold: number; wing: number | null; key: string; name: string; exit: string; why: string; rule: string; figures: string; legStop: number; take?: number; /** ADR-150: sell the same expiry again after a take, down to this many days before it settles */ again?: number; /** the study behind it, when it is not the monthly study of the others */ source?: string; trials?: { count: number; note: string } };
+/** ADR-150: the study of the take that sells again (the research thread's, on its branch `research/exits`, commit 40d77f3). */
+const ALT_MONTHLY_TAKE_STUDY = "docs/research/scripts/autopilot-study/results-monthly-take-slippage-2026-11-26.txt on branch research/exits (study_monthly_take.py; 10 ETH month-end expiries, hourly marks, the nearest listed strike within 3 % of the spot, the exchange's real fees, a fill cost measured on daily options only, 100 lots)";
 const ALT_MONTHLY: readonly AltMonthly[] = [
   { range: "far", sold: 16, wing: 24, key: "wings-stop-3x", name: "wings, stop at triple", exit: "buy the options 24 % away as wings; buy a sold option back if its price triples and keep everything else to settlement", why: "ETH moves further in a month than BTC, so the strikes sit further out. As on BTC, wings with a stop was the strongest monthly shape: a kept wing pays when the month keeps trending. Held with no stop the same trade lost.", rule: "wings 24 % away, each sold option stopped at three times its price, the wings kept", figures: "+88.30 a trade on 157 entries over 11 expiries, 10 of them positive, 83 % positive, worst entry -250", legStop: 3 },
   { range: "far", sold: 16, wing: 24, key: "wings-take-half", name: "wings, stop at triple, take half", exit: "buy the options 24 % away as wings; close the whole trade at half the premium, and buy a sold option back if its price triples", why: "The same with the quick profit: far less on average and almost every entry a winner, positive in all eleven expiries.", rule: "wings 24 % away, each sold option stopped at three times its price, the whole trade closed at half the premium", figures: "+33.60 a trade on 157 entries over 11 expiries, 11 of them positive, 98 % positive, worst entry -250", legStop: 3, take: 0.5 },
   { range: "near", sold: 12, wing: null, key: "stop-2x", name: "stop at double", exit: "buy either one back if its price doubles, and hold the other to settlement", why: "The nearer month with the stop alone. Held with no stop the same trade averaged -96 with a worst entry of -767.", rule: "each option stopped at twice its price", figures: "+34.30 a trade on 165 entries over 11 expiries, 9 of them positive, 59 % positive, worst entry -84", legStop: 2 },
   { range: "near", sold: 12, wing: null, key: "take-half", name: "take half", exit: "close the whole trade once it is up by half the premium, and buy either option back if its price doubles", why: "The steadiest naked ETH monthly shape: about the same average as the stop alone, more winning entries, the smallest worst entry, positive in ten of eleven expiries.", rule: "each option stopped at twice its price, the whole trade closed at half the premium", figures: "+32.10 a trade on 165 entries over 11 expiries, 10 of them positive, 72 % positive, worst entry -69", legStop: 2, take: 0.5 },
   { range: "near", sold: 12, wing: 18, key: "wings-stop-3x", name: "wings, stop at triple", exit: "buy the options 18 % away as wings; buy a sold option back if its price triples and keep everything else to settlement", why: "The winged shape on the nearer month: the highest average of the ETH monthly set, positive in eight of eleven expiries, on wing prices that are model marks.", rule: "wings 18 % away, each sold option stopped at three times its price, the wings kept", figures: "+102.30 a trade on 165 entries over 11 expiries, 8 of them positive, 79 % positive, worst entry -184", legStop: 3 },
+  // ADR-150 (27 Nov 2026): the take at 35 % that sells the same expiry again. Beside the others, none of them changed.
+  { range: "near", sold: 12, wing: null, key: "take-35-sell-again", name: "take 35 % and sell again", exit: "buy either one back if its price doubles; once the trade is up by 35 % of its premium after the entry fee, close it and at once sell a new call and put 12 % from the spot of that moment on the same expiry, with the same stop and take, again and again until 7 days before it settles (a take after one option was stopped counts as a take; with both options stopped there is nothing left to take and nothing is sold again)", why: "A monthly strangle spends most of its life decaying towards a profit it gives back on one late move. Taking 35 % and selling again collects that decay several times on one expiry, each time at fresh strikes 12 % from the spot. On ten expiries it earned more than holding to settlement, in more of them, with a smaller worst expiry. Ten expiries is a small sample, on hourly prices.", rule: "each option stopped at twice its price; the whole strangle taken at 35 % of its premium after the entry fee and a new one sold on the same expiry, not in its last 7 days; a stop sells nothing again", figures: "+36.60 an expiry on 10 expiries, 6 of them positive (60 %), worst expiry -31, 2.6 strangles sold an expiry, against +23.3, 3 of 10 and -60 for the stop alone held to settlement", legStop: 2, take: 0.35, again: 7, source: ALT_MONTHLY_TAKE_STUDY, trials: { count: 5, note: "5 take levels with the same stop at double, sold again after each take, on the same 10 ETH month-end expiries: +35.4, +35.0, +36.6, +33.0 and +30.2 an expiry against +23.3 for the stop alone; the level was chosen after seeing all five, on a sample of ten expiries" } },
 ];
 const altMonthlyPlaybook = (x: AltMonthly): Playbook => {
   const r = ALT_MONTHLY_RANGES[x.range];
@@ -607,19 +627,31 @@ const altMonthlyPlaybook = (x: AltMonthly): Playbook => {
     name: `ETH monthly ${x.sold} %, ${r.label}, ${x.name}`,
     summary: `${r.words} a month-end expiry sell an ETH call and put ${x.sold} % away; ${x.exit}.`,
     rationale: x.why,
-    evidence: { claim: `ETH, sold ${x.sold} % away, entered ${r.days} days before expiry, ${x.rule}: ${x.figures}.`, source: ALT_MONTHLY_STUDY },
+    evidence: { claim: `ETH, sold ${x.sold} % away, entered ${r.days} days before expiry, ${x.rule}: ${x.figures}.`, source: x.source ?? ALT_MONTHLY_STUDY },
     template: x.wing === null ? strangleBy(`ETH monthly strangle (${x.sold} % away)`, { pct: x.sold }) : strangleAway(`ETH monthly strangle with wings (${x.sold} % / ${x.wing} %)`, x.sold, x.wing, "month-end"),
     minDte: r.minDte,
     lots: 100,
     assets: ["ETH"],
     thresholds: NO_RECORD,
-    trials: ALT_MONTHLY_TRIALS,
+    trials: x.trials ?? ALT_MONTHLY_TRIALS,
     control: false,
-    clock: { ...HOURS, cadence: "monthly", oncePerExpiry: true, window: "any evening, 9:30 to 10:30 PM IST", describe: `on the first evening a month-end expiry is ${r.days} days out, once per expiry`, maxDte: r.maxDte, legStop: x.legStop, takeProfitOfCredit: x.take },
+    clock: {
+      ...HOURS,
+      cadence: "monthly",
+      oncePerExpiry: true,
+      window: "any evening, 9:30 to 10:30 PM IST",
+      describe: x.again === undefined ? `on the first evening a month-end expiry is ${r.days} days out, once per expiry` : `on the first evening a month-end expiry is ${r.days} days out; after each take, again on the same expiry at once, until ${x.again} days before it settles`,
+      maxDte: r.maxDte,
+      legStop: x.legStop,
+      takeProfitOfCredit: x.take,
+      ...(x.again === undefined ? {} : { sellAgain: { minDte: x.again, withinHours: 24, maxPerExpiry: 8 }, takeAfterEntryFee: true }),
+    },
   };
 };
-/** The monthly strangles on ETH (ADR-119). */
-export const ALT_MONTHLY_PLAYBOOKS: readonly Playbook[] = ALT_MONTHLY.map(altMonthlyPlaybook);
+/** The monthly strangles on ETH (ADR-119): each sold once per expiry. */
+export const ALT_MONTHLY_PLAYBOOKS: readonly Playbook[] = ALT_MONTHLY.filter((x) => x.again === undefined).map(altMonthlyPlaybook);
+/** ADR-150: the ETH monthly strangle that sells the same expiry again after each take. Beside the ones above. */
+export const ALT_MONTHLY_AGAIN_PLAYBOOKS: readonly Playbook[] = ALT_MONTHLY.filter((x) => x.again !== undefined).map(altMonthlyPlaybook);
 /** Every clock playbook of the other coins, in the order the screen lists them: daily, weekly, monthly. */
 export const ALT_PLAYBOOKS: readonly Playbook[] = [...ALT_DAILY_PLAYBOOKS, ...ALT_WEEKLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 
@@ -812,7 +844,7 @@ export const WINGS_TRAIL_DAILY_PLAYBOOKS: readonly Playbook[] = [
 ].map((p) => ({ ...p, trials: WINGS_TRAIL_TRIALS, evidence: { ...p.evidence, source: WINGS_TRAIL_STUDY } }));
 
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...MOVE_DAILY_PLAYBOOKS, ...BUYBACK_DAILY_PLAYBOOKS, ...BUYBACK_SHARE_PLAYBOOKS, ...TAKE90_DAILY_PLAYBOOKS, ...COMBO_DAILY_PLAYBOOKS, ...TRAIL15_DAILY_PLAYBOOKS, ...TRAIL15_XAUT_PLAYBOOKS, ...CAUTIOUS_DAILY_PLAYBOOKS, ...WINGS_TRAIL_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...TAKE90_WEEKLY_PLAYBOOKS, ...ONE_DAY_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...MOVE_DAILY_PLAYBOOKS, ...BUYBACK_DAILY_PLAYBOOKS, ...BUYBACK_SHARE_PLAYBOOKS, ...TAKE90_DAILY_PLAYBOOKS, ...COMBO_DAILY_PLAYBOOKS, ...TRAIL15_DAILY_PLAYBOOKS, ...TRAIL15_XAUT_PLAYBOOKS, ...CAUTIOUS_DAILY_PLAYBOOKS, ...WINGS_TRAIL_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...TAKE90_WEEKLY_PLAYBOOKS, ...ONE_DAY_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_AGAIN_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
@@ -835,8 +867,11 @@ export function playbookCadence(p: Playbook): PlaybookCadence {
 export interface PlaybookBacktest {
   /** Mean net result per trade. */
   mean: number;
-  /** What one trade is: a day's, a week's, or (monthly: entries of one expiry overlap, so it is not "a month") a trade. */
-  per: "day" | "week" | "trade";
+  /**
+   * What one result is: a day's, a week's, or (monthly: entries of one expiry overlap, so it is not "a month") a trade.
+   * ADR-150: "expiry" for a playbook that sells the same expiry again: every strangle sold on one expiry, together.
+   */
+  per: "day" | "week" | "trade" | "expiry";
   /** Share of trades that ended positive, in per cent. */
   positivePct: number;
   /** The worst single trade. */
@@ -928,6 +963,8 @@ const BACKTESTS: Record<string, PlaybookBacktest> = {
   "eth-monthly-strangle-12pct-near-stop-2x": mo(34.3, 59, -84, 165, 9),
   "eth-monthly-strangle-12pct-near-take-half": mo(32.1, 72, -69, 165, 10),
   "eth-monthly-strangle-12pct-near-wings-stop-3x": mo(102.3, 79, -184, 165, 8),
+  // ADR-150: counted per EXPIRY (every strangle sold on it together), not per entry day as the rows above
+  "eth-monthly-strangle-12pct-near-take-35-sell-again": bt(36.6, "expiry", 60, -31, 10, "10 expiries, each with every strangle sold on it counted together (2.6 on average), 6 positive; hourly prices"),
 };
 /** The backtest figures of a playbook entered by the clock; undefined for a recorded playbook (its record is live data). */
 export function playbookBacktest(id: string): PlaybookBacktest | undefined {
@@ -966,13 +1003,14 @@ export type ProposalResult = { ok: true; proposal: PlaybookProposal } | { ok: fa
  * Whether the playbook's plan enters on the latest recorded day and, when it does, the concrete structure: exactly the
  * entry the record would have taken, through the same `entryFor` the backtest uses. The control never proposes.
  */
-export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unitsPerLot: number; calendar: BacktestOptions["calendar"]; spotBefore?: number | null | undefined }): ProposalResult {
+export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unitsPerLot: number; calendar: BacktestOptions["calendar"]; spotBefore?: number | null | undefined; /** ADR-150: price the structure on this expiry only, as near as `minDte` days (a playbook that sells the same expiry again) */ only?: { expiry: string; minDte: number } | undefined }): ProposalResult {
   if (p.control) return { ok: false, reason: "control" };
   const tpl = playbookTemplate(p);
   if (!tpl || daysIn.length === 0) return { ok: false, reason: "noDays" };
   const days = [...daysIn].sort((a, b) => a.day.localeCompare(b.day));
   const i = days.length - 1;
-  const entry = entryFor(days, i, tpl, { lots: p.lots, unitsPerLot: base.unitsPerLot, minDte: p.minDte, calendar: base.calendar, conditions: p.conditions, expiryOk: p.clock?.cadence === "monthly" ? isMonthEndExpiry : undefined });
+  const only = base.only;
+  const entry = entryFor(days, i, tpl, { lots: p.lots, unitsPerLot: base.unitsPerLot, minDte: only ? only.minDte : p.minDte, calendar: base.calendar, conditions: p.conditions, expiryOk: only ? (e) => e === only.expiry : p.clock?.cadence === "monthly" ? isMonthEndExpiry : undefined });
   if (!entry.ok) return { ok: false, reason: entry.reason };
   const d = days[i]!;
   // ADR-122: a playbook that sells one side after a move needs the earlier spot; without it there is nothing to judge

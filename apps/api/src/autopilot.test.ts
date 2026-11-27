@@ -1850,3 +1850,158 @@ describe("HC-TR-266 the ETH daily strangle with wings and the trail alone (ADR-1
     expect(Number(done!.realizedPnl)).toBeCloseTo(0.5 * net, 1);
   });
 });
+
+// (last in the file, and in late 2028: later than any snapshot a test above writes or reads)
+describe("HC-TR-312 a playbook that sells the same expiry again after its take (ADR-150)", () => {
+  it("HC-TR-311 HC-TR-312 the ETH monthly sells its first strangle once in its range; after a take it sells a new one on the same expiry at the spot of that moment, at any hour, with the take counted after the entry fee; not after a stop, not in the last 7 days, not while one is open, and no other playbook does it", async () => {
+    const again = autopilotPlaybookById("eth-monthly-strangle-12pct-near-take-35-sell-again")!;
+    const half = autopilotPlaybookById("eth-monthly-strangle-12pct-near-take-half")!; // the one beside it: sold once per expiry
+    const me = await t.signUp("autopilot-sell-again@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    await put({ enabled: true, strategies: [{ playbookId: again.id, exit: "own" }, { playbookId: half.id, exit: "own" }] }, me.cookie);
+    const mineOf = async (playbookId: string) => (await t.db.select().from(strategies).where(eq(strategies.userId, id)).orderBy(asc(strategies.startedAt), asc(strategies.createdAt))).filter((x) => x.autopilotPlaybookId === playbookId);
+    const legsOf = async (strategyId: string) => (await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, strategyId)).orderBy(asc(strategyLegs.position))).map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`);
+    const lastOf = async (playbookId: string) => (await view(me.cookie)).runs.find((r) => r.playbookId === playbookId)!;
+    /** An ETH ladder 20 apart around `spot`; time value falling away from the money. */
+    const ethAt = (ts: number, spot: number, expiries: readonly string[]): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Quote[] = [];
+      for (const e of expiries)
+        for (let k = 1500; k <= 3300; k += 20) {
+          const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+          const tv = 120 * Math.exp(-Math.abs(k - spot) / 400);
+          for (const [kind, letter, intrinsic] of [["call", "C", Math.max(spot - k, 0)], ["put", "P", Math.max(k - spot, 0)]] as const) {
+            const symbol = `${letter}-ETH-${k}-${code}`;
+            products.push({ ...inst(symbol, kind, k, e), underlying: "ETH", contractSize: "0.01" });
+            quotes.push({ instrumentId: `delta_india:${symbol}`, ts, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: String(spot), markIv: 0.6 });
+          }
+        }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "ETH" ? quotes : []) };
+    };
+    const pass = async (at: number, spot: number, expiries: readonly string[]) => {
+      await snapshotOnce(t.deps, ethAt(at - MIN, spot, expiries), () => at - MIN);
+      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]);
+    };
+    const close = async (strategyId: string, at: number, closeReason: "target" | "stopped" | "squared_off" | "expired") => {
+      await t.db.update(strategies).set({ status: "archived", closedAt: new Date(at), closeReason }).where(eq(strategies.id, strategyId));
+      await t.db.update(strategyLegs).set({ status: "squared_off", closedAt: new Date(at) }).where(eq(strategyLegs.strategyId, strategyId));
+    };
+    const EXP = ["2028-11-24", "2028-12-29"]; // month-end Fridays of a year no other test in this file prices
+    // 19 November 2028, in the evening window: the December month-end is 40 days out. Both playbooks sell their first strangle.
+    const NOV15 = Date.UTC(2028, 10, 19, 16, 5, 0); // (19 November 2028)
+    await pass(NOV15, 2300, EXP);
+    const [first] = await mineOf(again.id);
+    expect(first).toMatchObject({ status: "paper", tradingMode: "paper", name: "ETH monthly 12 %, 1 month out, take 35 % and sell again · Autopilot" });
+    // 12 % of 2,300 is 276: 2,024 and 2,576, nearest listed 2,020 and 2,580
+    expect(await legsOf(first!.id)).toEqual(["sell put 2020 2028-12-29 x100", "sell call 2580 2028-12-29 x100"]);
+    const rules1 = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, first!.id));
+    expect(rules1.map((r) => `${r.kind} ${r.kind === "leg_stop" ? r.value : ""}`.trim()).sort()).toEqual(["leg_stop 2", "leg_stop 2", "target"]);
+    // the take: 35 % of the premium PLUS the fee of the entry (half of the round trip), so the trade is 35 % ahead after it
+    const entry1 = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === first!.id)!;
+    const credit1 = -Number(entry1.detail.entryCost);
+    const target1 = Number(rules1.find((r) => r.kind === "target")!.thresholdUsd);
+    // above 35 % of the premium by the entry's fee: more than the share alone, and by less than the premium's fee cap
+    expect(target1).toBeGreaterThan(credit1 * 0.35);
+    expect(target1 - credit1 * 0.35).toBeCloseTo(Number(entry1.detail.fees) / 2, 2); // the round trip is two fills of the same size
+    expect(target1 - credit1 * 0.35).toBeLessThan(credit1 * 0.05);
+    expect(entry1.reason).toBe("Its entry conditions were met on the latest prices");
+    // the one beside it takes at half the premium alone, as it always did
+    const [firstHalf] = await mineOf(half.id);
+    const rulesHalf = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, firstHalf!.id));
+    const entryHalf = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === firstHalf!.id)!;
+    expect(Number(rulesHalf.find((r) => r.kind === "target")!.thresholdUsd)).toBeCloseTo(-Number(entryHalf.detail.entryCost) / 2, 1);
+
+    // while it is open nothing is sold again, in the window or out of it
+    await pass(NOV15 + 20 * 3_600_000, 2400, EXP);
+    expect(await mineOf(again.id)).toHaveLength(1);
+
+    // both takes fire three days later at 09:00 UTC, far outside the evening window. On the next pass, ten minutes later,
+    // the spot is 2,400: the playbook that sells again sells 12 % from THAT spot on the same expiry; the other does not
+    const T1 = Date.UTC(2028, 10, 22, 9, 0, 0);
+    await close(first!.id, T1, "target");
+    await close(firstHalf!.id, T1, "target");
+    const sold = await pass(T1 + 10 * MIN, 2400, EXP);
+    expect(sold.entered).toBe(1);
+    const second = (await mineOf(again.id))[1]!;
+    expect(second.status).toBe("paper");
+    // 12 % of 2,400 is 288: 2,112 and 2,688, nearest listed 2,120 and 2,680
+    expect(await legsOf(second.id)).toEqual(["sell put 2120 2028-12-29 x100", "sell call 2680 2028-12-29 x100"]);
+    const entry2 = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === second.id)!;
+    expect(entry2.reason).toBe("Sold again on the same expiry after its take");
+    expect(entry2.detail).toMatchObject({ expiry: "2028-12-29", exit: "own", legStop: 2 });
+    expect((await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, second.id))).map((r) => r.kind).sort()).toEqual(["leg_stop", "leg_stop", "target"]);
+    expect(await mineOf(half.id)).toHaveLength(1);
+    // one sale for one take: the next passes hold the new trade
+    await pass(T1 + 20 * MIN, 2400, EXP);
+    expect(await mineOf(again.id)).toHaveLength(2);
+
+    // its stops end the second strangle: a stop sells nothing again, that morning or in the evening window
+    const T2 = Date.UTC(2028, 10, 24, 9, 0, 0);
+    await close(second.id, T2, "stopped");
+    await pass(T2 + 10 * MIN, 2400, EXP);
+    await pass(Date.UTC(2028, 10, 24, 16, 5, 0), 2400, EXP);
+    expect(await mineOf(again.id)).toHaveLength(2);
+    expect(await lastOf(again.id)).toMatchObject({ kind: "skipped", reason: "Already traded this expiry" });
+
+    // closed by hand or at settlement: neither is a take
+    for (const [i, why] of (["squared_off", "expired"] as const).entries()) {
+      await t.db.update(strategies).set({ closeReason: why }).where(eq(strategies.id, second.id));
+      await pass(T2 + (30 + i * 10) * MIN, 2400, EXP);
+      expect(await mineOf(again.id), why).toHaveLength(2);
+    }
+
+    // closed by its take again (as the first was), but 25 hours ago: a take is followed by a sale within 24 hours or not
+    // at all. Autopilot being off, an outage, or the strategy switched off and on again sell nothing late
+    await t.db.update(strategies).set({ closeReason: "target" }).where(eq(strategies.id, second.id));
+    await pass(T2 + 25 * 3_600_000, 2400, EXP);
+    expect(await mineOf(again.id)).toHaveLength(2);
+    // inside the day it would have been: the same pass an hour earlier in the day's count sells (shown on the next step)
+
+    // 22 December, 09:10 UTC: the expiry is still 7 days away, so the take of the second strangle is followed by a third
+    const DEC18 = Date.UTC(2028, 11, 22, 9, 0, 0); // (22 December 2028)
+    // the second strangle is taken that morning (its close moved here: a take from November sells nothing now)
+    await pass(DEC18 + 5 * MIN, 2400, ["2028-12-29", "2029-01-26"]);
+    expect(await mineOf(again.id)).toHaveLength(2);
+    await t.db.update(strategies).set({ closedAt: new Date(DEC18) }).where(eq(strategies.id, second.id));
+    await pass(DEC18 + 10 * MIN, 2400, ["2028-12-29", "2029-01-26"]);
+    const third = (await mineOf(again.id))[2]!;
+    expect(await legsOf(third.id)).toEqual(["sell put 2120 2028-12-29 x100", "sell call 2680 2028-12-29 x100"]);
+    // its own take a day later, with 6 days left: nothing is sold again in the last 7 days
+    const DEC19 = DEC18 + DAY;
+    await close(third.id, DEC19, "target");
+    await pass(DEC19 + 10 * MIN, 2400, ["2028-12-29", "2029-01-26"]);
+    expect(await mineOf(again.id)).toHaveLength(3);
+
+    // the next month gets its own first sale, in the evening window
+    await pass(Date.UTC(2028, 11, 24, 16, 5, 0), 2400, ["2028-12-29", "2029-01-26"]);
+    const fourth = (await mineOf(again.id))[3]!;
+    expect((await legsOf(fourth.id)).every((l) => l.includes("2029-01-26"))).toBe(true);
+    expect((await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === fourth.id)!.reason).toBe("Its entry conditions were met on the latest prices");
+
+    // one trade per EXPIRY for this playbook: January's strangle is taken and sold again while nothing of December is
+    // left, and (the case that matters) a trade open on one expiry does not keep another expiry's sale out
+    const JAN2 = Date.UTC(2029, 0, 2, 9, 0, 0);
+    await close(fourth.id, JAN2, "target");
+    await pass(JAN2 + 10 * MIN, 2400, ["2029-01-26", "2029-02-23"]);
+    const fifth = (await mineOf(again.id))[4]!;
+    expect((await legsOf(fifth.id)).every((l) => l.includes("2029-01-26"))).toBe(true);
+    // 14 January, evening: February's month-end is 40 days out, and January's re-sold strangle is still open
+    await pass(Date.UTC(2029, 0, 14, 16, 5, 0), 2400, ["2029-01-26", "2029-02-23"]);
+    const all = await mineOf(again.id);
+    expect(all.filter((x) => x.status === "paper")).toHaveLength(2);
+    expect((await legsOf(all[5]!.id)).every((l) => l.includes("2029-02-23"))).toBe(true);
+    // the monthly beside it holds one trade in all, as it always did: with its December trade long closed it has
+    // entered January and February each once, never twice on one expiry
+    const halves = await mineOf(half.id);
+    expect(new Set(await Promise.all(halves.map(async (x) => (await legsOf(x.id))[0]!.split(" ")[3]))).size).toBe(halves.length);
+
+    // an expiry is sold at most 8 times: with eight sales of February on the books, a fresh take sells no ninth
+    const feb = all[5]!;
+    for (let n = 0; n < 7; n++) await t.db.insert(strategies).values({ id: `strat_feb_${n}`, userId: id, name: "Earlier sale", asset: "ETH", venue: "delta_india", status: "archived", tradingMode: "paper", autopilotPlaybookId: again.id, autopilotStructure: `sell:put:${2000 + n}:2029-02-23`, closeReason: "target", startedAt: new Date(JAN2 + n * MIN), closedAt: new Date(JAN2 + (n + 1) * MIN) });
+    const JAN15 = Date.UTC(2029, 0, 15, 9, 0, 0);
+    await close(feb.id, JAN15, "target");
+    await pass(JAN15 + 10 * MIN, 2400, ["2029-01-26", "2029-02-23"]);
+    expect((await mineOf(again.id)).filter((x) => (x.autopilotStructure ?? "").includes("2029-02-23"))).toHaveLength(8);
+    expect(await lastOf(again.id)).toMatchObject({ kind: "skipped", reason: "Not sold again after its take: this expiry has been sold 8 times, the most for one expiry" });
+  });
+});

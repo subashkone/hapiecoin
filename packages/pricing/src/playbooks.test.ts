@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, ONE_DAY_WEEKLY_PLAYBOOKS, CAUTIOUS_DAILY_PLAYBOOKS, WINGS_TRAIL_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_AGAIN_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, ONE_DAY_WEEKLY_PLAYBOOKS, CAUTIOUS_DAILY_PLAYBOOKS, WINGS_TRAIL_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,31 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length + ONE_DAY_WEEKLY_PLAYBOOKS.length + CAUTIOUS_DAILY_PLAYBOOKS.length + WINGS_TRAIL_DAILY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + ALT_MONTHLY_AGAIN_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length + ONE_DAY_WEEKLY_PLAYBOOKS.length + CAUTIOUS_DAILY_PLAYBOOKS.length + WINGS_TRAIL_DAILY_PLAYBOOKS.length);
+  });
+
+  it("HC-TR-311 one more ETH monthly strangle beside the five: 12 % away, a stop at double, a take at 35 % of the premium after the entry fee, and the same expiry sold again after each take until 7 days before it settles", () => {
+    expect(ALT_MONTHLY_AGAIN_PLAYBOOKS.map((p) => p.id)).toEqual(["eth-monthly-strangle-12pct-near-take-35-sell-again"]);
+    const p = ALT_MONTHLY_AGAIN_PLAYBOOKS[0]!;
+    expect(autopilotPlaybookById(p.id)).toBe(p);
+    expect(AUTOPILOT_PLAYBOOKS.at(-1)).toBe(p); // the newest of the list, after everything that was there
+    expect(ALT_PLAYBOOKS).not.toContain(p);
+    expect(p).toMatchObject({ name: "ETH monthly 12 %, 1 month out, take 35 % and sell again", assets: ["ETH"], lots: 100, minDte: 30, control: false });
+    expect(p.name.length).toBeLessThanOrEqual(68);
+    expect(playbookCadence(p)).toBe("monthly");
+    expect(p.clock).toMatchObject({ cadence: "monthly", oncePerExpiry: true, fromHourUtc: 16, toHourUtc: 17, venues: ["delta_india"], maxDte: 44, legStop: 2, takeProfitOfCredit: 0.35, sellAgain: { minDte: 7, withinHours: 24, maxPerExpiry: 8 }, takeAfterEntryFee: true });
+    expect(p.clock!.describe).toBe("on the first evening a month-end expiry is 30 to 44 days out; after each take, again on the same expiry at once, until 7 days before it settles");
+    // the same legs as the "take half" one beside it: a call and a put 12 % from the spot
+    expect(playbookTemplate(p)!.legs).toEqual(playbookTemplate(autopilotPlaybookById("eth-monthly-strangle-12pct-near-take-half")!)!.legs);
+    // what it rests on is said as it is: ten expiries, the research branch, the level chosen after seeing five
+    expect(p.evidence.source).toContain("on branch research/exits");
+    expect(p.evidence.claim).toContain("+36.60 an expiry on 10 expiries, 6 of them positive (60 %), worst expiry -31");
+    expect(p.trials).toMatchObject({ count: 5 });
+    expect(p.trials.note).toContain("chosen after seeing all five, on a sample of ten expiries");
+    expect(playbookBacktest(p.id)).toMatchObject({ mean: 36.6, per: "expiry", positivePct: 60, worst: -31, samples: 10 });
+    // no other playbook sells again or counts its take after a fee: the rest of the list is as it was
+    expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.clock?.sellAgain !== undefined || x.clock?.takeAfterEntryFee !== undefined)).toEqual([p]);
+    expect(ALT_MONTHLY_PLAYBOOKS).toHaveLength(5);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -290,15 +314,18 @@ describe("HC-TR-231 a playbook's cadence and its backtest as figures", () => {
     for (const p of AUTOPILOT_PLAYBOOKS.filter((x) => x.clock)) {
       const b = playbookBacktest(p.id)!;
       expect(b, p.id).toBeDefined();
-      expect(b.per).toBe(({ daily: "day", weekly: "week", monthly: "trade", trend: "" } as const)[playbookCadence(p)]);
-      if (playbookCadence(p) === "monthly") expect(b.basis, p.id).toMatch(new RegExp(`^${b.samples} entry days over 11 expiries, (\\d+) positive$`));
+      // ADR-150: a playbook that sells the same expiry again is counted per expiry (every strangle on it together)
+      const again = p.clock!.sellAgain !== undefined;
+      expect(b.per).toBe(again ? "expiry" : ({ daily: "day", weekly: "week", monthly: "trade", trend: "" } as const)[playbookCadence(p)]);
+      if (playbookCadence(p) === "monthly" && !again) expect(b.basis, p.id).toMatch(new RegExp(`^${b.samples} entry days over 11 expiries, (\\d+) positive$`));
+      if (again) expect(b.basis, p.id).toMatch(new RegExp(`^${b.samples} expiries, each with every strangle sold on it counted together \\(2\\.6 on average\\), (\\d+) positive; hourly prices$`));
       if (playbookCadence(p) === "monthly") expect(p.evidence.claim, p.id).toContain(`${b.basis!.match(/, (\d+) positive/)![1]} of them positive`);
       // the mean as the sentence prints it: two decimals, a sign
-      expect(p.evidence.claim, p.id).toContain(`${b.mean >= 0 ? "+" : "-"}${Math.abs(b.mean).toFixed(2)} a ${b.per}`);
+      expect(p.evidence.claim, p.id).toContain(`${b.mean >= 0 ? "+" : "-"}${Math.abs(b.mean).toFixed(2)} ${b.per === "expiry" ? "an" : "a"} ${b.per}`);
       expect(b.worst, p.id).toBeLessThan(0);
-      expect(p.evidence.claim, p.id).toMatch(new RegExp(`worst (day|week|entry) -${Math.abs(b.worst)}(?![0-9])`));
+      expect(p.evidence.claim, p.id).toMatch(new RegExp(`worst (day|week|entry|expiry) -${Math.abs(b.worst)}(?![0-9])`));
       expect(p.evidence.claim, p.id).toMatch(new RegExp(`\\b${b.positivePct} %`));
-      expect(p.evidence.claim, p.id).toMatch(new RegExp(`on ${b.samples} (days|weeks|entries)`));
+      expect(p.evidence.claim, p.id).toMatch(new RegExp(`on ${b.samples} (days|weeks|entries|expiries)`));
     }
     expect(playbookBacktest("trend-calls")).toBeUndefined();
     // and nothing else has figures: a stale or misspelt key would be an id no playbook has
