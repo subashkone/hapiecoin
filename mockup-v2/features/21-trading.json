@@ -2818,5 +2818,41 @@
     "how": "The margin estimated for a sold option or a futures leg (the live Trade Preview, and the figure stored when a trade is entered) uses the venue's listed percent up to the position size the venue lists as its threshold (200,000 USD on a BTC option) and adds the venue's scaling factor for every USD above it, each leg its own position. It used to add the factor per contract from the first contract, which was a little high for small trades and far too low for large ones. A contract that lists a factor and no threshold gets no figure rather than a guessed one. The figure is at the contract's highest leverage and has not yet been compared with the margin of a real position. The live preview refuses a placement with such a leg and names the cause (it never falls back to the wallet rules that apply when a venue has no margin data)",
     "evidence": "ADR-146 (26 Nov 2026): packages/venues/src/delta/trading.ts (marginPctOf, shortOptionMarginUsd, futuresMarginUsd, getProduct), raw.ts, normalize.ts, types.ts, apps/api/src/margin.ts, routes/live-exec.ts, venues.ts; tests: packages/venues/src/delta/trading.test.ts HC-TR-295 (three), normalize.test.ts HC-TR-295, trading-more.test.ts HC-TR-295, apps/api/src/margin.test.ts HC-TR-295, apps/api/src/routes/live.test.ts HC-TR-295 (two), apps/api/src/venues.test.ts HC-TR-295; docs/research/delta-margin-verification.md",
     "test": "unit (venues, api)"
+  },
+  {
+    "id": "HC-TR-296",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot mandate: a trader signs one per strategy and exchange account (API only, a record)",
+    "how": "POST /v1/autopilot/mandates stores a mandate for one saved strategy version and one of the trader's own exchange accounts: lots per trade, the most capital it may use, a loss limit for the day and for the week, the number of trades open at once (whole US dollars), and the four statements in the words signed, with an audit line. GET /v1/autopilot/mandates reads a trader's own back, ended ones included, each saying whether its strategy still stands (on paper, approved). It is a record: nothing reads it yet, no order is placed, and Autopilot trades on paper only. There is no screen yet",
+    "evidence": "ADR-147 (26 Nov 2026): packages/schema/src/autopilot-mandate.ts, apps/api/src/autopilot-mandate.ts, apps/api/src/routes/autopilot-mandate.ts, apps/api/src/db/schema.ts autopilotMandates, apps/api/drizzle/0037_brave_darkstar.sql; tests: apps/api/src/autopilot-mandate.test.ts, packages/schema/src/autopilot-mandate.test.ts HC-TR-296",
+    "test": "integration (api, real Postgres) + unit (schema)"
+  },
+  {
+    "id": "HC-TR-297",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot mandate: what a signing is refused for",
+    "how": "Signing needs the typed LIVE word, an account with the authenticator on and its current code (an account without the authenticator cannot sign), and live trading as part of the plan (the month's count is not read: signing uses nothing). It is refused unless the strategy is on paper with a standing approval, its loss is limited by bought options, it uses no exit that runs on paper only (profit steps, the buy-back of a cheap option), the trader is in its audience, the exchange account is the trader's own and on the strategy's exchange, the lots are within the strategy's, the trades open at once are no more than its coins, its settings can be read, and the trader holds no other mandate for it that has not ended. Each refusal is said in its own sentence",
+    "evidence": "ADR-147 (26 Nov 2026): packages/schema/src/autopilot-mandate.ts, apps/api/src/autopilot-mandate.ts, apps/api/src/routes/autopilot-mandate.ts, apps/api/src/db/schema.ts autopilotMandates, apps/api/drizzle/0037_brave_darkstar.sql; tests: apps/api/src/autopilot-mandate.test.ts, packages/schema/src/autopilot-mandate.test.ts HC-TR-297",
+    "test": "integration (api, real Postgres) + unit (schema)"
+  },
+  {
+    "id": "HC-TR-298",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live Autopilot mandate: pause, resume, end",
+    "how": "A trader pauses or ends their own mandate at once, with no code and no check: stopping is never refused. Resuming a paused one asks for the authenticator code and checks again that the strategy may trade live and is still the trader's to use. An ended mandate is final and stays as the record of what was signed; a new one can then be signed. Disconnecting the exchange account ends its mandates with it, and a new one can then be signed. Another trader's mandate is not found. Every step writes an audit line",
+    "evidence": "ADR-147 (26 Nov 2026): packages/schema/src/autopilot-mandate.ts, apps/api/src/autopilot-mandate.ts, apps/api/src/routes/autopilot-mandate.ts, apps/api/src/routes/credentials.ts (disconnect), apps/api/src/db/schema.ts autopilotMandates, apps/api/drizzle/0037_brave_darkstar.sql; tests: apps/api/src/autopilot-mandate.test.ts, packages/schema/src/autopilot-mandate.test.ts HC-TR-298",
+    "test": "integration (api, real Postgres)"
   }
 ]

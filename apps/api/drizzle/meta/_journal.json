@@ -260,6 +260,13 @@
       "when": 1795684068286,
       "tag": "0036_cold_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795715821343,
+      "tag": "0037_brave_darkstar",
+      "breakpoints": true
     }
   ]
 }

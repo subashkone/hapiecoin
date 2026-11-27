@@ -10,6 +10,7 @@ import { AccountLabel, BrokerCredentialPublic, Id, MAX_ACCOUNTS_PER_BROKER, Trad
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
+import { endMandatesOfAccount } from "../autopilot-mandate.js";
 import { brokerCredentials, brokers, strategies } from "../db/schema.js";
 import { dataOnlyReason } from "./live-exec.js";
 import type { DeltaCredentialErrorCode } from "../delta/private-client.js";
@@ -225,7 +226,13 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
       if (live.length) throw errors.conflict(`${live.length} live ${live.length === 1 ? "strategy trades" : "strategies trade"} through this key · square off or stop them first`);
       // drafts, paper and closed strategies stop naming the key (the column is `restrict`, never a silent fallback)
       await deps.db.update(strategies).set({ accountId: null }).where(and(eq(strategies.userId, me.id), eq(strategies.accountId, row.id)));
-      await deps.db.delete(brokerCredentials).where(eq(brokerCredentials.id, row.id));
+      // HC-TR-298: a mandate for live Autopilot through this account ends with it, in the same transaction as the removal
+      const ended = await deps.db.transaction(async (tx) => {
+        const rows = await endMandatesOfAccount(tx, row.id, new Date());
+        await tx.delete(brokerCredentials).where(eq(brokerCredentials.id, row.id));
+        return rows;
+      });
+      for (const m of ended) await auditFrom(c, deps.db)({ action: "autopilot.mandate.end", target: `autopilot_mandate:${m.id}`, after: { state: m.state, reason: m.endReason } });
       await auditFrom(
         c,
         deps.db,
