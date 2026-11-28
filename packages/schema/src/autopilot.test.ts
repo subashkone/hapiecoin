@@ -28,7 +28,7 @@ describe("HC-TR-218 the Autopilot log", () => {
 });
 
 describe("HC-TR-223 Autopilot results", () => {
-  it("HC-TR-223 days to expiry fall in four bands; a result carries counts and money as decimals", () => {
+  it("HC-TR-223 HC-TR-314 days to expiry fall in four bands; a result carries counts and money as decimals", () => {
     expect([0, 1, 2, 7, 8, 30, 31, 90].map(autopilotDteBand)).toEqual(["0-1", "0-1", "2-7", "2-7", "8-30", "8-30", "31+", "31+"]);
     expect(Object.keys(AUTOPILOT_DTE_BAND_LABELS)).toEqual([...AUTOPILOT_DTE_BANDS]);
     const tally = { open: 1, closed: 2, wins: 1, grossUsd: "3.00", feesUsd: "0.80", netUsd: "2.20" };
@@ -41,6 +41,10 @@ describe("HC-TR-223 Autopilot results", () => {
     };
     expect(AutopilotResults.parse(results)).toEqual(results);
     expect(AutopilotResults.safeParse({ ...results, total: { ...tally, wins: -1 } }).success).toBe(false);
+    // HC-TR-314: a closed trade may carry its capital figures, either of them null
+    const withCapital = { ...results, trades: [{ ...results.trades[0]!, maxLossUsd: "114.35", marginUsd: null }] };
+    expect(AutopilotResults.parse(withCapital)).toEqual(withCapital);
+    expect(AutopilotResults.safeParse({ ...results, trades: [{ ...results.trades[0]!, marginUsd: "a lot" }] }).success).toBe(false);
     expect(AutopilotResults.safeParse({ ...results, byDte: [{ band: "soon", ...tally }] }).success).toBe(false);
     expect(AUTOPILOT_MAX_OPEN).toBe(1); // ADR-112: the ladder of ADR-110 lost in the backtest
     // HC-TR-225: a playbook entered by the clock runs on its own exits; a trader chooses between the other two

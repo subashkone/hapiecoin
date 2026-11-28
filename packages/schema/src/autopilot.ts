@@ -194,6 +194,13 @@ export const AutopilotClosedTrade = z.strictObject({
   grossUsd: DecimalString,
   feesUsd: DecimalString,
   netUsd: DecimalString,
+  /**
+   * HC-TR-314: what the trade tied up, as recorded when it was entered. `maxLossUsd` is the most the structure could
+   * lose at expiry, sent only where bought options cover every sold one (null for a sold call or put with no cover, a lone sold put included); `marginUsd` is the margin estimated at entry (ADR-128; an
+   * estimate never compared with the exchange, GAPS #109). Null when none was recorded; absent from an older API.
+   */
+  maxLossUsd: DecimalString.nullable().optional(),
+  marginUsd: DecimalString.nullable().optional(),
 });
 export type AutopilotClosedTrade = z.infer<typeof AutopilotClosedTrade>;
 

@@ -72,6 +72,17 @@ export function capitalUnbounded(runs: readonly AutopilotRun[], openIds: Readonl
   return runs.some((r) => r.kind === "entered" && r.strategyId !== null && openIds.has(r.strategyId) && r.detail.capital === null);
 }
 
+/**
+ * HC-TR-314: the capital of one Autopilot trade and what the figure is, as the trade card reads it (ADR-128): the most
+ * it could lose at expiry where bought options cover it, otherwise the margin estimated at entry. Null with neither.
+ */
+export function tradeCapital(maxLossUsd: string | null | undefined, marginUsd: string | null | undefined): { usd: number; basis: "max loss" | "est. margin" } | null {
+  const worst = maxLossUsd === null || maxLossUsd === undefined ? NaN : Number(maxLossUsd);
+  if (Number.isFinite(worst) && worst > 0) return { usd: worst, basis: "max loss" };
+  const margin = marginUsd === null || marginUsd === undefined ? NaN : Number(marginUsd);
+  return Number.isFinite(margin) && margin > 0 ? { usd: margin, basis: "est. margin" } : null;
+}
+
 /** The capital (USD) the log says the open Autopilot trades tie up: each trade's maximum loss at entry. */
 export function capitalInUse(runs: readonly AutopilotRun[], openIds: ReadonlySet<string>): number {
   let sum = 0;

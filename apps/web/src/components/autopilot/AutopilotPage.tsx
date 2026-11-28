@@ -22,12 +22,12 @@ import { recordFor, usePlaybookRecords } from "@/lib/api/playbooks";
 import { strategyFetchers, strategyKeys, useStopStrategy, useStrategies } from "@/lib/api/strategies";
 import { fmtDateTime, fmtExpiry, fmtStrike } from "@/lib/format";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
-import { fmtMoney } from "@/lib/money";
+import { type MoneyFormat, fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
-import { HEALTH_LABELS, type TradeHealth, autopilotLevels, capitalInUse, capitalUnbounded, latestRun, tradeHealth } from "@/lib/strategy/autopilot";
+import { HEALTH_LABELS, type TradeHealth, autopilotLevels, capitalInUse, capitalUnbounded, latestRun, tradeCapital, tradeHealth } from "@/lib/strategy/autopilot";
 import { catalogueOf } from "@/lib/strategy/autopilot-catalogue";
 import { exitTags, hasWings, istClock, lossLimited, moveWords, nextDay, premiumWords, wholeTradeFew, wholeTradeWords } from "@/lib/strategy/autopilot-words";
-import { dayPnl, openLegs, priceMap } from "@/lib/strategy/paper";
+import { coverOf, dayPnl, openLegs, priceMap } from "@/lib/strategy/paper";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 
 // (kept as exports of the screen: its tests and the admin page read them from here or from the shared file)
@@ -81,6 +81,12 @@ const TD = "px-1.5 py-2 align-middle sm:px-2.5";
 const TDN = "num whitespace-nowrap px-1.5 py-2 text-right align-middle sm:px-2.5";
 // a figure with words or several strikes: it wraps, so that the open trades never need a sideways scroll (ADR-139)
 const TDW = "num px-1.5 py-2 text-right align-middle sm:px-2.5";
+
+/** HC-TR-314: what an open trade tied up, as recorded at entry, with what the figure is; nothing when none was recorded. */
+function CapitalLine({ cap, money }: { cap: ReturnType<typeof tradeCapital>; money: MoneyFormat }) {
+  if (!cap) return null;
+  return <div className="flex justify-between gap-2" data-testid="autopilot-trade-capital"><span className="text-muted-foreground">Capital, recorded at entry</span><span className="num">{fmtMoney(cap.usd, money)} · {cap.basis === "max loss" ? "the most it can lose at expiry with every option held" : "estimated margin, not checked against the exchange"}</span></div>;
+}
 const ROW = "grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-[minmax(0,2.4fr)_minmax(0,1.5fr)_minmax(0,1.3fr)_minmax(0,1.1fr)_minmax(0,1.8fr)]";
 const RECORD: Record<PlaybookStatus, { label: string; variant: "profit" | "loss" | "outline" | "warning" }> = {
   // the record is of the playbook run with its own exits, not Autopilot's profit exit (ADR-108): the card says so
@@ -434,6 +440,7 @@ export function AutopilotPage() {
                             <div className="flex justify-between gap-2" data-testid="autopilot-trade-rest-trail"><span className="text-muted-foreground">Trailing what is left</span><span className="num">{lv.restTrailExitUsd === null ? "starts once it is in profit" : `closes if its profit falls to ${fmtMoney(lv.restTrailExitUsd, money, { signed: true })}`}</span></div>
                           ) : null}
                           {h && h.usedPct !== null ? <div className="flex justify-between gap-2" data-testid="autopilot-trade-used"><span className="text-muted-foreground">Loss used</span><span className="num">{Math.round(h.usedPct)}% of the loss the stop allows</span></div> : null}
+                          <CapitalLine cap={tradeCapital(coverOf(s.legs) === "covered" ? runs.find((r) => r.kind === "entered" && r.strategyId === s.id)?.detail.capital : null, s.marginEstimate)} money={money} />
                           <div className="flex justify-between gap-2"><span className="text-muted-foreground">Opened</span><span>{fmtDateTime(s.startedAt)}</span></div>
                         </div>
                       </td>

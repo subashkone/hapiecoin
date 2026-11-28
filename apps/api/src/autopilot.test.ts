@@ -531,7 +531,7 @@ describe("HC-TR-217 an Autopilot trade from its exit to the next entry", () => {
 });
 
 describe("HC-TR-223 what the trades Autopilot opened came to", () => {
-  it("HC-TR-223 counts open trades, nets closed ones of the fees estimated at entry, and groups by playbook, asset, exit style and days to expiry; needs a session", async () => {
+  it("HC-TR-223 HC-TR-314 counts open trades, nets closed ones of the fees estimated at entry, and groups by playbook, asset, exit style and days to expiry; needs a session", async () => {
     expect((await t.request("/v1/autopilot/results")).status).toBe(401);
     const me = await t.signUp("autopilot-results@hapiecoin.test");
     const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
@@ -544,7 +544,7 @@ describe("HC-TR-223 what the trades Autopilot opened came to", () => {
     const row = (sid: string, over: Partial<typeof strategies.$inferInsert>) => ({ id: sid, userId: id, name: sid, asset: "BTC" as const, venue: "delta_india" as const, status: "archived" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY, ...over });
     await t.db.insert(strategies).values([
       row("res_1", { realizedPnl: "5.00", startedAt: new Date(B), closedAt: new Date(B + 30 * MIN), closeReason: "target" }),
-      row("res_2", { realizedPnl: "-2.00", startedAt: new Date(B + HOUR), closedAt: new Date(B + 2 * HOUR), closeReason: "stopped" }),
+      row("res_2", { realizedPnl: "-2.00", startedAt: new Date(B + HOUR), closedAt: new Date(B + 2 * HOUR), closeReason: "stopped", marginEstimate: "108.50" }),
       row("res_3", { status: "paper", asset: "ETH", autopilotPlaybookId: "trend-puts", startedAt: new Date(B + 3 * HOUR) }),
       // a small gross profit the fees eat: not a win; no start time and no close reason on the row
       row("res_4", { realizedPnl: "0.30", asset: "ETH", autopilotPlaybookId: "trend-puts", closedAt: new Date(B + 4 * HOUR + 10 * MIN) }),
@@ -553,10 +553,13 @@ describe("HC-TR-223 what the trades Autopilot opened came to", () => {
     ]);
     const legs = [{ side: "buy" as const, kind: "call" as const, strike: "82000", price: "1" }, { side: "sell" as const, kind: "call" as const, strike: "83000", price: "1" }];
     const line = (sid: string, at: number, playbookId: string, asset: "BTC" | "ETH", detail: AutopilotRunDetail) => ({ userId: id, playbookId, venue: "delta_india" as const, asset, kind: "entered" as const, reason: "entered", strategyId: sid, detail, at: new Date(at) });
+    const leg = (sid: string, n: number, side: "buy" | "sell", kind: "call" | "put", strike: string) => ({ id: `leg_${sid}_${n}`, strategyId: sid, kind, side, strike, expiry: "2026-09-21", symbol: `${kind === "call" ? "C" : "P"}-BTC-${strike}-210926`, lots: 1, price: "1", entryPrice: "1", exitPrice: "1", status: "squared_off" as const, position: n, closedAt: new Date(B + 30 * MIN) });
+    // res_1 is a covered call spread; res_2 a lone sold put, whose loss to a price of zero the log holds as its "capital"
+    await t.db.insert(strategyLegs).values([leg("res_1", 0, "buy", "call", "82000"), leg("res_1", 1, "sell", "call", "83000"), leg("res_2", 0, "sell", "put", "82000")]);
     const [other] = await mine(); // the first trader's strategy: a line pointing at it is not this trader's result
     await t.db.insert(autopilotRuns).values([
-      line("res_1", B, BUTTERFLY, "BTC", { exit: "trail", dte: 1, fees: "0.40", expiry: "2026-09-21", legs }),
-      line("res_2", B + HOUR, BUTTERFLY, "BTC", { exit: "trail", dte: 0, fees: "0.40" }),
+      line("res_1", B, BUTTERFLY, "BTC", { exit: "trail", dte: 1, fees: "0.40", expiry: "2026-09-21", legs, capital: "0.77" }),
+      line("res_2", B + HOUR, BUTTERFLY, "BTC", { exit: "trail", dte: 0, fees: "0.40", capital: "8200.00" }),
       line("res_3", B + 3 * HOUR, "trend-puts", "ETH", { exit: "target", dte: 20, fees: "0.50" }),
       line("res_4", B + 4 * HOUR, "trend-puts", "ETH", { exit: "target", dte: 20, fees: "0.50" }),
       line("res_5", B + 5 * HOUR, BUTTERFLY, "BTC", {}),
@@ -577,8 +580,11 @@ describe("HC-TR-223 what the trades Autopilot opened came to", () => {
       { band: "31+", open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00" },
     ]);
     expect(r.trades.map((x) => x.strategyId)).toEqual(["res_5", "res_4", "res_2", "res_1"]); // newest close first
-    expect(r.trades[3]).toEqual({ strategyId: "res_1", playbookId: BUTTERFLY, asset: "BTC", exit: "trail", strikes: ["82000", "83000"], expiry: "2026-09-21", dte: 1, openedAt: new Date(B).toISOString(), closedAt: new Date(B + 30 * MIN).toISOString(), closeReason: "target", grossUsd: "5.00", feesUsd: "0.40", netUsd: "4.60" });
-    expect(r.trades[0]).toMatchObject({ exit: "trail", strikes: [], expiry: null, dte: null, feesUsd: "0.00", netUsd: "1.00" });
+    expect(r.trades[3]).toEqual({ strategyId: "res_1", playbookId: BUTTERFLY, asset: "BTC", exit: "trail", strikes: ["82000", "83000"], expiry: "2026-09-21", dte: 1, openedAt: new Date(B).toISOString(), closedAt: new Date(B + 30 * MIN).toISOString(), closeReason: "target", grossUsd: "5.00", feesUsd: "0.40", netUsd: "4.60", maxLossUsd: "0.77", marginUsd: null });
+    // HC-TR-314: the capital recorded at entry: the most a covered structure could lose; for a sold option with no cover
+    // (a lone sold put included, whatever the log holds) the margin estimated at entry; null with neither or with no legs
+    expect(r.trades[2]).toMatchObject({ strategyId: "res_2", maxLossUsd: null, marginUsd: "108.50" });
+    expect(r.trades[0]).toMatchObject({ exit: "trail", strikes: [], expiry: null, dte: null, feesUsd: "0.00", netUsd: "1.00", maxLossUsd: null, marginUsd: null });
     expect(r.trades[1]).toMatchObject({ openedAt: new Date(B + 4 * HOUR).toISOString(), closeReason: null });
     // every leg squared off by hand while the row still says paper: closed in the results, dated by its last leg
     await t.db.insert(strategies).values(row("res_7", { status: "paper", realizedPnl: "2.00", startedAt: new Date(B + 9 * HOUR) }));
