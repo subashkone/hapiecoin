@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 export const WorkspaceLoader = dynamic(() => import("./Workspace").then((m) => m.Workspace), {
   ssr: false,
   loading: () => (
-    <div className="grid h-[calc(100vh-50px)] place-items-center" data-testid="workspace-loading">
+    <div className="grid h-[calc(100vh-50px-var(--banner-h,0px))] place-items-center" data-testid="workspace-loading">
       <Spinner size="lg" label="Loading workspace" />
     </div>
   ),

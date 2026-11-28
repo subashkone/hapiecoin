@@ -23,6 +23,30 @@ test.describe("HC-SH desk header and live chain", () => {
     await expect(page.getByTestId("plan-banner")).toContainText("Congratulations! Your plan is active until 31 Dec 2026");
   });
 
+  test("HC-SH-145 a plan banner adds nothing to the height of the Desk: with it showing an empty tab is exactly the window, and closing it changes no tab's height", async ({ page }) => {
+    await expect(page.getByTestId("plan-banner")).toBeVisible();
+    await expect(page.getByTestId("workspace")).toBeVisible({ timeout: 15_000 });
+    const heights = () => page.evaluate(() => ({ doc: document.documentElement.scrollHeight, win: window.innerHeight }));
+    // (the Chain tab is left out: at this window height its own rows stand 3 px over with a banner, which is its content, not the banner)
+    const TABS = ["journal", "paper"];
+    const withBanner: number[] = [];
+    for (const tab of TABS) {
+      await page.getByTestId(`tab-${tab}`).click();
+      await expect(page.getByTestId(`tab-${tab}`)).toHaveAttribute("data-state", "active");
+      withBanner.push((await heights()).doc);
+    }
+    // an empty Journal has nothing to grow the page: before the fix it stood one banner (36 px) taller than the window
+    const win = (await heights()).win;
+    expect(withBanner).toEqual([win, win]);
+    await page.getByTestId("plan-banner").getByRole("button", { name: "Dismiss" }).click();
+    await expect(page.getByTestId("plan-banner")).toBeHidden();
+    for (const [i, tab] of TABS.entries()) {
+      await page.getByTestId(`tab-${tab}`).click();
+      await expect(page.getByTestId(`tab-${tab}`)).toHaveAttribute("data-state", "active");
+      expect((await heights()).doc, `the ${tab} tab`).toBe(withBanner[i]);
+    }
+  });
+
   test("HC-SH-077 / 078 header stats, HC-SH-105..108 portfolio bar, HC-SH-101..103 shortcuts, HC-SH-086 / 087 palette (ADR-053)", async ({ page }) => {
     await expect(page.getByTestId("header-atm-iv")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("header-atm-iv")).toContainText(/\d%/);

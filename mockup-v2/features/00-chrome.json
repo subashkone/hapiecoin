@@ -1258,5 +1258,16 @@
     "how": "deploy/compose.prod.yml pulls the four images named by RELEASE; Caddy is the only public door, with a password gate; the api migrates as it starts; deploy/backup.sh writes a dump and deploy/restore.sh loads one into an empty database, refusing while the api runs",
     "evidence": "ADR-151, GAPS #186 (26 Nov 2026): apps/web/Dockerfile, apps/ingest/Dockerfile, deploy/compose.prod.yml, deploy/Caddyfile, deploy/backup.sh, deploy/restore.sh, .github/workflows/ci.yml (docker job), docs/deploy.md §6; tried by hand with dummy settings: api, gateway and ingest images built, api healthy from the compose file, dump and restore with equal row counts in 42 tables; ADR-152 (27 Nov 2026): the server's database is a managed PostgreSQL 17, migrations and a dump without TimescaleDB tried on throwaway databases; the gate and the real database are not tried yet",
     "test": "manual (image run, dump and restore trial); CI image job"
+  },
+  {
+    "route": "/desk",
+    "screen": "Shared chrome · routes",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Desk fits the window with a plan banner showing",
+    "how": "With a plan banner between the header and the workspace, the Desk is exactly as tall as the window: the workspace gives up the 36 px of the banner, so the page cannot scroll and take the header out of view; closing the banner gives the row back to the workspace",
+    "evidence": "GAPS #190 d (28 Nov 2026): apps/web/src/app/globals.css (--banner-h), apps/web/src/components/workspace/Workspace.tsx, WorkspaceLoader.tsx; test: apps/web/e2e/desk.spec.ts HC-SH-145",
+    "test": "e2e (Playwright)"
   }
 ]
