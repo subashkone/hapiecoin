@@ -9634,6 +9634,21 @@
   "evidence": "ADR-150 (27 Nov 2026): packages/pricing/src/playbooks.ts (ALT_MONTHLY_AGAIN_PLAYBOOKS, sellAgain, takeAfterEntryFee, proposalFor only), apps/api/src/autopilot.ts (the sell-again rule, clockPlanFor), apps/web/src/components/autopilot/AutopilotPage.tsx; tests: packages/pricing/src/playbooks.test.ts HC-TR-311, apps/api/src/autopilot.test.ts HC-TR-311 HC-TR-312, apps/web/src/components/autopilot/autopilot-page.test.tsx HC-TR-311"
  },
  {
+  "id": "HC-TR-313",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot: the BTC evening strangle with wings and a stop at triple",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) + integration (api, real Postgres)",
+  "acceptance": "One more BTC daily strategy on paper, beside the winged strangle that is held: each evening it sells a call and a put three strikes out on the next expiry and buys the options eight strikes out; a sold option whose price triples is bought back alone, its wing and everything else are held to settlement. Its card says what its figure rests on: 84 days of one period, picked after seeing the table, September more than half of the total, no trade on the days the wings had no price, and the lower figure with fill costs. The stop at double the owner asked for was tested first and is not built. Paper only; switched on for nobody",
+  "evidence": "ADR-154 (27 Nov 2026): packages/pricing/src/playbooks.ts (WINGS_STOP_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-313, apps/api/src/autopilot.test.ts HC-TR-313"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

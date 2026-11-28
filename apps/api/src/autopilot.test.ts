@@ -2005,3 +2005,73 @@ describe("HC-TR-312 a playbook that sells the same expiry again after its take (
     expect(await lastOf(again.id)).toMatchObject({ kind: "skipped", reason: "Not sold again after its take: this expiry has been sold 8 times, the most for one expiry" });
   });
 });
+
+// (in mid 2029: later than any snapshot a test above writes or reads)
+describe("HC-TR-313 the BTC daily strangle with wings and a stop at triple (ADR-154)", () => {
+  it("HC-TR-313 entered by the job: the winged strangle's four options, a stop at three times its price on each SOLD option and no other rule; a sold option that triples is bought back alone and its wing stays open", async () => {
+    const me = await t.signUp("autopilot-wings-stop@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "evening-strangle-wings-3-stop-3x";
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    const AT = Date.UTC(2029, 5, 11, 16, 5, 0); // (11 June 2029, 21:35 IST)
+    const SPOT = 83_200;
+    for (const e of ["2029-06-12", "2029-06-13"])
+      for (let i = -12; i <= 12; i++) {
+        const k = SPOT + i * 200;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 400 * Math.exp(-Math.abs(k - SPOT) / 1500);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(SPOT - k, 0)], ["put", "P", Math.max(k - SPOT, 0)]] as const) {
+          const symbol = `${letter}-BTC-${k}-${code}`;
+          products.push(inst(symbol, kind, k, e));
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: AT - MIN, mark: (intrinsic + tv).toFixed(1), oi: "1", spot: String(SPOT), markIv: 0.4 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) }, () => AT - MIN);
+    await runAutopilot(deps(AT, { maxOpen: undefined }), ["delta_india"]);
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: PB, status: "paper", tradingMode: "paper", asset: "BTC", name: "Evening strangle with wings, stop at triple · Autopilot" });
+    const legsNow = () => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    const legs = await legsNow();
+    // the strikes of the winged strangle that is held: sold three strikes out, bought eight out, on tomorrow's expiry
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["buy put 81600 2029-06-12 x100", "sell put 82600 2029-06-12 x100", "sell call 83800 2029-06-12 x100", "buy call 84800 2029-06-12 x100"]);
+    const rulesNow = () => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id));
+    const rules = await rulesNow();
+    // one stop for each sold option at three times the price it was sold at; the wings carry none, and nothing else is armed
+    expect(rules).toHaveLength(2);
+    const sold = legs.filter((l) => l.side === "sell");
+    for (const l of sold) expect(rules.find((r) => r.legId === l.id)).toMatchObject({ kind: "leg_stop", trigger: "multiple", value: "3", scope: "leg", state: "armed" });
+    for (const l of sold) expect(Number(rules.find((r) => r.legId === l.id)!.thresholdUsd)).toBeCloseTo(3 * Number(l.price), 1);
+    const detail = (await view(me.cookie)).runs.find((r) => r.playbookId === PB && r.kind === "entered")!.detail;
+    expect(detail).toMatchObject({ exit: "own", legStop: 3, expiry: "2029-06-12", stopUsd: null });
+    expect(detail.targetUsd).toBeUndefined();
+    expect(Number(detail.entryCost)).toBeLessThan(0); // a credit
+    expect(Number(detail.capital)).toBeGreaterThan(0); // the wings give it a maximum loss
+
+    // the sold call at three times its price, every other option where it was: that option alone is bought back
+    const call = legs[2]!;
+    const callStop = rules.find((r) => r.legId === call.id)!;
+    const mine = new Set(rules.map((r) => r.id));
+    const fired = (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(legs.map((l) => [l.symbol, (l.id === call.id ? 3 : 1) * Number(l.price)])), spot: null }) }, () => AT + 10 * MIN)).fired.filter((r) => mine.has(r));
+    expect(fired).toEqual([callStop.id]);
+    expect((await legsNow()).map((l) => `${l.side} ${l.kind} ${l.status}`)).toEqual(["buy put open", "sell put open", "sell call squared_off", "buy call open"]);
+    // the trade is still open on paper: the put side, and the wing behind the stopped call, are held to settlement
+    const [after] = await t.db.select().from(strategies).where(eq(strategies.id, trade!.id));
+    expect(after).toMatchObject({ status: "paper", closeReason: null });
+    const putStop = (await rulesNow()).find((r) => r.legId === sold[0]!.id)!;
+    expect(putStop).toMatchObject({ kind: "leg_stop", state: "armed" });
+
+    // the sold put triples too: both sold options are gone, and the trade stays open on its two bought wings with no
+    // rule left to fire. It ends at settlement, never as "stopped"
+    const put2 = sold[0]!;
+    const firedPut = (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(legs.filter((l) => l.id !== call.id).map((l) => [l.symbol, (l.id === put2.id ? 3 : 1) * Number(l.price)])), spot: null }) }, () => AT + 20 * MIN)).fired.filter((r) => mine.has(r));
+    expect(firedPut).toEqual([putStop.id]);
+    expect((await legsNow()).map((l) => `${l.side} ${l.kind} ${l.status}`)).toEqual(["buy put open", "sell put squared_off", "sell call squared_off", "buy call open"]);
+    const [held] = await t.db.select().from(strategies).where(eq(strategies.id, trade!.id));
+    expect(held).toMatchObject({ status: "paper", closeReason: null });
+    expect((await rulesNow()).filter((r) => r.state === "armed")).toHaveLength(0);
+    // each stop booked a loss of twice that option's price (bought back at three times what it was sold for), on 100 lots of 0.001
+    expect(Number(held!.realizedPnl)).toBeCloseTo(-2 * (Number(call.price) + Number(put2.price)) * 0.1, 1);
+  });
+});
