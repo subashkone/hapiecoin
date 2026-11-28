@@ -916,6 +916,7 @@ describe("HC-TR-263 the Friday weekly strangle held for its first day only (ADR-
       expect(p.trials.count).toBe(108);
       expect(p.trials.note).toContain("not whether the price can be had");
       expect(p.evidence.source).toContain("results-weekly-one-day-2026-11-28.txt, the table corrected on 28 Nov 2026");
+      expect(p.evidence.source).toContain("branch research/exits, commit eaed649");
       expect(p.summary).toContain("Saturday at 5:30 PM IST");
     }
     expect(byId("weekly-fri-strangle-one-day").name).toBe("Friday weekly strangle, one day");
@@ -1064,6 +1065,7 @@ describe("HC-TR-313 the BTC evening strangle with wings and a stop at triple", (
     expect(playbookBacktest(p.id)).toMatchObject({ mean: 8.57, per: "day", positivePct: 63, worst: -92.4, samples: 84 });
     expect(p.evidence.claim).toContain("+8.57 a day on 84 days, 63 % of days positive, worst day -92.4");
     expect(p.evidence.source).toContain("results-wings-stop-2026-11-27.txt");
+    expect(p.evidence.source).toContain("branch research/exits, commit eaed649");
     for (const said of ["picked after seeing the table", "On 22 of the 106 days the wings had no price", "+6.99 a day with a worst day of -95.0", "A stop at double did not work there", "over all 90 days traded it reads +7.06 a day, and +5.43 with fill costs, with November at -26", "its loss is NOT capped at the figure the wings give", "On 5 of the 90 days traded to 27 Nov it lost more than that day's largest loss of the four options held together"]) expect(p.rationale).toContain(said);
     expect(p.trials).toMatchObject({ count: 26 });
   });
