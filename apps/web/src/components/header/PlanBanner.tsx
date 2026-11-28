@@ -51,6 +51,7 @@ export function PlanBannerView({ plan, onDismiss }: { plan: PlanState; onDismiss
   return (
     <div
       role="status"
+      // globals.css reads this id and the h-9 below (--banner-h): the workspace gives up this row while the banner shows (HC-SH-145)
       data-testid="plan-banner"
       data-kind={v.kind}
       className={cn(

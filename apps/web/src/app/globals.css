@@ -80,3 +80,10 @@
   background: hsl(var(--profit));
   animation: hc-pulse 1.6s ease-in-out infinite;
 }
+
+/* GAPS #190 d: the plan banner (PlanBanner.tsx, h-9) sits between the header and the workspace. The workspace fills the
+   window less the header and the bottom bar; without this it stood 36 px taller than the window whenever a banner
+   showed, and the page could scroll the header out of view. */
+:root:has([data-testid="plan-banner"]) {
+  --banner-h: 36px;
+}

@@ -1,6 +1,6 @@
 # Workspace chrome, settings and dialogs
 
-Part of the [HapieCoin feature guide](README.md). 118 traced features on 27 screens; 117 built and tested, 1 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 119 traced features on 27 screens; 118 built and tested, 1 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -78,6 +78,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-SH-142 | The workspace lives at /desk and the account pages at /plans and /invite | The header, the palette, the tour, the assistant, the offline page, the installed app's start address and the links the server sends all use these addresses; the workspace is named Desk in the header, the shortcuts sheet and the copy; the menu says My plan and Invite friends; no redirect is kept from the earlier addresses (the product had no users when it was renamed) | built | unit (web), e2e |
 | HC-SH-143 | Autopilot is reachable and visible from the Desk: a header and palette entry, an item on the status bar with its open trades and P&L, and a tag on the Paper cards it opened | the header's Autopilot tab and the palette's Autopilot command open /autopilot; the status bar always shows On or Off and the open Autopilot trades, with their P&L once every leg has a live price; a Paper card of a trade Autopilot opened carries an Autopilot tag and its Go live is disabled with the reason | built | unit (web) |
 | HC-SH-144 | A private copy starts on one server from images GitHub builds, and a database dump restores into an empty server | deploy/compose.prod.yml pulls the four images named by RELEASE; Caddy is the only public door, with a password gate; the api migrates as it starts; deploy/backup.sh writes a dump and deploy/restore.sh loads one into an empty database, refusing while the api runs | built | manual (image run, dump and restore trial); CI image job |
+| HC-SH-145 | A plan banner adds no height of its own to the Desk | With a plan banner between the header and the workspace, the workspace gives up the 36 px of the banner, so an empty tab is exactly as tall as the window and the banner alone no longer lets the page scroll the header out of view; closing the banner gives the row back to the workspace. A tab whose own content is taller than the window still scrolls the page (the Chain tab stands 3 px over at 720 px with a banner) | built | e2e (Playwright) |
 
 ### Shared chrome · Exchange chip / live surfaces · `/desk`
 

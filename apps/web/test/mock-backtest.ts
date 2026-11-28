@@ -5,6 +5,7 @@ import type { BacktestFees, BacktestResult, SweepResult, Underlying } from "@hap
 import { toDecimal } from "@hapiecoin/schema";
 import { type BacktestOptions, type EodDay, type EodRow, type SweepAxisSpec, calendarFor, runBacktest, sweepBacktest, templateByName } from "@hapiecoin/pricing";
 import { getVenueCore } from "@hapiecoin/venues/core";
+import { shiftExpiries, yesterdayIso } from "./expiry-shift";
 import { SPOT0, buildChain, expiriesOf } from "./fixtures/chain";
 
 const DAY = 86_400_000;
@@ -12,7 +13,10 @@ const UNITS: Record<Underlying, number> = { BTC: 0.001, ETH: 0.01, XAUT: 0.001 }
 
 export function mockEodDays(asset: Underlying, days: number, now = Date.now()): EodDay[] {
   const noon = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate(), 12);
-  const expiries = expiriesOf()[asset];
+  // GAPS #114, as the fake gateway serves them: the recorded expiries moved by whole days so the recorded "today" lands
+  // on yesterday. Read as recorded they all lay in the past from 28 Nov 2026 and every history day came back empty.
+  const shifted = shiftExpiries(expiriesOf(), yesterdayIso(now));
+  const expiries = shifted.served[asset];
   const out: EodDay[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const ts = noon - i * DAY;
@@ -26,7 +30,7 @@ export function mockEodDays(asset: Underlying, days: number, now = Date.now()): 
         .filter((e) => e >= day)
         .map((e) => ({
           expiry: e,
-          rows: buildChain(asset, e, ts).map((r): EodRow => ({ strike: Number(r.strike), call: r.call ? { mark: Number(r.call.mark), iv: r.call.markIv } : undefined, put: r.put ? { mark: Number(r.put.mark), iv: r.put.markIv } : undefined })),
+          rows: buildChain(asset, shifted.toRecorded.get(e)!, ts).map((r): EodRow => ({ strike: Number(r.strike), call: r.call ? { mark: Number(r.call.mark), iv: r.call.markIv } : undefined, put: r.put ? { mark: Number(r.put.mark), iv: r.put.markIv } : undefined })),
         })),
     });
   }
