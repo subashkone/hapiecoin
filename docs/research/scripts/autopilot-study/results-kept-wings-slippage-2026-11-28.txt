@@ -1,0 +1,40 @@
+## BTC daily, kept wings WITH SLIPPAGE: 105 daily expiries (2026-08-08 .. 2026-11-20), each side 1 % away, entered 20 h before settlement; wings 100 lots, kept for their cycle
+                                                     mean  win   total   worst  worst 3 worst 7d drawdown   26-08  26-09  26-10  26-11  wings/d       on 10 worst  car
+   -- daily strangle held
+   no wings                                         +5.77  80%    +605  -338.9   -941.0   -477.3   -506.8     -48   +388   -301   +567
+   week, this expiry, wings 3 % away               +13.04  63%   +1369  -263.7   -680.1   -222.9   -756.8    +771    +79   -590  +1108    +7.28    +1204/   -1759    0
+   week, this expiry, wings 5 % away               +12.99  75%   +1364  -275.4   -612.6   -216.8   -689.4    +798   +114   -483   +936    +7.23    +1137/   -1759    0
+   week, next expiry, wings 5 % away               +12.65  70%   +1329  -245.2   -660.8   -217.4   -764.7    +751   +102   -573  +1049    +6.89    +1058/   -1759    0
+   week, next expiry, wings 8 % away               +12.23  76%   +1285  -292.6   -638.3   -218.3   -674.8    +672   +200   -504   +917    +6.47     +929/   -1759    0
+   month, this expiry, wings 8 % away              +20.58  78%   +2161  -339.0   -641.3   -243.2   -721.2    +971   +188   -537  +1538   +14.82     +979/   -1759    0
+   month, this expiry, wings 12 % away             +19.07  81%   +2002  -339.0   -740.1   -221.0   -580.6    +836   +274   -434  +1325   +13.30     +732/   -1759    0
+   month, next expiry, wings 12 % away             +10.06  74%   +1056  -263.4   -591.2   -183.0   -567.3    +639   +278   -428   +567    +4.29     +794/   -1759    0
+   month, next expiry, wings 16 % away              +8.80  75%    +923  -302.2   -633.7   -198.1   -552.6    +476   +296   -415   +567    +3.03     +611/   -1759    0
+   -- daily strangle stop 2x
+   no wings                                         +6.84  48%    +718   -41.5   -115.8    -89.9   -143.8     -69   +377    +46   +364
+   week, this expiry, wings 3 % away               +14.12  49%   +1483  -168.8   -442.1   -293.5   -636.8    +750    +69   -242   +906    +7.28     +470/    -297    0
+   week, this expiry, wings 5 % away               +14.07  53%   +1478  -111.1   -252.6   -220.4   -321.8    +776   +103   -135   +733    +7.23     +433/    -297    0
+   week, next expiry, wings 5 % away               +13.73  50%   +1442  -111.3   -313.4   -267.0   -490.9    +729    +92   -226   +846    +6.89     +443/    -297    0
+   week, next expiry, wings 8 % away               +13.31  52%   +1398   -76.4   -200.0   -210.6   -237.5    +650   +190   -156   +714    +6.47     +434/    -297    0
+   month, this expiry, wings 8 % away              +21.66  56%   +2274  -157.6   -350.8    -98.4   -282.9    +949   +178   -189  +1336   +14.82     +718/    -297    0
+   month, this expiry, wings 12 % away             +20.14  55%   +2115  -159.1   -289.7    -76.3   -159.1    +815   +264    -86  +1123   +13.30     +631/    -297    0
+   month, next expiry, wings 12 % away             +11.14  50%   +1169  -205.5   -423.0   -228.4   -260.7    +618   +268    -80   +364    +4.29     +366/    -297    0
+   month, next expiry, wings 16 % away              +9.87  50%   +1037  -194.7   -388.3   -225.1   -244.1    +454   +285    -68   +364    +3.03     +310/    -297    0
+   -- daily strangle stop 3x
+   no wings                                        +11.57  66%   +1215  -108.3   -260.9   -167.3   -189.7     -52   +699   +103   +464
+   week, this expiry, wings 3 % away               +18.84  59%   +1979  -199.5   -489.9   -271.8   -463.2    +768   +390   -185  +1006    +7.28    +1090/    -599    0
+   week, this expiry, wings 5 % away               +18.80  69%   +1974  -111.1   -300.5   -183.3   -257.6    +794   +425    -79   +833    +7.23    +1087/    -599    0
+   week, next expiry, wings 5 % away               +18.45  65%   +1938  -142.0   -333.1   -240.7   -371.2    +747   +414   -169   +946    +6.89    +1192/    -599    0
+   week, next expiry, wings 8 % away               +18.04  70%   +1894   -86.7   -239.4   -174.9   -211.6    +668   +512   -100   +814    +6.47    +1053/    -599    0
+   month, this expiry, wings 8 % away              +26.38  71%   +2770  -174.8   -368.7   -176.3   -273.5    +967   +499   -132  +1436   +14.82    +1442/    -599    0
+   month, this expiry, wings 12 % away             +24.87  71%   +2611  -176.2   -314.6   -134.0   -183.3    +833   +586    -30  +1222   +13.30    +1297/    -599    0
+   month, next expiry, wings 12 % away             +15.86  70%   +1665  -170.9   -391.3   -229.5   -268.3    +635   +590    -24   +464    +4.29     +709/    -599    0
+   month, next expiry, wings 16 % away             +14.60  68%   +1533  -161.3   -369.5   -216.0   -252.2    +472   +607    -11   +464    +3.03     +601/    -599    0
+   rows: 27
+   -- the wings ALONE, no strangle, on every cycle the caches price (weekly expiries 2025-12-05 .. 2026-11-20, monthly 2026-01-30 .. 2026-11-27); per cycle
+                                                  cycles     mean  win   total    worst     best  per day  first / second half of the cycles
+   week, this expiry, wings 3 % away                  51    -13.4  25%    -684   -353.0  +1212.6    -1.92  -1680 / +996
+   week, this expiry, wings 5 % away                  51     -4.4  16%    -226   -259.2  +1127.4    -0.63  -1114 / +888
+   month, this expiry, wings 8 % away                 10   +227.0  50%   +2270   -337.8  +1021.2    +7.54  +1139 / +1131
+   month, this expiry, wings 12 % away                10   +190.1  50%   +1901   -211.0   +885.9    +6.32  +814 / +1087
+

@@ -1,0 +1,144 @@
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 20 h later (144 h before); mean premium 149.0
+   no stop          n= 51 mean=  +14.84 win= 86% total=   +757 worst=   -69.0 worst3=  -137.4 drawdown=   -69.0 halves +418 / +339
+   stop at double   n= 51 mean=  +13.52 win= 86% total=   +690 worst=   -91.5 worst3=  -204.7 drawdown=   -91.5 halves +396 / +294
+   stop at triple   n= 51 mean=  +14.84 win= 86% total=   +757 worst=   -69.0 worst3=  -137.4 drawdown=   -69.0 halves +418 / +339
+## BTC Friday weekly: sold 3 % away 140 h before the settlement, closed 20 h later (120 h before); mean premium 125.7
+   no stop          n= 51 mean=   -5.67 win= 43% total=   -289 worst=   -61.0 worst3=  -164.3 drawdown=  -364.1 halves -284 / -5
+   stop at double   n= 51 mean=  -10.40 win= 41% total=   -530 worst=   -92.3 worst3=  -234.5 drawdown=  -530.5 halves -397 / -133
+   stop at triple   n= 51 mean=   -5.67 win= 43% total=   -289 worst=   -61.0 worst3=  -164.3 drawdown=  -364.1 halves -284 / -5
+## BTC Friday weekly: sold 3 % away 116 h before the settlement, closed 20 h later (96 h before); mean premium 124.2
+   no stop          n= 51 mean=   -0.19 win= 65% total=    -10 worst=  -170.6 worst3=  -368.2 drawdown=  -190.0 halves +42 / -52
+   stop at double   n= 51 mean=   -6.74 win= 57% total=   -344 worst=  -138.7 worst3=  -367.1 drawdown=  -386.9 halves -293 / -50
+   stop at triple   n= 51 mean=   -0.69 win= 65% total=    -35 worst=  -138.7 worst3=  -367.1 drawdown=  -149.6 halves -44 / +9
+## BTC Friday weekly: sold 3 % away 92 h before the settlement, closed 20 h later (72 h before); mean premium 98.7
+   no stop          n= 51 mean=   +9.56 win= 75% total=   +488 worst=   -67.1 worst3=  -167.4 drawdown=  -100.5 halves +340 / +147
+   stop at double   n= 51 mean=   +7.82 win= 71% total=   +399 worst=   -52.3 worst3=  -127.4 drawdown=   -88.7 halves +261 / +138
+   stop at triple   n= 51 mean=   +8.95 win= 75% total=   +456 worst=   -88.6 worst3=  -198.5 drawdown=  -131.6 halves +319 / +137
+## BTC Friday weekly: sold 3 % away 68 h before the settlement, closed 20 h later (48 h before); mean premium 72.6
+   no stop          n= 51 mean=   +2.05 win= 61% total=   +104 worst=  -121.0 worst3=  -284.6 drawdown=  -305.0 halves -168 / +272
+   stop at double   n= 51 mean=   -1.75 win= 59% total=    -89 worst=  -118.3 worst3=  -302.5 drawdown=  -471.1 halves -361 / +272
+   stop at triple   n= 51 mean=   -2.05 win= 61% total=   -104 worst=  -129.3 worst3=  -355.3 drawdown=  -509.8 halves -373 / +269
+## BTC Friday weekly: sold 3 % away 44 h before the settlement, closed 20 h later (24 h before); mean premium 44.9
+   no stop          n= 51 mean=   +3.17 win= 84% total=   +162 worst=  -160.7 worst3=  -402.3 drawdown=  -229.6 halves +306 / -145
+   stop at double   n= 51 mean=   +5.37 win= 71% total=   +274 worst=   -90.5 worst3=  -165.7 drawdown=  -129.8 halves +211 / +62
+   stop at triple   n= 51 mean=   +1.05 win= 80% total=    +53 worst=  -141.5 worst3=  -345.9 drawdown=  -287.8 halves +138 / -84
+## BTC Friday weekly: sold 2 % away 164 h before the settlement, closed 20 h later (144 h before); mean premium 193.4
+   no stop          n= 51 mean=  +16.43 win= 86% total=   +838 worst=   -83.1 worst3=  -153.9 drawdown=   -83.1 halves +456 / +382
+   stop at double   n= 51 mean=  +14.82 win= 86% total=   +756 worst=  -115.2 worst3=  -235.9 drawdown=  -115.2 halves +424 / +332
+   stop at triple   n= 51 mean=  +16.43 win= 86% total=   +838 worst=   -83.1 worst3=  -153.9 drawdown=   -83.1 halves +456 / +382
+## BTC Friday weekly: sold 2 % away 140 h before the settlement, closed 20 h later (120 h before); mean premium 168.2
+   no stop          n= 51 mean=   -5.70 win= 45% total=   -291 worst=   -56.2 worst3=  -162.4 drawdown=  -390.4 halves -303 / +12
+   stop at double   n= 51 mean=  -12.26 win= 43% total=   -625 worst=  -159.3 worst3=  -342.5 drawdown=  -625.4 halves -435 / -190
+   stop at triple   n= 51 mean=   -5.70 win= 45% total=   -291 worst=   -56.2 worst3=  -162.4 drawdown=  -390.4 halves -303 / +12
+## BTC Friday weekly: sold 2 % away 116 h before the settlement, closed 20 h later (96 h before); mean premium 164.9
+   no stop          n= 51 mean=   +0.09 win= 63% total=     +5 worst=  -200.5 worst3=  -435.6 drawdown=  -218.7 halves +44 / -39
+   stop at double   n= 51 mean=   -6.24 win= 59% total=   -318 worst=  -146.4 worst3=  -417.6 drawdown=  -363.5 halves -312 / -6
+   stop at triple   n= 51 mean=   +2.17 win= 63% total=   +111 worst=  -146.3 worst3=  -329.5 drawdown=  -151.0 halves +74 / +37
+## BTC Friday weekly: sold 4 % away 164 h before the settlement, closed 20 h later (144 h before); mean premium 115.8
+   no stop          n= 51 mean=  +12.75 win= 88% total=   +650 worst=   -66.0 worst3=  -130.1 drawdown=   -66.0 halves +374 / +277
+   stop at double   n= 51 mean=  +12.19 win= 88% total=   +622 worst=   -86.0 worst3=  -158.4 drawdown=   -86.0 halves +354 / +268
+   stop at triple   n= 51 mean=  +12.75 win= 88% total=   +650 worst=   -66.0 worst3=  -130.1 drawdown=   -66.0 halves +374 / +277
+## BTC Friday weekly: sold 4 % away 140 h before the settlement, closed 20 h later (120 h before); mean premium 95.1
+   no stop          n= 51 mean=   -5.22 win= 45% total=   -266 worst=   -51.2 worst3=  -145.2 drawdown=  -322.5 halves -246 / -20
+   stop at double   n= 51 mean=   -9.04 win= 43% total=   -461 worst=   -87.2 worst3=  -223.4 drawdown=  -460.9 halves -324 / -137
+   stop at triple   n= 51 mean=   -5.22 win= 45% total=   -266 worst=   -51.2 worst3=  -145.2 drawdown=  -322.5 halves -246 / -20
+## BTC Friday weekly: sold 4 % away 116 h before the settlement, closed 20 h later (96 h before); mean premium 92.0
+   no stop          n= 51 mean=   -1.35 win= 67% total=    -69 worst=  -159.2 worst3=  -357.4 drawdown=  -172.0 halves -17 / -52
+   stop at double   n= 51 mean=   -6.90 win= 57% total=   -352 worst=  -144.4 worst3=  -362.4 drawdown=  -388.4 halves -285 / -67
+   stop at triple   n= 51 mean=   -1.90 win= 67% total=    -97 worst=  -144.4 worst3=  -362.4 drawdown=  -181.3 halves -98 / +1
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 44 h later (120 h before); mean premium 149.0
+   no stop          n= 51 mean=  +12.06 win= 88% total=   +615 worst=  -143.0 worst3=  -292.1 drawdown=  -151.7 halves +251 / +364
+   stop at double   n= 51 mean=   +8.41 win= 78% total=   +429 worst=  -151.8 worst3=  -311.3 drawdown=  -159.4 halves +158 / +271
+   stop at triple   n= 51 mean=  +12.10 win= 88% total=   +617 worst=  -162.5 worst3=  -290.0 drawdown=  -171.2 halves +231 / +386
+## ETH Friday weekly: sold 4 % away 164 h before the settlement, closed 20 h later (144 h before); mean premium 66.0
+   no stop          n= 51 mean=   +6.84 win= 78% total=   +349 worst=   -19.4 worst3=   -44.3 drawdown=   -19.4 halves +217 / +132
+   stop at double   n= 51 mean=   +6.23 win= 78% total=   +318 worst=   -44.6 worst3=   -71.1 drawdown=   -44.6 halves +217 / +101
+   stop at triple   n= 51 mean=   +6.83 win= 78% total=   +348 worst=   -19.4 worst3=   -44.7 drawdown=   -19.6 halves +217 / +132
+## ETH Friday weekly: sold 4 % away 140 h before the settlement, closed 20 h later (120 h before); mean premium 57.7
+   no stop          n= 51 mean=   -1.54 win= 45% total=    -78 worst=   -19.1 worst3=   -54.6 drawdown=  -130.3 halves -82 / +3
+   stop at double   n= 51 mean=   -3.56 win= 41% total=   -181 worst=   -38.0 worst3=  -103.4 drawdown=  -193.0 halves -117 / -65
+   stop at triple   n= 51 mean=   -1.54 win= 45% total=    -78 worst=   -19.1 worst3=   -54.6 drawdown=  -130.3 halves -82 / +3
+## ETH Friday weekly: sold 4 % away 116 h before the settlement, closed 20 h later (96 h before); mean premium 56.2
+   no stop          n= 51 mean=   -0.17 win= 67% total=     -9 worst=   -58.8 worst3=  -149.1 drawdown=   -90.8 halves -4 / -5
+   stop at double   n= 51 mean=   -1.52 win= 63% total=    -78 worst=   -45.7 worst3=  -128.6 drawdown=  -119.7 halves -101 / +23
+   stop at triple   n= 51 mean=   -0.77 win= 67% total=    -39 worst=   -63.9 worst3=  -164.0 drawdown=   -87.4 halves -17 / -23
+## ETH Friday weekly: sold 4 % away 92 h before the settlement, closed 20 h later (72 h before); mean premium 44.4
+   no stop          n= 51 mean=   +4.19 win= 78% total=   +214 worst=   -66.2 worst3=  -111.6 drawdown=   -85.4 halves +130 / +84
+   stop at double   n= 51 mean=   +3.89 win= 75% total=   +198 worst=   -55.2 worst3=   -92.7 drawdown=   -74.9 halves +126 / +72
+   stop at triple   n= 51 mean=   +3.75 win= 76% total=   +191 worst=   -55.2 worst3=  -114.7 drawdown=   -74.3 halves +141 / +50
+## ETH Friday weekly: sold 4 % away 68 h before the settlement, closed 20 h later (48 h before); mean premium 31.8
+   no stop          n= 51 mean=   +2.14 win= 76% total=   +109 worst=   -65.6 worst3=  -127.6 drawdown=   -92.0 halves -4 / +113
+   stop at double   n= 51 mean=   +1.03 win= 69% total=    +53 worst=   -62.1 worst3=  -120.1 drawdown=  -126.3 halves -79 / +132
+   stop at triple   n= 51 mean=   -0.64 win= 73% total=    -33 worst=   -82.2 worst3=  -197.3 drawdown=  -234.8 halves -138 / +106
+## ETH Friday weekly: sold 4 % away 44 h before the settlement, closed 20 h later (24 h before); mean premium 19.9
+   no stop          n= 51 mean=   +2.09 win= 75% total=   +107 worst=  -115.7 worst3=  -160.7 drawdown=  -117.9 halves +174 / -67
+   stop at double   n= 51 mean=   +1.61 win= 65% total=    +82 worst=   -50.7 worst3=  -120.2 drawdown=   -61.7 halves +87 / -5
+   stop at triple   n= 51 mean=   +0.70 win= 69% total=    +36 worst=   -50.7 worst3=  -110.6 drawdown=   -85.0 halves +83 / -48
+## ETH Friday weekly: sold 3 % away 164 h before the settlement, closed 20 h later (144 h before); mean premium 80.0
+   no stop          n= 51 mean=   +6.58 win= 82% total=   +335 worst=   -50.1 worst3=   -83.5 drawdown=   -64.0 halves +197 / +138
+   stop at double   n= 51 mean=   +6.23 win= 82% total=   +318 worst=   -44.6 worst3=   -89.4 drawdown=   -44.6 halves +197 / +121
+   stop at triple   n= 51 mean=   +6.58 win= 82% total=   +335 worst=   -50.1 worst3=   -83.5 drawdown=   -64.0 halves +197 / +138
+## ETH Friday weekly: sold 3 % away 140 h before the settlement, closed 20 h later (120 h before); mean premium 70.0
+   no stop          n= 51 mean=   -2.58 win= 37% total=   -132 worst=   -23.3 worst3=   -61.0 drawdown=  -169.6 halves -103 / -29
+   stop at double   n= 51 mean=   -4.56 win= 35% total=   -232 worst=   -42.8 worst3=  -115.3 drawdown=  -244.5 halves -138 / -95
+   stop at triple   n= 51 mean=   -2.58 win= 37% total=   -132 worst=   -23.3 worst3=   -61.0 drawdown=  -169.6 halves -103 / -29
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 4 h later (160 h before); mean premium 149.0
+   no stop          n= 51 mean=   +5.47 win= 76% total=   +279 worst=   -22.4 worst3=   -47.2 drawdown=   -22.4 halves +174 / +105
+   stop at double   n= 51 mean=   +5.47 win= 76% total=   +279 worst=   -22.4 worst3=   -47.2 drawdown=   -22.4 halves +174 / +105
+   stop at triple   n= 51 mean=   +5.47 win= 76% total=   +279 worst=   -22.4 worst3=   -47.2 drawdown=   -22.4 halves +174 / +105
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 8 h later (156 h before); mean premium 149.0
+   no stop          n= 51 mean=  +11.13 win= 84% total=   +567 worst=   -23.2 worst3=   -54.6 drawdown=   -23.2 halves +386 / +181
+   stop at double   n= 51 mean=  +11.13 win= 84% total=   +567 worst=   -23.2 worst3=   -54.6 drawdown=   -23.2 halves +386 / +181
+   stop at triple   n= 51 mean=  +11.13 win= 84% total=   +567 worst=   -23.2 worst3=   -54.6 drawdown=   -23.2 halves +386 / +181
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 12 h later (152 h before); mean premium 149.0
+   no stop          n= 51 mean=  +13.11 win= 84% total=   +669 worst=   -61.7 worst3=   -94.4 drawdown=   -61.7 halves +491 / +178
+   stop at double   n= 51 mean=  +13.11 win= 84% total=   +669 worst=   -61.7 worst3=   -94.4 drawdown=   -61.7 halves +491 / +178
+   stop at triple   n= 51 mean=  +13.11 win= 84% total=   +669 worst=   -61.7 worst3=   -94.4 drawdown=   -61.7 halves +491 / +178
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 16 h later (148 h before); mean premium 149.0
+   no stop          n= 51 mean=  +13.15 win= 88% total=   +671 worst=   -56.3 worst3=  -145.5 drawdown=   -56.3 halves +425 / +245
+   stop at double   n= 51 mean=  +12.10 win= 88% total=   +617 worst=   -84.8 worst3=  -198.8 drawdown=   -84.8 halves +397 / +220
+   stop at triple   n= 51 mean=  +13.15 win= 88% total=   +671 worst=   -56.3 worst3=  -145.5 drawdown=   -56.3 halves +425 / +245
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 24 h later (140 h before); mean premium 149.0
+   no stop          n= 51 mean=  +13.51 win= 82% total=   +689 worst=  -123.7 worst3=  -204.5 drawdown=  -123.7 halves +455 / +234
+   stop at double   n= 51 mean=  +12.71 win= 82% total=   +648 worst=  -105.8 worst3=  -220.0 drawdown=  -105.8 halves +384 / +265
+   stop at triple   n= 51 mean=  +13.83 win= 82% total=   +706 worst=  -107.0 worst3=  -187.8 drawdown=  -107.0 halves +455 / +251
+## BTC Friday weekly: sold 3 % away 164 h before the settlement, closed 30 h later (134 h before); mean premium 149.0
+   no stop          n= 51 mean=  +11.16 win= 82% total=   +569 worst=  -201.1 worst3=  -438.1 drawdown=  -201.1 halves +317 / +252
+   stop at double   n= 51 mean=  +12.01 win= 82% total=   +612 worst=  -171.6 worst3=  -327.5 drawdown=  -171.6 halves +310 / +302
+   stop at triple   n= 51 mean=  +13.71 win= 82% total=   +699 worst=  -163.5 worst3=  -308.0 drawdown=  -163.5 halves +345 / +354
+## BTC Friday weekly: sold 3 % away 168 h before the settlement, closed 20 h later (148 h before); mean premium 156.2
+   no stop          n= 51 mean=  +11.15 win= 75% total=   +569 worst=   -89.4 worst3=  -199.7 drawdown=  -104.1 halves +358 / +210
+   stop at double   n= 51 mean=   +3.56 win= 69% total=   +182 worst=  -144.2 worst3=  -310.5 drawdown=  -263.3 halves +130 / +51
+   stop at triple   n= 51 mean=  +10.87 win= 75% total=   +554 worst=  -103.6 worst3=  -213.9 drawdown=  -104.1 halves +358 / +196
+## BTC Friday weekly: sold 3 % away 166 h before the settlement, closed 20 h later (146 h before); mean premium 157.0
+   no stop          n= 51 mean=  +17.36 win= 86% total=   +886 worst=   -70.7 worst3=  -172.6 drawdown=   -78.4 halves +447 / +439
+   stop at double   n= 51 mean=  +16.48 win= 84% total=   +841 worst=   -88.4 worst3=  -191.9 drawdown=   -96.1 halves +429 / +411
+   stop at triple   n= 51 mean=  +17.36 win= 86% total=   +886 worst=   -70.7 worst3=  -172.6 drawdown=   -78.4 halves +447 / +439
+## BTC Friday weekly: sold 3 % away 162 h before the settlement, closed 20 h later (142 h before); mean premium 142.5
+   no stop          n= 51 mean=  +11.29 win= 84% total=   +576 worst=   -65.1 worst3=  -124.3 drawdown=   -65.1 halves +363 / +213
+   stop at double   n= 51 mean=  +10.55 win= 84% total=   +538 worst=   -73.8 worst3=  -162.1 drawdown=   -88.3 halves +363 / +175
+   stop at triple   n= 51 mean=  +11.29 win= 84% total=   +576 worst=   -65.1 worst3=  -124.3 drawdown=   -65.1 halves +363 / +213
+## BTC Friday weekly: sold 3 % away 160 h before the settlement, closed 20 h later (140 h before); mean premium 137.4
+   no stop          n= 51 mean=   +2.73 win= 75% total=   +139 worst=  -150.7 worst3=  -273.5 drawdown=  -153.3 halves +130 / +10
+   stop at double   n= 51 mean=   +5.29 win= 75% total=   +270 worst=   -75.3 worst3=  -148.7 drawdown=   -78.7 halves +137 / +133
+   stop at triple   n= 51 mean=   +4.12 win= 75% total=   +210 worst=   -82.8 worst3=  -202.7 drawdown=   -86.2 halves +130 / +80
+## BTC Friday weekly: sold 3 % away 156 h before the settlement, closed 20 h later (136 h before); mean premium 129.7
+   no stop          n= 51 mean=   -5.15 win= 61% total=   -263 worst=  -332.6 worst3=  -493.1 drawdown=  -363.8 halves -316 / +53
+   stop at double   n= 51 mean=   -1.80 win= 61% total=    -92 worst=  -172.7 worst3=  -294.3 drawdown=  -230.9 halves -183 / +91
+   stop at triple   n= 51 mean=   -1.59 win= 61% total=    -81 worst=  -153.7 worst3=  -311.3 drawdown=  -184.9 halves -137 / +56
+## ETH Friday weekly: sold 4 % away 164 h before the settlement, closed 8 h later (156 h before); mean premium 66.0
+   no stop          n= 51 mean=   +5.56 win= 90% total=   +284 worst=   -38.0 worst3=   -49.1 drawdown=   -38.0 halves +206 / +78
+   stop at double   n= 51 mean=   +5.66 win= 90% total=   +289 worst=   -33.1 worst3=   -44.0 drawdown=   -33.1 halves +206 / +83
+   stop at triple   n= 51 mean=   +5.56 win= 90% total=   +284 worst=   -38.0 worst3=   -49.1 drawdown=   -38.0 halves +206 / +78
+## ETH Friday weekly: sold 4 % away 164 h before the settlement, closed 12 h later (152 h before); mean premium 66.0
+   no stop          n= 51 mean=   +6.83 win= 90% total=   +348 worst=   -34.6 worst3=   -53.9 drawdown=   -34.6 halves +251 / +97
+   stop at double   n= 51 mean=   +6.83 win= 90% total=   +348 worst=   -32.5 worst3=   -54.0 drawdown=   -32.5 halves +251 / +97
+   stop at triple   n= 51 mean=   +6.83 win= 90% total=   +348 worst=   -34.6 worst3=   -53.9 drawdown=   -34.6 halves +251 / +97
+## ETH Friday weekly: sold 4 % away 164 h before the settlement, closed 24 h later (140 h before); mean premium 66.0
+   no stop          n= 51 mean=   +5.35 win= 80% total=   +273 worst=   -55.9 worst3=  -121.0 drawdown=   -55.9 halves +207 / +66
+   stop at double   n= 51 mean=   +4.56 win= 78% total=   +232 worst=   -57.9 worst3=  -133.1 drawdown=   -57.9 halves +205 / +27
+   stop at triple   n= 51 mean=   +5.10 win= 80% total=   +260 worst=   -57.9 worst3=  -122.9 drawdown=   -57.9 halves +205 / +55
+## XAUT Friday weekly: sold 2 % away 164 h before the settlement, closed 20 h later (144 h before); mean premium 3.0
+   no stop          n= 15 mean=   +0.08 win= 60% total=     +1 worst=    -1.8 worst3=    -3.2 drawdown=    -1.8 halves +1 / -0
+   stop at double   n= 15 mean=   +0.08 win= 60% total=     +1 worst=    -1.8 worst3=    -3.2 drawdown=    -1.8 halves +1 / -0
+   stop at triple   n= 15 mean=   +0.08 win= 60% total=     +1 worst=    -1.8 worst3=    -3.2 drawdown=    -1.8 halves +1 / -0

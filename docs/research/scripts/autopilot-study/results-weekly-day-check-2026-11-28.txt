@@ -1,0 +1,52 @@
+## BTC Friday weekly: 51 weeks (2025-12-05 .. 2026-11-20), each side 3 % away, entered 164 h before settlement; stop 3x on every sold option; mean premium 149.0
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                    +40.65  57%   +2073  -168.3   -470.5   -504.9    +1525/+548     0     0    22
+   closed after one day whatever the result              +14.84  86%    +757   -69.0   -137.4    -69.0     +418/+339    51     0     0
+   -- take from the start (no check)
+   take at 5 % of the premium                             +6.08  96%    +310    -0.7     +0.2     -0.9     +198/+112     0    51     0
+   take at 10 % of the premium                           +13.54 100%    +690    +2.1    +12.7     -0.0     +427/+264     0    51     0
+   take at 20 % of the premium                           +18.31  94%    +934  -168.3   -425.7   -172.2     +373/+561     0    48     3
+   take at 30 % of the premium                           +14.64  80%    +747  -168.3   -470.5   -212.4     +203/+543     0    41    10
+   take at 50 % of the premium                           +28.59  73%   +1458  -168.3   -470.5   -178.6     +712/+746     0    37    14
+   -- check after one day; if it did not close, hold to settlement
+   close if ahead by 0 % or more                         +17.14  90%    +874  -152.2   -299.0   -152.2     +670/+204    44     0     5
+   close if ahead by 5 % or more                         +14.61  88%    +745  -168.3   -408.2   -168.3     +542/+204    42     0     6
+   close if ahead by 10 % or more                        +13.35  82%    +681  -168.3   -457.6   -226.4     +513/+168    37     0     9
+   close if ahead by 20 % or more                        +29.85  69%   +1522  -168.3   -470.5   -379.2    +1156/+367    17     0    16
+   -- check after one day; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %              +16.27  90%    +830   -87.7    -94.3    -87.7     +512/+318    42     8     1
+   close if ahead by 5 %; later take at 10 %             +18.17  98%    +926   -87.7    -81.5    -87.7     +578/+349    42     8     1
+   close if ahead by 5 %; later take at 25 %             +17.20  96%    +877  -168.3   -253.5   -168.3     +490/+387    42     7     2
+   close if ahead by 5 %; later take at 50 %             +14.04  90%    +716  -168.3   -408.2   -168.3     +412/+304    42     4     5
+   close if ahead by 10 %; later take at 0 %             +16.36  90%    +834   -87.7    -94.3    -87.7     +508/+326    37    13     1
+   close if ahead by 10 %; later take at 10 %            +15.69  96%    +800  -137.1   -221.1   -137.1     +441/+359    37    12     2
+   close if ahead by 10 %; later take at 25 %            +16.88  94%    +861  -168.3   -393.2   -168.3     +407/+454    37    11     3
+   close if ahead by 10 %; later take at 50 %            +15.07  86%    +769  -168.3   -457.6   -168.3     +444/+324    37     7     7
+   rows: 19
+
+## BTC Friday weekly: 51 weeks (2025-12-05 .. 2026-11-20), each side 3 % away, entered 164 h before settlement; stop 2x on every sold option; mean premium 149.0
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                    +28.33  43%   +1445  -267.5   -603.0   -304.1     +773/+672     0     0    32
+   closed after one day whatever the result              +13.52  86%    +690   -91.5   -204.7    -91.5     +396/+294    51     0     3
+   -- take from the start (no check)
+   take at 5 % of the premium                             +5.30  94%    +270   -39.2    -40.1    -39.2      +198/+72     0    50     2
+   take at 10 % of the premium                           +12.57  98%    +641   -39.2    -33.3    -39.2     +427/+214     0    49     3
+   take at 20 % of the premium                           +10.78  82%    +550  -267.5   -481.6   -267.5     +171/+379     0    40    11
+   take at 30 % of the premium                           +12.73  65%    +649  -267.5   -481.6   -304.1     +179/+470     0    31    20
+   take at 50 % of the premium                           +14.52  51%    +741  -267.5   -603.0   -304.1     +269/+472     0    24    27
+   -- check after one day; if it did not close, hold to settlement
+   close if ahead by 0 % or more                         +15.65  92%    +798  -267.5   -340.3   -267.5     +441/+358    44     0     6
+   close if ahead by 5 % or more                         +11.65  88%    +594  -267.5   -475.0   -267.5     +237/+358    42     0     8
+   close if ahead by 10 % or more                         +6.82  78%    +348  -267.5   -517.8   -270.6     +118/+230    37     0    13
+   close if ahead by 20 % or more                        +22.09  59%   +1127  -267.5   -603.0   -304.1     +771/+355    17     0    23
+   -- check after one day; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %              +11.25  88%    +574  -267.5   -340.3   -267.5     +238/+336    42     6     3
+   close if ahead by 5 %; later take at 10 %             +12.66  94%    +646  -267.5   -340.3   -267.5     +293/+353    42     5     5
+   close if ahead by 5 %; later take at 25 %              +9.86  90%    +503  -267.5   -475.0   -267.5     +145/+358    42     2     7
+   close if ahead by 5 %; later take at 50 %              +9.55  88%    +487  -267.5   -475.0   -267.5     +129/+358    42     1     8
+   close if ahead by 10 %; later take at 0 %             +11.34  88%    +578  -267.5   -340.3   -267.5     +234/+345    37    11     3
+   close if ahead by 10 %; later take at 10 %            +11.98  92%    +611  -267.5   -352.5   -267.5     +247/+364    37     9     6
+   close if ahead by 10 %; later take at 25 %             +7.19  82%    +367  -267.5   -481.6   -270.6      +27/+340    37     3    11
+   close if ahead by 10 %; later take at 50 %             +4.72  78%    +241  -267.5   -517.8   -270.6      +11/+230    37     1    13
+   rows: 19
+

@@ -1,0 +1,33 @@
+## BTC Friday weekly WITH SLIPPAGE: 51 weeks with an entry bar (2025-12-05 .. 2026-11-20); sold 3 % away, wings 7 % away; one day = closed 20 h after the entry; hourly marks; 100 lots a leg
+
+-- strikes: card; 26 weeks traded with wings, left out: {'no wing price': 25}
+                                                wks     mean  win   total    worst  worst 3 drawdown car
+   wings, one day                                26    -1.51  46%     -39    -23.7    -50.6    -68.1   0
+      cap (four-leg largest loss): mean 209.3, largest 278.6; worst week 2026-02-20 -23.7 against its cap 182.3; weeks beyond their cap: 0 after the costs of the close, 0 before them
+   wings, held to settlement                     26   +32.84  73%    +854   -248.4   -623.4   -394.0   0
+   naked, one day, the same weeks                26   +17.20  81%    +447    -26.6    -44.9    -26.6   0
+   naked, held, the same weeks                   26   +51.36  81%   +1335  -1221.6  -1784.8  -1326.0   0
+   naked, one day, every week with a price       51   +11.94  82%    +609    -73.6   -147.5    -73.6   0
+   by month of expiry                            25-12  26-01  26-02  26-03  26-04  26-05  26-06  26-07  26-08  26-09  26-10  26-11
+   wings, one day                                   +8     +4    -45    -10     +4     +7     -9    -12           +27           -13
+   wings, held to settlement                      +537    -39   +122    +87    -56    +82   -113   +170          +184          -120
+   naked, one day, the same weeks                 +122    +47    +41    +30    +31    +16    +51    +31           +82            -5
+   naked, held, the same weeks                    +893    +56   -473   +305     -6   +107    +94   +292          +305          -238
+   naked, one day, every week with a price        +122    +98    +41    -26    +61    -14    +72    +49    +39    +83    +73    +12
+
+-- strikes: nearest; 51 weeks traded with wings, left out: none
+                                                wks     mean  win   total    worst  worst 3 drawdown car
+   wings, one day                                51    -1.97  45%    -101    -36.3    -95.8   -159.8   0
+      cap (four-leg largest loss): mean 225.2, largest 310.2; worst week 2026-03-06 -36.3 against its cap 194.3; weeks beyond their cap: 0 after the costs of the close, 0 before them
+   wings, held to settlement                     51   +13.01  67%    +663   -299.8   -763.5   -730.0   0
+   naked, one day, the same weeks                51   +11.94  82%    +609    -73.6   -147.5    -73.6   0
+   naked, held, the same weeks                   51    +6.11  75%    +312  -1221.6  -3221.6  -1584.9   0
+   naked, one day, every week with a price       51   +11.94  82%    +609    -73.6   -147.5    -73.6   0
+   by month of expiry                            25-12  26-01  26-02  26-03  26-04  26-05  26-06  26-07  26-08  26-09  26-10  26-11
+   wings, one day                                   +8     +4    -45    -54     -5    -31     -0    -10     -1    +25    +23    -13
+   wings, held to settlement                      +537   -267   +122     +1    +54   +273   -300   +286    -27   +109   +162   -288
+   naked, one day, the same weeks                 +122    +98    +41    -26    +61    -14    +72    +49    +39    +83    +73    +12
+   naked, held, the same weeks                    +893    -26   -473   +396   +250   +415   -772   +459   -871   +263   +302   -525
+   naked, one day, every week with a price        +122    +98    +41    -26    +61    -14    +72    +49    +39    +83    +73    +12
+
+rows tried in this file: 10 (5 rows on 2 strike readings); one sold distance, one wing distance, one holding time.

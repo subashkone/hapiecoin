@@ -3,6 +3,8 @@ the first 20 hours of the Friday weekly were positive on 86 % of the weeks). Her
 every evening of the week: the Friday weekly's strangle is sold at the hour given and closed a number of hours later,
 whatever the result, with and without a stop on each sold option. One row per call; loop the entry hour outside.
 Same trades, fees and fills as study_exits.py (imported; run without -I from this folder).
+Corrected 28 Nov 2026: on hourly bars the close was one bar late (21 hours for "20"); the exit now takes the same
+shift as the entry, as study_exits.py does for its timed exits. results-weekly-one-day-2026-11-24.txt is the late reading.
 
 Usage: python study_oneday.py <cache_dir> <lot_size> <bar_minutes> <entry_hours_before> <percent_away> "" "" <label> <hours held>"""
 import sys, datetime as dt
@@ -26,5 +28,5 @@ def st(vals_e):
 prem = sum(tr.credit for _, tr in X.trades) / len(X.trades)
 print(f"## {LABEL}: sold {X.PCT * 100:g} % away {X.ENTRY:g} h before the settlement, closed {HOLD:g} h later ({X.ENTRY - HOLD:g} h before); mean premium {prem:.1f}")
 for name, mult in (("no stop", None), ("stop at double", 2), ("stop at triple", 3)):
-    rows = [(e, tr.run(mult=mult, t_exit=tr.settle - dt.timedelta(hours=X.ENTRY - HOLD))) for e, tr in sorted(X.trades, key=lambda x: x[0])]
+    rows = [(e, tr.run(mult=mult, t_exit=tr.settle - dt.timedelta(hours=X.ENTRY - HOLD) - X.shift)) for e, tr in sorted(X.trades, key=lambda x: x[0])]
     print(f"   {name:16s} {st(rows)}")

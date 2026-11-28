@@ -1,0 +1,45 @@
+## monthly-BTC: sold 12 % away with wings half as far again, entered 30 to 44 days before; 165 entries on 11 expiries; the same entries and strikes for both rows
+   held to settlement        mean   -105.1  win  58%  worst   -525.5
+   stop 3x, wing kept        mean   +209.1  win  92%  worst   -265.5
+      of which: sold options    +73.1, wings   +139.6, entry fees   -3.6; mean net premium 95.3
+   entries with a stop: 79 of 165 (both sides stopped on 0)
+      on those: held   -330.0, stopped   +326.4 (sold options   -102.3, wings   +432.3)
+      on the others: held   +101.4, stopped   +101.4
+   cap (four-leg largest loss): mean 373.1, largest 524.0; entries losing more than their own cap: stopped 0 of 165, held 64 of 165
+      largest excess over the cap: held +2.0 (the settlement fees, which the cap leaves out), stopped -31.6
+   expiry       n     held  stopped stops on     sold    wings spot chg max thru
+   2026-01-30  15   +119.6   +119.6        0   +264.1   -140.3    -5.5%    +0.6%
+   2026-02-27  15   -450.0   +680.3       15   -113.3   +797.8   -27.8%   +26.0%
+   2026-03-27  15   +119.2    +72.1        2   +245.5   -170.3    -1.1%    +5.0%
+   2026-04-24  15   +116.6   +116.6        0   +305.2   -185.2   +10.4%    +2.9%
+   2026-05-29  15   +100.7    +73.5        2   +174.0    -96.9    -4.1%    -0.6%
+   2026-06-26  15   -414.8   +183.8       15   -108.6   +296.0   -23.3%   +17.9%
+   2026-07-31  15    +76.3    +24.4        3   +113.9    -86.6    +3.3%    +2.8%
+   2026-08-28  15   -341.1   +164.4       15    -78.4   +245.9   +23.0%   +13.7%
+   2026-09-25  15   -133.7   +405.2        9     +6.4   +402.1   +20.3%   +22.7%
+   2026-10-30  15    +68.0     +5.6        3    +88.3    -78.8    -6.4%    +2.5%
+   2026-11-27  15   -417.4   +454.9       15    -93.6   +552.3   -25.8%   +24.6%
+
+## monthly-ETH: sold 12 % away with wings half as far again, entered 30 to 44 days before; 165 entries on 11 expiries; the same entries and strikes for both rows
+   held to settlement        mean    -26.0  win  41%  worst   -163.5
+   stop 3x, wing kept        mean   +102.3  win  79%  worst   -184.4
+      of which: sold options    +32.8, wings    +70.6, entry fees   -1.1; mean net premium 46.9
+   entries with a stop: 90 of 165 (both sides stopped on 0)
+      on those: held    -78.0, stopped   +157.2 (sold options    -59.5, wings   +217.8)
+      on the others: held    +36.4, stopped    +36.4
+   cap (four-leg largest loss): mean 97.2, largest 163.1; entries losing more than their own cap: stopped 12 of 165, held 63 of 165
+      largest excess over the cap: held +0.6 (the settlement fees, which the cap leaves out), stopped +129.8
+      largest excess, stopped: expiry 2026-03-27 lost 184.4 against its cap 54.5; by expiry: {'2026-03-27': 4, '2026-07-31': 7, '2026-10-30': 1}
+   expiry       n     held  stopped stops on     sold    wings spot chg max thru
+   2026-01-30  15    +80.1    +80.1        0   +204.7   -123.2    -6.7%    +2.5%
+   2026-02-27  15   -129.1   +415.3       15    -62.9   +479.7   -36.7%   +37.4%
+   2026-03-27  15    +42.7    -12.9        4    +94.0   -106.0    +1.2%   +12.4%
+   2026-04-24  15    +40.9    +40.9        0   +183.5   -141.6    +8.7%    +6.5%
+   2026-05-29  15     +4.4     +4.4        0   +105.2    -99.7   -13.9%    +5.8%
+   2026-06-26  15    -68.1   +146.4       15    -44.9   +192.3   -28.0%   +23.9%
+   2026-07-31  15    -11.2    -30.7        8    +23.6    -53.6   +14.2%    +9.3%
+   2026-08-28  15    -70.5   +142.8       15    -93.5   +237.2   +32.2%   +26.7%
+   2026-09-25  15    -27.3   +205.5        8     +3.8   +202.8   +26.1%   +32.5%
+   2026-10-30  15    -39.5    -44.0       10    -10.0    -32.8   -15.4%    +8.6%
+   2026-11-27  15   -108.6   +176.9       15    -43.0   +221.1   -30.5%   +29.1%
+

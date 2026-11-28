@@ -1,0 +1,68 @@
+## BTC daily wings-3, the 106 days of the first study: 106 days (2026-08-08 .. 2026-11-21), entered 20 h before settlement; sold 600 and bought 1600 from the spot rounded to 200; 84 days traded with wings, left out: {'no wing price': 22}
+   net premium mean 29.2 (least 5.2); largest possible loss with all four legs open: mean 72.9, largest 95.0
+                                                              days    mean  win   total   worst  worst 3 drawdown     Aug    Sep    Oct    Nov stops closed carried
+   -- reference
+   wings, held to settlement (no stop)                          84   +5.93  73%    +498   -78.3   -232.4   -252.3    +128   +130    +74   +167     0      0       0
+   naked 600, stop 2x on each sold option                      106   +7.51  45%    +796   -60.2   -153.8   -134.0     -53   +488    +26   +334    64      0       0
+   naked 600, stop 3x on each sold option                      106  +12.00  61%   +1272   -98.3   -274.1   -191.7     -41   +766   +130   +417    38      0       0
+   naked 600, stop 2x, only the days traded with wings          84   +5.36  42%    +450   -60.2   -153.8   -127.1     -70   +253    +32   +235    54      0       0
+   naked 600, stop 3x, only the days traded with wings          84  +13.57  62%   +1140   -98.3   -249.9   -142.0     +16   +547   +215   +361    30      0       0
+   naked 600, held, only the days traded with wings             84  +10.92  79%    +918  -305.9   -799.3   -375.5    +131   +254   +105   +427     0      0       0
+   -- wings, stop 2x on each sold option; A1 wing kept
+   A  the stop only                                             84   +0.37  40%     +31   -73.1   -214.9   -408.7     -73   +129     +1    -25    54      0       0
+   B  + trail from 15 %, give back 30 %                         84   +2.09  75%    +176   -58.6   -153.8   -115.8     +48   +116    +18     -7    24     65       0
+   B  + trail from 25 %, give back 30 %                         84   +0.73  73%     +61   -69.2   -185.0   -191.3     +42     -1     -9    +29    32     58       0
+   C  + buy-back of a sold option at a mark of 5                84   -0.14  40%     -12   -73.6   -215.4   -419.9     -83   +117    -13    -33    54      0       0
+   D  + take at 50 % of the net premium                         84   +0.22  63%     +18   -73.1   -214.9   -278.9    -109     +1     +6   +119    47     53       0
+   D  + trail the rest by half after a stop                     84   -0.90  40%     -76   -73.1   -209.9   -381.5     -87   +136    -40    -85    54      0       0
+   D  + take at 50 % and trail the rest by half                 84   -1.92  62%    -161   -73.1   -209.9   -285.5    -122     +9    -63    +15    47     52       0
+   E  + trail from 25 % and buy-back at 5                       84   +0.26  71%     +22   -69.2   -185.5   -213.8     -24    +54    -36    +27    32     55       0
+   E  + trail from 25 % and trail the rest                      84   -1.23  71%    -103   -69.5   -193.0   -233.1     +28     +7    -65    -73    32     57       0
+   -- wings, stop 2x on each sold option; A2 wing sold with its stopped option
+   A  the stop only                                             84   -0.11  37%     -10   -60.8   -142.3   -165.4    -127    +61    -42    +97    54      0       0
+   B  + trail from 15 %, give back 30 %                         84   +1.27  71%    +106   -38.8    -65.4    -68.6     +42    +27     -6    +43    24     58       0
+   B  + trail from 25 %, give back 30 %                         84   +0.62  65%     +52   -60.8   -113.1   -117.1     +29    -32     -9    +63    32     49       0
+   C  + buy-back of a sold option at a mark of 5                84   -0.62  37%     -52   -60.8   -142.3   -180.1    -137    +50    -56    +90    54      0       0
+   D  + take at 50 % of the net premium                         84   -0.35  49%     -29   -60.8   -142.3   -148.5     -59    +17    -58    +71    47     37       0
+   D  + trail the rest by half after a stop                     84   -0.90  36%     -75   -34.7    -98.4   -173.9    -135    +75    -73    +58    54      0       0
+   D  + take at 50 % and trail the rest by half                 84   -1.13  48%     -95   -34.7    -98.4   -164.3     -67    +30    -90    +31    47     37       0
+   E  + trail from 25 % and buy-back at 5                       84   +0.43  65%     +36   -60.8   -113.6   -118.8     +26    -36    -14    +60    32     49       0
+   E  + trail from 25 % and trail the rest                      84   -0.45  64%     -38   -33.7    -84.2   -125.0     +21    -18    -57    +16    32     49       0
+   -- wings, stop 3x on each sold option (for comparison)
+   the stop only, wing kept                                     84   +8.57  63%    +720   -92.4   -266.0   -191.5     +13   +422   +184   +100    30      0       0
+   the stop only, wing sold                                     84   +5.35  57%    +449   -71.6   -169.8   -159.9     -46   +208    +70   +217    30      0       0
+
+## BTC daily wings-3, every day in the cache: 112 days (2026-08-08 .. 2026-11-27), entered 20 h before settlement; sold 600 and bought 1600 from the spot rounded to 200; 90 days traded with wings, left out: {'no wing price': 22}
+   net premium mean 30.4 (least 5.2); largest possible loss with all four legs open: mean 71.7, largest 95.0
+                                                              days    mean  win   total   worst  worst 3 drawdown     Aug    Sep    Oct    Nov stops closed carried
+   -- reference
+   wings, held to settlement (no stop)                          90   +4.66  70%    +419   -78.3   -232.4   -252.3    +128   +130    +74    +88     0      0       0
+   naked 600, stop 2x on each sold option                      112   +8.16  46%    +914   -60.2   -153.8   -134.0     -53   +488    +26   +453    67      0       0
+   naked 600, stop 3x on each sold option                      112  +11.42  61%   +1279   -98.3   -274.1   -191.7     -41   +766   +130   +424    41      0       0
+   naked 600, stop 2x, only the days traded with wings          90   +6.32  42%    +569   -60.2   -153.8   -127.1     -70   +253    +32   +354    57      0       0
+   naked 600, stop 3x, only the days traded with wings          90  +12.74  61%   +1147   -98.3   -249.9   -142.0     +16   +547   +215   +368    33      0       0
+   naked 600, held, only the days traded with wings             90  +10.34  78%    +931  -305.9   -799.3   -375.5    +131   +254   +105   +440     0      0       0
+   -- wings, stop 2x on each sold option; A1 wing kept
+   A  the stop only                                             90   +0.64  41%     +57   -73.1   -214.9   -408.7     -73   +129     +1     +1    57      0       0
+   B  + trail from 15 %, give back 30 %                         90   +2.66  77%    +240   -58.6   -153.8   -115.8     +48   +116    +18    +57    26     71       0
+   B  + trail from 25 %, give back 30 %                         90   +1.26  73%    +113   -69.2   -185.0   -191.3     +42     -1     -9    +81    34     64       0
+   C  + buy-back of a sold option at a mark of 5                90   +0.13  41%     +12   -73.6   -215.4   -419.9     -83   +117    -13     -9    57      0       0
+   D  + take at 50 % of the net premium                         90   +1.25  64%    +112   -73.1   -214.9   -278.9    -109     +1     +6   +213    50     58       0
+   D  + trail the rest by half after a stop                     90   -0.55  41%     -49   -73.1   -209.9   -381.5     -87   +136    -40    -58    57      0       0
+   D  + take at 50 % and trail the rest by half                 90   -0.74  63%     -67   -73.1   -209.9   -285.5    -122     +9    -63   +109    50     57       0
+   E  + trail from 25 % and buy-back at 5                       90   +0.82  72%     +73   -69.2   -185.5   -213.8     -24    +54    -36    +79    34     61       0
+   E  + trail from 25 % and trail the rest                      90   -0.57  72%     -51   -69.5   -193.0   -233.1     +28     +7    -65    -21    34     63       0
+   -- wings, stop 2x on each sold option; A2 wing sold with its stopped option
+   A  the stop only                                             90   -0.01  37%      -1   -60.8   -142.3   -165.4    -127    +61    -42   +106    57      0       0
+   B  + trail from 15 %, give back 30 %                         90   +1.33  71%    +119   -38.8    -65.4    -68.6     +42    +27     -6    +56    26     62       0
+   B  + trail from 25 %, give back 30 %                         90   +0.58  64%     +53   -60.8   -113.1   -117.1     +29    -32     -9    +64    34     53       0
+   C  + buy-back of a sold option at a mark of 5                90   -0.51  37%     -46   -60.8   -142.3   -180.1    -137    +50    -56    +96    57      0       0
+   D  + take at 50 % of the net premium                         90   +0.16  49%     +15   -60.8   -142.3   -148.5     -59    +17    -58   +115    50     40       0
+   D  + trail the rest by half after a stop                     90   -0.74  36%     -67   -34.7    -98.4   -173.9    -135    +75    -73    +66    57      0       0
+   D  + take at 50 % and trail the rest by half                 90   -0.57  48%     -51   -34.7    -98.4   -164.3     -67    +30    -90    +75    50     40       0
+   E  + trail from 25 % and buy-back at 5                       90   +0.40  64%     +36   -60.8   -113.6   -118.8     +26    -36    -14    +60    34     53       0
+   E  + trail from 25 % and trail the rest                      90   -0.41  63%     -37   -33.7    -84.2   -125.0     +21    -18    -57    +17    34     53       0
+   -- wings, stop 3x on each sold option (for comparison)
+   the stop only, wing kept                                     90   +7.06  61%    +635   -92.4   -266.0   -191.5     +13   +422   +184    +16    33      0       0
+   the stop only, wing sold                                     90   +4.27  56%    +384   -71.6   -173.5   -159.9     -46   +208    +70   +152    33      0       0
+

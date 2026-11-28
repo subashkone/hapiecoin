@@ -1,0 +1,156 @@
+## ETH Friday weekly WITH SLIPPAGE: 51 expiries (2025-12-05 .. 2026-11-20), each side 4 % away, entered 164 h before settlement; stop 3x on every sold option; mean premium 66.0
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                    +13.32  57%    +679   -83.9   -232.0   -214.9       +672/+7     0     0    23
+   closed at the check (20 h) whatever the result         +5.57  78%    +284   -21.6    -49.6    -21.6     +178/+106    51     0     1
+   -- take from the start (no check)
+   take at 5 % of the premium                             +1.87  96%     +95   -12.8    -13.2    -12.8       +68/+28     0    50     1
+   take at 10 % of the premium                            +4.89  98%    +249   -12.8    -10.8    -12.8      +164/+85     0    50     1
+   take at 20 % of the premium                            +8.59  94%    +438   -71.3   -129.0    -71.3     +308/+129     0    48     3
+   take at 30 % of the premium                           +10.55  86%    +538   -74.8   -216.7    -74.8     +412/+126     0    44     7
+   take at 50 % of the premium                           +12.86  75%    +656   -74.8   -216.7   -126.8     +395/+261     0    38    13
+   -- check 20 h after the entry; if it did not close, hold to settlement
+   close if ahead by 0 % or more                          +4.27  82%    +218   -63.0   -162.4    -63.0      +92/+126    42     0     7
+   close if ahead by 5 % or more                          +3.75  84%    +191   -71.3   -188.7   -103.6       +92/+99    40     0     8
+   close if ahead by 10 % or more                         +8.13  84%    +414   -71.3   -188.7   -103.6     +268/+147    37     0     8
+   close if ahead by 20 % or more                        +12.06  67%    +615   -74.8   -216.7   -214.9      +565/+50    14     0    17
+   -- check 20 h after the entry; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %               +4.42  82%    +226   -71.3   -129.0    -71.3      +176/+50    40     8     3
+   close if ahead by 5 %; later take at 10 %              +5.37  94%    +274   -71.3   -129.0    -71.3      +200/+74    40     8     3
+   close if ahead by 5 %; later take at 25 %              +6.97  94%    +356   -71.3   -129.0    -71.3     +250/+106    40     8     3
+   close if ahead by 5 %; later take at 50 %              +3.96  86%    +202   -71.3   -188.7    -71.3      +99/+103    40     4     7
+   close if ahead by 10 %; later take at 0 %              +4.41  82%    +225   -71.3   -129.0    -71.3      +176/+49    37    11     3
+   close if ahead by 10 %; later take at 10 %             +5.49  94%    +280   -71.3   -129.0    -71.3      +205/+75    37    11     3
+   close if ahead by 10 %; later take at 25 %             +8.10  94%    +413   -71.3   -129.0    -71.3     +299/+114    37    11     3
+   close if ahead by 10 %; later take at 50 %             +6.44  86%    +328   -71.3   -188.7    -71.3     +203/+126    37     7     7
+   rows: 19
+
+## BTC daily WITH SLIPPAGE: 112 expiries (2026-08-08 .. 2026-11-27), each side 1 % away, entered 20 h before settlement; stop 3x on every sold option; mean premium 39.0
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                    +10.29  64%   +1153  -108.3   -261.6   -189.7     +656/+497     0     0    39
+   closed at the check (10 h) whatever the result         +6.84  73%    +766  -112.6   -243.0   -118.4     +408/+358   112     0    24
+   -- take from the start (no check)
+   take at 5 % of the premium                             -1.72  14%    -193   -24.0    -56.2   -202.4      -132/-61     0   108     4
+   take at 10 % of the premium                            +0.07  41%      +8   -24.0    -70.9    -72.0       -44/+52     0   106     6
+   take at 20 % of the premium                            +1.89  89%    +212   -52.1   -141.4    -65.1      +120/+92     0   100    12
+   take at 30 % of the premium                            +4.15  87%    +465   -71.2   -173.3    -71.2     +296/+169     0    97    15
+   take at 50 % of the premium                            +7.72  79%    +865   -71.2   -174.5    -94.0     +509/+356     0    89    23
+   -- check 10 h after the entry; if it did not close, hold to settlement
+   close if ahead by 0 % or more                          +6.06  73%    +679  -108.3   -260.9   -189.7     +357/+322    86     0    26
+   close if ahead by 5 % or more                          +5.57  73%    +623  -108.3   -260.9   -189.7     +302/+322    85     0    27
+   close if ahead by 10 % or more                         +6.05  75%    +678  -108.3   -260.9   -189.7     +302/+376    83     0    27
+   close if ahead by 20 % or more                         +5.76  73%    +645  -108.3   -260.9   -189.7     +335/+309    78     0    30
+   -- check 10 h after the entry; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %               +6.83  74%    +765  -108.3   -244.1   -132.9     +443/+322    85     2    25
+   close if ahead by 5 %; later take at 10 %              +6.88  75%    +771  -108.3   -244.1   -132.9     +449/+322    85     2    25
+   close if ahead by 5 %; later take at 25 %              +7.01  75%    +785  -108.3   -244.1   -132.9     +463/+322    85     2    25
+   close if ahead by 5 %; later take at 50 %              +7.21  75%    +808  -108.3   -244.1   -132.9     +486/+322    85     2    25
+   close if ahead by 10 %; later take at 0 %              +6.87  75%    +769  -108.3   -244.1   -130.8     +443/+326    83     4    25
+   close if ahead by 10 %; later take at 10 %             +6.94  77%    +778  -108.3   -244.1   -128.4     +449/+329    83     4    25
+   close if ahead by 10 %; later take at 25 %             +7.16  77%    +802  -108.3   -244.1   -126.9     +463/+339    83     4    25
+   close if ahead by 10 %; later take at 50 %             +7.47  77%    +837  -108.3   -244.1   -120.5     +486/+351    83     4    25
+   rows: 19
+
+## ETH daily WITH SLIPPAGE: 112 expiries (2026-08-08 .. 2026-11-27), each side 1 % away, entered 20 h before settlement; stop 3x on every sold option; mean premium 21.5
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                     +3.97  61%    +445   -50.8   -139.4   -123.4     +229/+216     0     0    40
+   closed at the check (10 h) whatever the result         +2.76  72%    +310   -50.9   -139.6    -81.3     +118/+192   111     0    25
+   -- take from the start (no check)
+   take at 5 % of the premium                             -1.07  33%    -119   -45.5    -91.3   -130.6       -99/-20     0   108     4
+   take at 10 % of the premium                            -0.11  70%     -12   -45.5    -91.3    -97.2       -60/+48     0   107     5
+   take at 20 % of the premium                            +0.09  88%     +10   -45.5   -117.1   -101.9       -36/+46     0    98    14
+   take at 30 % of the premium                            +1.15  84%    +129   -45.5   -128.8    -82.7       -8/+137     0    94    17
+   take at 50 % of the premium                            +2.64  74%    +295   -45.5   -128.8    -72.6     +153/+143     0    83    27
+   -- check 10 h after the entry; if it did not close, hold to settlement
+   close if ahead by 0 % or more                          +2.69  72%    +302   -50.8   -139.4    -81.1     +122/+180    83     0    28
+   close if ahead by 5 % or more                          +2.72  73%    +304   -50.8   -139.4    -81.1     +114/+190    81     0    29
+   close if ahead by 10 % or more                         +2.93  73%    +328   -50.8   -139.4    -81.1     +137/+190    80     0    29
+   close if ahead by 20 % or more                         +2.18  71%    +244   -50.8   -139.4   -122.8     +116/+128    77     0    31
+   -- check 10 h after the entry; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %               +3.20  77%    +358   -50.8   -139.4    -81.1     +132/+226    81     6    25
+   close if ahead by 5 %; later take at 10 %              +3.23  78%    +362   -50.8   -139.4    -81.1     +133/+229    81     6    25
+   close if ahead by 5 %; later take at 25 %              +2.64  73%    +296   -50.8   -139.4    -81.1     +114/+182    81     1    29
+   close if ahead by 5 %; later take at 50 %              +2.67  73%    +299   -50.8   -139.4    -81.1     +114/+185    81     1    29
+   close if ahead by 10 %; later take at 0 %              +3.20  77%    +359   -50.8   -139.4    -81.1     +133/+226    80     7    25
+   close if ahead by 10 %; later take at 10 %             +3.24  78%    +363   -50.8   -139.4    -81.1     +134/+229    80     7    25
+   close if ahead by 10 %; later take at 25 %             +2.70  73%    +302   -50.8   -139.4    -81.1     +120/+182    80     2    29
+   close if ahead by 10 %; later take at 50 %             +2.79  73%    +313   -50.8   -139.4    -81.1     +128/+185    80     2    29
+   rows: 19
+
+## ETH Friday weekly WITH SLIPPAGE: 51 expiries (2025-12-05 .. 2026-11-20), each side 4 % away, entered 164 h before settlement; stop 2x on every sold option; mean premium 66.0
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                     +0.73  45%     +37  -109.2   -239.8   -183.7       +79/-41     0     0    38
+   closed at the check (20 h) whatever the result         +4.97  78%    +253   -46.6    -77.3    -46.6      +178/+75    51     0     2
+   -- take from the start (no check)
+   take at 5 % of the premium                             +1.08  94%     +55   -28.1    -52.7    -42.6       +43/+12     0    49     2
+   take at 10 % of the premium                            +3.59  94%    +183   -28.1    -69.1    -28.1      +135/+48     0    48     3
+   take at 20 % of the premium                            +5.09  78%    +259   -45.0    -97.2    -49.8      +181/+79     0    39    14
+   take at 30 % of the premium                            +3.55  67%    +181  -109.2   -182.3   -129.8      +133/+47     0    30    21
+   take at 50 % of the premium                            +4.76  61%    +243  -109.2   -214.7   -116.9      +147/+96     0    25    26
+   -- check 20 h after the entry; if it did not close, hold to settlement
+   close if ahead by 0 % or more                          +4.92  80%    +251   -45.0    -97.2    -45.0      +185/+66    42     0     8
+   close if ahead by 5 % or more                          +4.80  82%    +245   -45.0    -97.2    -45.0      +185/+60    40     0    10
+   close if ahead by 10 % or more                         +3.40  78%    +173   -60.6   -133.7    -60.6      +107/+66    37     0    13
+   close if ahead by 20 % or more                         +1.05  53%     +54  -109.2   -214.7   -137.1       +74/-21    14     0    29
+   -- check 20 h after the entry; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %               +4.13  82%    +211   -45.0    -97.2    -45.0      +153/+57    40     5     6
+   close if ahead by 5 %; later take at 10 %              +4.66  88%    +238   -45.0    -97.2    -45.0      +171/+66    40     5     6
+   close if ahead by 5 %; later take at 25 %              +5.07  86%    +259   -45.0    -97.2    -45.0      +179/+80    40     3     8
+   close if ahead by 5 %; later take at 50 %              +4.93  82%    +252   -45.0    -97.2    -45.0      +192/+60    40     1    10
+   close if ahead by 10 %; later take at 0 %              +4.11  82%    +210   -45.0    -97.2    -45.0      +153/+56    37     8     6
+   close if ahead by 10 %; later take at 10 %             +4.80  88%    +245   -45.0    -97.2    -45.0      +177/+68    37     8     7
+   close if ahead by 10 %; later take at 25 %             +5.54  84%    +283   -45.0    -97.2    -45.0      +197/+86    37     4    10
+   close if ahead by 10 %; later take at 50 %             +3.54  78%    +180   -60.6   -133.7    -60.6      +114/+66    37     1    13
+   rows: 19
+
+## BTC daily WITH SLIPPAGE: 112 expiries (2026-08-08 .. 2026-11-27), each side 1 % away, entered 20 h before settlement; stop 2x on every sold option; mean premium 39.0
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                     +7.21  47%    +807   -41.5   -115.8   -143.8     +299/+508     0     0    63
+   closed at the check (10 h) whatever the result         +5.50  58%    +616   -39.0    -94.5   -114.6     +183/+432   109     0    49
+   -- take from the start (no check)
+   take at 5 % of the premium                             -1.93  13%    -216   -30.9    -72.4   -217.1      -137/-79     0   106     7
+   take at 10 % of the premium                            -0.38  38%     -43   -30.9    -72.4    -73.9       -56/+13     0    99    13
+   take at 20 % of the premium                            +2.14  82%    +240   -39.0    -93.9    -47.1      +63/+177     0    91    21
+   take at 30 % of the premium                            +3.72  73%    +417   -39.0    -93.9    -64.2     +156/+261     0    81    31
+   take at 50 % of the premium                            +6.26  62%    +701   -41.5   -111.3    -95.4     +231/+470     0    67    45
+   -- check 10 h after the entry; if it did not close, hold to settlement
+   close if ahead by 0 % or more                          +6.23  58%    +698   -41.5   -115.8    -94.9     +202/+496    68     0    49
+   close if ahead by 5 % or more                          +6.23  58%    +698   -41.5   -115.8    -94.9     +202/+496    67     0    49
+   close if ahead by 10 % or more                         +6.41  60%    +718   -41.5   -115.8    -94.9     +206/+512    63     0    49
+   close if ahead by 20 % or more                         +6.69  59%    +749   -41.5   -115.8    -94.9     +249/+500    60     0    50
+   -- check 10 h after the entry; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %               +6.22  58%    +696   -41.5   -115.8    -94.9     +202/+495    67     4    49
+   close if ahead by 5 %; later take at 10 %              +6.23  58%    +698   -41.5   -115.8    -94.9     +202/+496    67     0    49
+   close if ahead by 5 %; later take at 25 %              +6.23  58%    +698   -41.5   -115.8    -94.9     +202/+496    67     0    49
+   close if ahead by 5 %; later take at 50 %              +6.23  58%    +698   -41.5   -115.8    -94.9     +202/+496    67     0    49
+   close if ahead by 10 %; later take at 0 %              +6.22  58%    +697   -41.5   -115.8    -94.9     +202/+495    63     8    49
+   close if ahead by 10 %; later take at 10 %             +6.27  60%    +702   -41.5   -115.8    -94.9     +203/+499    63     2    49
+   close if ahead by 10 %; later take at 25 %             +6.31  60%    +706   -41.5   -115.8    -94.9     +206/+501    63     1    49
+   close if ahead by 10 %; later take at 50 %             +6.36  60%    +713   -41.5   -115.8    -94.9     +206/+507    63     1    49
+   rows: 19
+
+## ETH daily WITH SLIPPAGE: 112 expiries (2026-08-08 .. 2026-11-27), each side 1 % away, entered 20 h before settlement; stop 2x on every sold option; mean premium 21.5
+                                                           mean  win   total   worst  worst 3 drawdown        halves check  take stops
+   the stop alone, held to settlement                     +2.65  45%    +297   -50.8   -125.0   -105.9     +130/+167     0     0    65
+   closed at the check (10 h) whatever the result         +2.39  57%    +268   -50.9   -118.6    -57.5      +75/+193   110     0    49
+   -- take from the start (no check)
+   take at 5 % of the premium                             -1.30  29%    -146   -33.7    -86.5   -150.6      -101/-45     0   101    11
+   take at 10 % of the premium                            -0.90  61%    -101   -34.0    -95.2   -137.8       -73/-28     0    95    17
+   take at 20 % of the premium                            -0.04  73%      -4   -34.0    -95.2    -98.0       -17/+13     0    81    31
+   take at 30 % of the premium                            +0.97  68%    +109   -34.0    -95.2    -69.6       +7/+102     0    75    37
+   take at 50 % of the premium                            +1.93  58%    +217   -40.2   -107.9   -103.4     +111/+106     0    63    49
+   -- check 10 h after the entry; if it did not close, hold to settlement
+   close if ahead by 0 % or more                          +2.53  58%    +283   -50.8   -118.5    -51.9      +66/+218    67     0    49
+   close if ahead by 5 % or more                          +2.63  59%    +295   -50.8   -118.5    -51.9      +66/+229    64     0    49
+   close if ahead by 10 % or more                         +2.63  59%    +295   -50.8   -118.5    -51.9      +66/+229    62     0    49
+   close if ahead by 20 % or more                         +2.11  56%    +236   -50.8   -125.0   -101.6      +62/+174    59     0    52
+   -- check 10 h after the entry; if it did not close, take later at a share of the premium
+   close if ahead by 5 %; later take at 0 %               +2.53  58%    +283   -50.8   -118.5    -51.9      +66/+217    64     5    49
+   close if ahead by 5 %; later take at 10 %              +2.55  59%    +285   -50.8   -118.5    -51.9      +66/+220    64     2    49
+   close if ahead by 5 %; later take at 25 %              +2.56  59%    +286   -50.8   -118.5    -51.9      +66/+220    64     1    49
+   close if ahead by 5 %; later take at 50 %              +2.58  59%    +289   -50.8   -118.5    -51.9      +66/+223    64     1    49
+   close if ahead by 10 %; later take at 0 %              +2.53  58%    +283   -50.8   -118.5    -51.9      +66/+217    62     7    49
+   close if ahead by 10 %; later take at 10 %             +2.55  59%    +286   -50.8   -118.5    -51.9      +66/+220    62     2    49
+   close if ahead by 10 %; later take at 25 %             +2.56  59%    +287   -50.8   -118.5    -51.9      +66/+221    62     1    49
+   close if ahead by 10 %; later take at 50 %             +2.59  59%    +290   -50.8   -118.5    -51.9      +66/+223    62     1    49
+   rows: 19
+

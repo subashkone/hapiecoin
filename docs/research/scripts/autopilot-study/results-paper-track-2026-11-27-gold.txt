@@ -1,0 +1,465 @@
+export of 2026-11-27T19:54:34Z; 460 paper trades tracked at 1-minute marks; results in USD before fees; times IST
+ # coin strategy                                       state  entered       premium     last     best best at         worst worst at     given back
+ 1 ETH  Pin butterfly                                  closed 21 Nov 15:06    -0.91    -0.91    +0.37 22 Nov 11:13    -0.91 22 Nov 16:21       1.28
+ 2 BTC  Trend with puts                                closed 21 Nov 15:06    -4.17    -2.15    +0.15 21 Nov 16:05    -2.31 23 Nov 19:27       2.29
+ 3 ETH  Trend with puts                                closed 21 Nov 15:06    -3.31    -1.67    +0.06 21 Nov 15:48    -1.67 23 Nov 19:27       1.74
+ 4 BTC  Pin butterfly                                  closed 21 Nov 15:06    -0.39    -0.39    +0.09 21 Nov 15:59    -0.46 21 Nov 19:07       0.48
+ 5 BTC  Premium harvest                                open   21 Nov 15:06   +14.63    +0.64    +0.67 25 Nov 20:21    -1.48 23 Nov 19:59       0.03
+ 6 BTC  Trend with puts                                closed 21 Nov 18:37    -3.99    -2.00    +0.28 22 Nov 11:12    -2.16 23 Nov 19:55       2.28
+ 7 ETH  Pin butterfly                                  closed 21 Nov 18:37    -0.77    -0.77    +0.24 22 Nov 12:51    -0.78 23 Nov 16:47       1.01
+ 8 ETH  Trend with puts                                closed 21 Nov 18:37    -3.48    -1.77    +0.40 22 Nov 11:12    -1.83 23 Nov 19:46       2.17
+ 9 BTC  Pin butterfly                                  closed 21 Nov 18:37    -0.27    -0.27    +0.28 22 Nov 10:34    -0.27 23 Nov 14:53       0.55
+10 BTC  Premium harvest                                open   21 Nov 18:37   +14.66    +0.92    +0.95 28 Nov 01:23    -1.08 23 Nov 19:56       0.03
+11 BTC  Trend with puts                                closed 21 Nov 18:54    -4.22    -2.14    +0.33 22 Nov 11:12    -2.21 23 Nov 19:55       2.47
+12 ETH  Pin butterfly                                  closed 21 Nov 19:06    -0.79    +0.50    +0.56 23 Nov 08:12    -0.14 21 Nov 19:08       0.06
+13 BTC  Pin butterfly                                  closed 21 Nov 19:06    -0.29    -0.29    +0.14 23 Nov 08:12    -0.30 23 Nov 17:02       0.43
+14 BTC  Trend with puts                                closed 21 Nov 19:11    -3.95    +0.89    +0.89 22 Nov 11:16    -0.22 21 Nov 19:33       0.00
+15 BTC  Premium harvest                                open   21 Nov 19:11   +14.83    +1.19    +1.31 28 Nov 00:51    -0.50 23 Nov 19:56       0.12
+16 ETH  Trend with puts                                closed 21 Nov 19:16    -3.87    +0.70    +0.71 22 Nov 09:19    -0.14 21 Nov 19:33       0.01
+17 ETH  Premium harvest                                closed 21 Nov 19:16    +7.16    +0.80    +0.90 24 Nov 06:29    -0.70 23 Nov 19:57       0.10
+18 BTC  Pin butterfly                                  closed 21 Nov 19:26    -0.27    -0.27    +0.32 23 Nov 08:19    -0.28 23 Nov 17:15       0.59
+19 ETH  Pin butterfly                                  closed 21 Nov 19:31    -0.81    +0.50    +0.56 23 Nov 06:37    -0.13 22 Nov 11:15       0.06
+20 BTC  Trend with puts                                closed 21 Nov 19:31    -4.08    +0.89    +0.89 22 Nov 10:45    -0.16 21 Nov 19:33       0.00
+21 BTC  Pin butterfly                                  closed 21 Nov 19:41    -0.24    -0.24    +0.33 23 Nov 08:13    -0.24 23 Nov 17:11       0.57
+22 BTC  Wide evening strangle with wings               closed 21 Nov 23:11   +35.39   +33.08   +34.14 22 Nov 15:17    -2.70 22 Nov 15:28       1.05
+23 BTC  Evening strangle, stop at double               closed 21 Nov 23:11   +82.23   +39.90   +74.98 22 Nov 15:17    -0.71 21 Nov 23:13      35.07
+24 BTC  Evening strangle with wings                    closed 21 Nov 23:11   +49.44    +7.14   +42.30 22 Nov 15:17   -15.66 22 Nov 15:28      35.16
+25 BTC  Evening strangle, stop at triple               closed 21 Nov 23:11   +82.23   +39.90   +74.98 22 Nov 15:17    -0.71 21 Nov 23:13      35.07
+26 BTC  Evening strangle, take half                    closed 21 Nov 23:53   +74.89   +37.52   +37.86 22 Nov 07:37    +0.20 21 Nov 23:54       0.34
+27 BTC  Evening strangle, trail the rest               closed 22 Nov 00:27   +71.35   -14.88   +34.35 22 Nov 07:41   -14.88 22 Nov 15:21      49.23
+28 BTC  Friday weekly strangle, take half              closed 22 Nov 01:13  +212.95    -8.66   +66.37 23 Nov 18:17  -185.96 25 Nov 20:14      75.03
+29 BTC  Friday weekly strangle, stop at double         closed 22 Nov 01:13  +212.95    -8.66   +66.37 23 Nov 18:17  -185.96 25 Nov 20:14      75.03
+30 BTC  Friday weekly strangle, stop at triple         closed 22 Nov 01:13  +212.95   -94.21   +66.37 23 Nov 18:17  -271.51 25 Nov 20:14     160.59
+31 BTC  Friday weekly strangle, trail the rest         closed 22 Nov 01:13  +212.95   -71.72   +66.37 23 Nov 18:17   -72.85 24 Nov 08:12     138.09
+32 BTC  Friday weekly strangle, with wings             closed 22 Nov 01:13  +119.54  +119.54  +119.54 27 Nov 17:28   -53.12 23 Nov 19:56       0.00
+33 BTC  Monthly strangle, 8 % away                     open   22 Nov 02:36  +673.36  +118.36  +118.40 28 Nov 01:23   -35.87 23 Nov 19:56       0.04
+34 BTC  Monthly 12 %, 1 month out, stop at triple      open   22 Nov 02:36  +273.69  +105.59  +106.19 28 Nov 01:12   -11.54 23 Nov 19:56       0.60
+35 BTC  Monthly strangle, 12 % away, one month out     open   22 Nov 02:36  +273.69  +105.59  +106.19 28 Nov 01:12   -11.54 23 Nov 19:56       0.60
+36 BTC  Monthly 12 %, 1 month out, wings, stop at trip open   22 Nov 02:36   +95.88   +26.14   +26.55 28 Nov 01:13   -10.77 23 Nov 19:56       0.40
+37 BTC  Monthly 8 %, 1 month out, wings, stop at tripl open   22 Nov 02:36  +150.90   +28.13   +28.29 28 Nov 01:23   -11.21 23 Nov 19:56       0.16
+38 BTC  Monthly 12 %, 1 month out, trail the rest      open   22 Nov 02:36  +273.69  +105.59  +106.19 28 Nov 01:12   -11.54 23 Nov 19:56       0.60
+39 BTC  Monthly 12 %, 1 month out, wings and a stop at open   22 Nov 02:36   +95.88   +26.14   +26.55 28 Nov 01:13   -10.77 23 Nov 19:56       0.40
+40 BTC  Monthly 12 %, 1 month out, with wings          open   22 Nov 02:36   +95.88   +26.14   +26.55 28 Nov 01:13   -10.77 23 Nov 19:56       0.40
+41 BTC  Monthly strangle, 1,000 a side                 open   22 Nov 02:36  +230.93   +67.33   +68.67 27 Nov 20:10    -7.46 23 Nov 19:56       1.34
+42 BTC  Monthly 12 %, 1 month out, stop at double      open   22 Nov 02:36  +273.69  +105.59  +106.19 28 Nov 01:12   -11.54 23 Nov 19:56       0.60
+43 BTC  Afternoon strangle, take half                  closed 22 Nov 15:33   +29.20   +14.63   +14.63 22 Nov 16:39    -7.63 22 Nov 15:38       0.00
+44 ETH  ETH evening strangle, wide, wings, take half   closed 22 Nov 21:34   +14.74    +7.37    +7.58 23 Nov 08:33    -0.95 22 Nov 22:56       0.21
+45 XAUT Gold evening strangle, take half               closed 22 Nov 21:34    +1.76    -0.22    +0.18 23 Nov 04:30    -0.89 23 Nov 04:58       0.39
+46 ETH  ETH evening strangle, take half                closed 22 Nov 21:34   +30.17   +15.16   +15.35 23 Nov 08:41    -2.88 22 Nov 23:01       0.19
+47 ETH  ETH evening strangle, wings at 3 %             closed 22 Nov 21:34   +17.64   +17.64   +17.64 23 Nov 17:25    -0.66 22 Nov 22:56       0.00
+48 BTC  Evening strangle with wings                    closed 22 Nov 21:34   +52.79   +46.12   +48.31 23 Nov 16:54    -4.60 22 Nov 22:16       2.19
+49 ETH  ETH monthly 12 %, 1 month out, wings, stop at  open   22 Nov 21:34   +42.69    +6.86    +7.60 28 Nov 00:43    -4.29 23 Nov 19:57       0.73
+50 BTC  Evening strangle, 100 a side                   closed 22 Nov 21:34   +21.94   +10.98   +11.10 23 Nov 06:09    -3.42 22 Nov 22:02       0.12
+51 BTC  Evening strangle, profit steps                 closed 22 Nov 21:34   +90.28   +56.49   +56.49 23 Nov 17:29    -7.59 22 Nov 22:46       0.00
+52 ETH  ETH monthly 16 %, 2 months out, wings, stop at open   22 Nov 21:34   +41.27    +3.29    +4.42 27 Nov 23:24    -2.16 23 Nov 19:56       1.13
+53 ETH  ETH evening strangle, trail the rest           closed 22 Nov 21:34   +30.17   +30.15   +30.15 23 Nov 17:25    -2.88 22 Nov 23:01       0.00
+54 BTC  Evening strangle, profit lock                  closed 22 Nov 21:34   +90.28   +90.26   +90.26 23 Nov 17:29    -7.59 22 Nov 22:46       0.00
+55 ETH  ETH monthly 12 %, 1 month out, take half       open   22 Nov 21:34  +121.48   +34.15   +34.50 28 Nov 01:15   -16.09 23 Nov 19:56       0.35
+56 ETH  ETH evening strangle, half then trail          closed 22 Nov 21:34   +30.17   +11.38   +15.64 23 Nov 08:49    -2.88 22 Nov 23:01       4.26
+57 ETH  ETH evening strangle, half a per cent away     closed 22 Nov 21:34   +38.03   +38.01   +38.01 23 Nov 17:29    -2.97 22 Nov 23:01       0.00
+58 BTC  Evening strangle, half then trail              closed 22 Nov 21:34   +90.28   +36.85   +45.96 23 Nov 08:05    -7.59 22 Nov 22:46       9.11
+59 ETH  ETH evening strangle, stop at triple           closed 22 Nov 21:34   +30.17   +30.15   +30.15 23 Nov 17:25    -2.88 22 Nov 23:01       0.00
+60 BTC  Evening strangle, stop at triple               closed 22 Nov 21:34   +91.96   +85.28   +87.39 23 Nov 16:54    -7.25 22 Nov 22:16       2.11
+61 ETH  ETH evening strangle, one side after a move    closed 22 Nov 21:34   +15.56   +15.55   +15.55 23 Nov 17:22    -3.78 22 Nov 22:50       0.00
+62 ETH  ETH monthly 12 %, 1 month out, stop at double  open   22 Nov 21:34  +121.48   +34.15   +34.50 28 Nov 01:15   -16.09 23 Nov 19:56       0.35
+63 ETH  ETH evening strangle, profit steps             closed 22 Nov 21:34   +30.17   +18.89   +18.89 23 Nov 17:25    -2.88 22 Nov 23:01       0.00
+64 BTC  Evening strangle, stop at double               closed 22 Nov 21:34   +91.96   +85.28   +87.39 23 Nov 16:54    -7.25 22 Nov 22:16       2.11
+65 XAUT Gold evening strangle, stop at double          closed 22 Nov 21:34    +1.76    -0.22    +0.18 23 Nov 04:30    -0.89 23 Nov 04:58       0.39
+66 BTC  Evening strangle, one side after a move        closed 22 Nov 21:34   +47.85   +47.84   +47.84 23 Nov 17:21   -16.41 22 Nov 23:38       0.00
+67 BTC  Evening strangle, out by 1:30 AM               closed 22 Nov 21:34   +90.28    +7.06    +7.09 23 Nov 01:29    -7.59 22 Nov 22:46       0.03
+68 BTC  Evening strangle, buy back at 5 dollars        closed 22 Nov 21:34   +90.28   +89.34   +89.34 23 Nov 17:11    -7.59 22 Nov 22:46       0.00
+69 ETH  ETH evening strangle, with wings               closed 22 Nov 21:34   +16.09   +16.09   +16.09 23 Nov 17:25    -0.63 22 Nov 23:00       0.00
+70 ETH  ETH evening strangle, out by 1:30 AM           closed 22 Nov 21:34   +30.17    +0.61    +0.76 23 Nov 01:21    -2.88 22 Nov 23:01       0.15
+71 XAUT Gold evening strangle, stop at triple          closed 22 Nov 21:34    +1.76    -1.12    +0.18 23 Nov 04:30    -1.83 23 Nov 06:44       1.30
+72 XAUT Gold evening strangle, trail the rest          closed 22 Nov 21:34    +1.76    -0.83    +0.18 23 Nov 04:30    -0.86 23 Nov 04:55       1.01
+73 BTC  Evening strangle, take half                    closed 22 Nov 21:34   +91.96   +45.99   +46.11 23 Nov 07:38    -7.25 22 Nov 22:16       0.12
+74 BTC  Evening strangle, trail the rest               closed 22 Nov 21:34   +91.96   +85.28   +87.39 23 Nov 16:54    -7.25 22 Nov 22:16       2.11
+75 BTC  Wide evening strangle with wings               closed 22 Nov 21:34   +38.99   +38.99   +38.99 23 Nov 17:28    -4.55 22 Nov 22:16       0.00
+76 ETH  ETH evening strangle, stop at double           closed 22 Nov 21:34   +30.17   +30.15   +30.15 23 Nov 17:25    -2.88 22 Nov 23:01       0.00
+77 ETH  ETH monthly 16 %, 2 months out, wings, stop at open   22 Nov 21:34   +41.27    +3.29    +4.42 27 Nov 23:24    -2.16 23 Nov 19:56       1.13
+78 BTC  Evening strangle, half a per cent away         closed 22 Nov 21:34  +114.45   +87.77   +99.34 23 Nov 16:47    -8.24 22 Nov 22:46      11.57
+79 BTC  Evening strangle, buy back at 20 % of the pric closed 22 Nov 21:34   +90.28   +73.30   +73.30 23 Nov 08:51    -7.59 22 Nov 22:46       0.00
+80 BTC  Afternoon strangle, take half                  closed 23 Nov 15:32   +19.44    +9.73    +9.79 23 Nov 16:25    +0.49 23 Nov 15:33       0.06
+81 ETH  Trend with puts                                closed 23 Nov 20:03    -3.55    +0.77    +0.79 23 Nov 20:21    +0.13 23 Nov 20:07       0.02
+82 BTC  Trend with puts                                closed 23 Nov 20:13    -4.21    +0.89    +0.89 23 Nov 23:00    -0.20 23 Nov 20:56       0.00
+83 ETH  Trend with puts                                closed 23 Nov 20:37    -3.38    +0.79    +0.80 23 Nov 23:15    -0.22 23 Nov 20:56       0.02
+84 ETH  ETH evening strangle, trail from 90 %          closed 23 Nov 21:32   +31.68   -15.14    +3.01 24 Nov 00:35   -16.55 24 Nov 04:34      18.15
+85 ETH  ETH evening strangle, stop at triple           closed 23 Nov 21:32   +31.68   -15.14    +3.01 24 Nov 00:35   -16.55 24 Nov 04:34      18.15
+86 ETH  ETH evening strangle, out by 1:30 AM           closed 23 Nov 21:32   +31.68    -4.64    +3.01 24 Nov 00:35   -13.87 24 Nov 01:11       7.65
+87 BTC  Evening strangle, half a per cent away         closed 23 Nov 21:32  +103.23   -56.98    +5.45 23 Nov 22:03   -67.51 24 Nov 01:22      62.42
+88 ETH  ETH evening strangle, wide, wings, take half   closed 23 Nov 21:32   +14.61   -13.83    +6.22 24 Nov 08:39   -13.83 24 Nov 17:27      20.05
+89 XAUT Gold evening strangle, take half               closed 23 Nov 21:32    +3.47    +1.75    +1.76 24 Nov 06:02    +0.02 23 Nov 21:33       0.00
+90 BTC  Evening strangle, trail from 90 %              closed 23 Nov 21:32   +74.99   -46.42    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      51.50
+91 BTC  Evening strangle, take half                    closed 23 Nov 21:32   +82.26    +0.99    +5.39 23 Nov 22:03   -17.59 23 Nov 23:23       4.40
+92 BTC  Evening strangle, stop at triple               closed 23 Nov 21:32   +82.26   -39.15    +5.39 23 Nov 22:03   -47.75 24 Nov 01:22      44.54
+93 BTC  Evening strangle, stop at double               closed 23 Nov 21:32   +82.26    +0.99    +5.39 23 Nov 22:03   -17.59 23 Nov 23:23       4.40
+94 ETH  ETH evening strangle, stop at double           closed 23 Nov 21:32   +31.68    +0.80    +2.94 23 Nov 22:49    -9.37 23 Nov 23:24       2.14
+95 BTC  Evening strangle, buy back at 20 % of the pric closed 23 Nov 21:32   +74.99   -53.21    +5.08 23 Nov 22:04   -55.64 24 Nov 01:08      58.29
+96 XAUT Gold evening strangle, stop at triple          closed 23 Nov 21:32    +3.47    -1.86    +2.70 24 Nov 18:22    -1.86 24 Nov 20:47       4.56
+97 BTC  Evening strangle, one side after a move        closed 23 Nov 21:32   +40.34   -81.06    +7.61 23 Nov 21:42   -83.50 24 Nov 01:08      88.67
+98 ETH  ETH evening strangle, half a per cent away     closed 23 Nov 21:32   +35.73   -22.75    +2.89 23 Nov 22:46   -23.54 24 Nov 06:40      25.64
+99 BTC  Evening strangle, 100 a side                   closed 23 Nov 21:32   +20.45   +10.32   +10.32 24 Nov 05:55    -7.73 23 Nov 23:15       0.00
+100 BTC  Evening strangle, profit lock                  closed 23 Nov 21:32   +74.99   -46.42    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      51.50
+101 ETH  ETH evening strangle, take half                closed 23 Nov 21:32   +31.68   -15.14    +3.01 24 Nov 00:35   -16.55 24 Nov 04:34      18.15
+102 ETH  ETH evening strangle, half then trail          closed 23 Nov 21:32   +31.68   -15.14    +3.01 24 Nov 00:35   -16.55 24 Nov 04:34      18.15
+103 BTC  Wide evening strangle with wings               closed 23 Nov 21:32   +31.96   -68.04    +5.75 24 Nov 06:40   -68.05 24 Nov 16:45      73.79
+104 ETH  ETH evening strangle, trail the rest           closed 23 Nov 21:32   +31.68    +0.80    +2.94 23 Nov 22:49    -9.37 23 Nov 23:24       2.14
+105 BTC  Evening strangle, close at 90 %                closed 23 Nov 21:32   +74.99   -46.42    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      51.50
+106 BTC  Evening strangle, trail the rest               closed 23 Nov 21:32   +82.26    +0.99    +5.39 23 Nov 22:03   -17.59 23 Nov 23:23       4.40
+107 ETH  ETH evening strangle, with wings               closed 23 Nov 21:32   +16.53   -23.47    +1.25 23 Nov 22:56   -23.47 24 Nov 17:29      24.73
+108 BTC  Evening strangle, half then trail              closed 23 Nov 21:32   +74.99   -46.42    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      51.50
+109 ETH  ETH evening strangle, one side after a move    closed 23 Nov 21:32   +15.38   -31.43    +5.12 23 Nov 22:04   -31.43 24 Nov 04:15      36.55
+110 BTC  Evening strangle, buy back at 5 dollars        closed 23 Nov 21:32   +74.99   -46.90    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      51.98
+111 BTC  Evening strangle, profit steps                 closed 23 Nov 21:32   +74.99   -49.87    +5.08 23 Nov 22:04   -53.48 24 Nov 01:08      54.95
+112 ETH  ETH evening strangle, profit steps             closed 23 Nov 21:32   +31.68   -15.92    +3.01 24 Nov 00:35   -16.27 24 Nov 04:34      18.93
+113 ETH  ETH evening strangle, close at 90 %            closed 23 Nov 21:32   +31.68   -15.14    +3.01 24 Nov 00:35   -16.55 24 Nov 04:34      18.15
+114 BTC  Evening strangle, out by 1:30 AM               closed 23 Nov 21:32   +74.99   -52.47    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      57.55
+115 ETH  ETH evening strangle, wings at 3 %             closed 23 Nov 21:32   +20.67   -19.33    +1.08 23 Nov 22:47   -19.34 24 Nov 16:20      20.42
+116 XAUT Gold evening strangle, trail the rest          closed 23 Nov 21:32    +3.47    -0.02    +2.70 24 Nov 18:22    -0.18 24 Nov 20:40       2.73
+117 BTC  Evening strangle, profit lock and buy back at  closed 23 Nov 21:32   +74.99   -46.90    +5.08 23 Nov 22:04   -53.55 24 Nov 01:22      51.98
+118 XAUT Gold evening strangle, stop at double          closed 23 Nov 21:32    +3.47    -0.02    +2.70 24 Nov 18:22    -0.18 24 Nov 20:40       2.73
+119 BTC  Evening strangle with wings                    closed 23 Nov 21:32   +45.64   -54.36    +3.28 24 Nov 06:40   -54.38 24 Nov 16:09      57.65
+120 ETH  ETH evening strangle, trail from 15 %          closed 23 Nov 22:17   +28.37    +2.99    +4.27 24 Nov 00:35    -7.61 23 Nov 23:15       1.27
+121 XAUT Gold evening strangle, trail from 15 %         closed 23 Nov 22:17    +2.46    +0.39    +0.58 24 Nov 04:31    -0.04 23 Nov 22:30       0.19
+122 BTC  Evening strangle, trail from 15 %              closed 23 Nov 22:17   +90.88   +12.34   +19.94 24 Nov 00:49    -7.12 23 Nov 23:15       7.60
+123 BTC  Trend with puts                                closed 23 Nov 23:16    -4.02    +0.91    +1.01 24 Nov 08:35    -0.23 23 Nov 23:24       0.11
+124 ETH  Trend with puts                                closed 23 Nov 23:31    -3.19    +0.77    +0.77 24 Nov 07:35    -0.14 24 Nov 00:34       0.00
+125 ETH  Premium harvest                                open   24 Nov 06:51    +6.33    +0.66    +0.70 28 Nov 00:43    -0.25 25 Nov 20:14       0.03
+126 ETH  Trend with puts                                closed 24 Nov 07:51    -3.83    +0.71    +0.71 25 Nov 07:03    -0.19 24 Nov 11:14       0.00
+127 BTC  Trend with puts                                closed 24 Nov 08:51    -4.00    +0.90    +0.90 25 Nov 17:02    -0.50 24 Nov 11:00       0.00
+128 BTC  Afternoon strangle, take half                  closed 24 Nov 15:32   +27.24   -25.00    +5.52 24 Nov 16:08   -26.87 24 Nov 17:27      30.52
+129 BTC  Evening strangle, half then trail              closed 24 Nov 21:34   +88.61   +38.61   +48.42 25 Nov 06:45    +0.95 24 Nov 21:35       9.81
+130 ETH  ETH evening strangle, close at 90 %            closed 24 Nov 21:34   +34.11   +15.68   +25.63 25 Nov 12:37    -0.06 24 Nov 21:36       9.95
+131 BTC  Evening strangle, trail from 90 %              closed 24 Nov 21:34   +88.61   +52.73   +79.25 25 Nov 14:28    +0.95 24 Nov 21:35      26.52
+132 BTC  Evening strangle, buy back at 20 % of the pric closed 24 Nov 21:34   +88.61   +72.68   +72.68 25 Nov 14:02    +0.95 24 Nov 21:35       0.00
+133 BTC  Evening strangle, out by 1:30 AM               closed 24 Nov 21:34   +88.61   +28.20   +28.58 25 Nov 01:25    +0.95 24 Nov 21:35       0.38
+134 ETH  ETH evening strangle, wings at 3 %             closed 24 Nov 21:34   +19.85    +1.44   +12.16 25 Nov 12:37    -1.89 25 Nov 17:01      10.72
+135 BTC  Evening strangle, profit lock and buy back at  closed 24 Nov 21:34   +88.61   +52.31   +81.08 25 Nov 14:28    +0.95 24 Nov 21:35      28.77
+136 ETH  ETH evening strangle, half then trail          closed 24 Nov 21:34   +34.11   +13.68   +17.18 25 Nov 05:37    -0.06 24 Nov 21:36       3.50
+137 XAUT Gold evening strangle, take half               closed 24 Nov 21:34    +3.09    +1.54    +1.56 25 Nov 06:20    -0.11 24 Nov 21:55       0.02
+138 XAUT Gold evening strangle, stop at triple          closed 24 Nov 21:34    +3.09    -1.39    +2.11 25 Nov 15:38    -1.40 25 Nov 19:11       3.50
+139 XAUT Gold evening strangle, trail the rest          closed 24 Nov 21:34    +3.09    -0.03    +2.11 25 Nov 15:38    -0.11 24 Nov 21:55       2.14
+140 ETH  ETH evening strangle, trail the rest           closed 24 Nov 21:34   +34.11   +15.68   +25.63 25 Nov 12:37    -0.06 24 Nov 21:36       9.95
+141 BTC  Evening strangle, half a per cent away         closed 24 Nov 21:34  +111.18   +35.30   +86.81 25 Nov 14:28    +0.56 24 Nov 21:35      51.51
+142 ETH  ETH Tuesday weekly strangle, stop at triple    closed 24 Nov 21:34   +43.53   +37.63   +40.83 27 Nov 05:58    -4.41 25 Nov 20:14       3.20
+143 ETH  ETH evening strangle, trail from 15 %          closed 24 Nov 21:34   +34.11   +11.52   +17.18 25 Nov 05:37    -0.06 24 Nov 21:36       5.66
+144 ETH  ETH evening strangle, stop at triple           closed 24 Nov 21:34   +34.11   +15.68   +25.63 25 Nov 12:37    -0.06 24 Nov 21:36       9.95
+145 BTC  Evening strangle, close at 90 %                closed 24 Nov 21:34   +88.61   +52.73   +79.25 25 Nov 14:28    +0.95 24 Nov 21:35      26.52
+146 ETH  ETH evening strangle, take half                closed 24 Nov 21:34   +34.11   +17.07   +17.07 25 Nov 05:34    -0.06 24 Nov 21:36       0.00
+147 ETH  ETH evening strangle, cautious                 closed 24 Nov 21:34   +21.03   +11.07   +13.87 25 Nov 05:37    -0.05 24 Nov 21:36       2.79
+148 ETH  ETH evening strangle, out by 1:30 AM           closed 24 Nov 21:34   +34.11    +9.63    +9.69 25 Nov 01:30    -0.06 24 Nov 21:36       0.07
+149 BTC  Tuesday weekly strangle, with wings            closed 24 Nov 21:34   +77.35   +60.01   +69.86 27 Nov 07:22   -21.54 25 Nov 20:14       9.86
+150 ETH  ETH evening strangle, half a per cent away     closed 24 Nov 21:34   +42.71   +14.29   +27.35 25 Nov 12:37    -0.04 24 Nov 21:36      13.06
+151 BTC  Evening strangle, stop at double               closed 24 Nov 21:34   +88.61   +52.73   +79.25 25 Nov 14:28    +0.95 24 Nov 21:35      26.52
+152 ETH  ETH evening strangle, one side after a move    closed 24 Nov 21:34   +17.07   +17.06   +17.06 25 Nov 17:12    -2.21 24 Nov 23:00       0.00
+153 ETH  ETH evening strangle, with wings               closed 24 Nov 21:34   +16.08    +7.67   +12.31 25 Nov 16:47    +0.09 24 Nov 21:40       4.64
+154 ETH  ETH evening strangle, trail from 90 %          closed 24 Nov 21:34   +34.11   +15.68   +25.63 25 Nov 12:37    -0.06 24 Nov 21:36       9.95
+155 BTC  Evening strangle with wings                    closed 24 Nov 21:34   +57.18   +21.33   +48.03 25 Nov 14:28    +0.62 24 Nov 21:39      26.71
+156 BTC  Evening strangle, buy back at 5 dollars        closed 24 Nov 21:34   +88.61   +52.31   +81.08 25 Nov 14:28    +0.95 24 Nov 21:35      28.77
+157 BTC  Evening strangle, cautious                     closed 24 Nov 21:34   +67.85   +28.46   +40.31 25 Nov 06:45    -0.02 24 Nov 21:35      11.85
+158 BTC  Evening strangle, one side after a move        closed 24 Nov 21:34   +43.88   +43.87   +43.87 25 Nov 17:13   -15.18 24 Nov 23:36       0.00
+159 BTC  Evening strangle, stop at triple               closed 24 Nov 21:34   +88.61   +52.73   +79.25 25 Nov 14:28    +0.95 24 Nov 21:35      26.52
+160 BTC  Evening strangle, take half                    closed 24 Nov 21:34   +88.61   +44.76   +44.76 25 Nov 05:03    +0.95 24 Nov 21:35       0.00
+161 ETH  ETH evening strangle, wide, wings, take half   closed 24 Nov 21:34   +14.84    +7.45    +7.45 25 Nov 03:07    +0.11 24 Nov 21:36       0.00
+162 BTC  Tuesday weekly strangle, stop at double        closed 24 Nov 21:34  +114.74   -37.17   +35.20 25 Nov 09:07   -97.76 26 Nov 05:46      72.37
+163 BTC  Evening strangle, profit steps                 closed 24 Nov 21:34   +88.61   +46.58   +53.21 25 Nov 14:28    +0.95 24 Nov 21:35       6.63
+164 BTC  Evening strangle, trail the rest               closed 24 Nov 21:34   +88.61   +52.73   +79.25 25 Nov 14:28    +0.95 24 Nov 21:35      26.52
+165 BTC  Evening strangle, 100 a side                   closed 24 Nov 21:34   +24.24   +12.20   +12.20 25 Nov 02:30    +0.33 24 Nov 21:35       0.00
+166 BTC  Tuesday weekly strangle, take half             closed 24 Nov 21:34  +114.74   -37.17   +35.20 25 Nov 09:07   -97.76 26 Nov 05:46      72.37
+167 ETH  ETH evening strangle, stop at double           closed 24 Nov 21:34   +34.11   +15.68   +25.63 25 Nov 12:37    -0.06 24 Nov 21:36       9.95
+168 ETH  ETH evening strangle, profit steps             closed 24 Nov 21:34   +34.11   +16.74   +19.22 25 Nov 12:37    -0.06 24 Nov 21:36       2.48
+169 BTC  Tuesday weekly strangle, trail the rest        closed 24 Nov 21:34  +114.74   -49.22   +35.20 25 Nov 09:07   -49.27 25 Nov 22:48      84.42
+170 XAUT Gold evening strangle, stop at double          closed 24 Nov 21:34    +3.09    -0.03    +2.11 25 Nov 15:38    -0.11 24 Nov 21:55       2.14
+171 BTC  Evening strangle, trail from 15 %              closed 24 Nov 21:34   +88.61    +9.43   +13.56 24 Nov 22:38    +0.95 24 Nov 21:35       4.13
+172 BTC  Evening strangle, profit lock                  closed 24 Nov 21:34   +88.61   +52.73   +79.25 25 Nov 14:28    +0.95 24 Nov 21:35      26.52
+173 XAUT Gold evening strangle, trail from 15 %         closed 24 Nov 21:34    +3.09    +1.28    +1.61 25 Nov 06:26    -0.11 24 Nov 21:55       0.32
+174 BTC  Tuesday weekly strangle, stop at triple        closed 24 Nov 21:34  +114.74   +97.37  +107.03 27 Nov 07:22   -43.17 25 Nov 20:14       9.66
+175 ETH  ETH evening strangle, wings and a trail        closed 24 Nov 21:34   +12.80    +6.52    +8.21 25 Nov 05:39    -0.06 24 Nov 21:36       1.69
+176 BTC  Wide evening strangle with wings               closed 24 Nov 22:20   +36.13   +36.13   +36.13 25 Nov 17:29    -1.05 24 Nov 23:33       0.00
+177 ETH  Trend with puts                                closed 25 Nov 07:20    -3.64    +0.72    +0.72 25 Nov 20:07    -0.17 25 Nov 08:50       0.00
+178 BTC  Afternoon strangle, take half                  closed 25 Nov 15:30   +28.41   -15.21    +9.90 25 Nov 16:49   -15.21 25 Nov 16:58      25.11
+179 BTC  Trend with puts                                open   25 Nov 17:19    -4.09    -0.80    +0.84 25 Nov 20:14    -1.88 27 Nov 13:50       1.64
+180 ETH  Trend with puts                                closed 25 Nov 20:26    -3.29    -1.66    +0.05 25 Nov 20:46    -1.66 27 Nov 10:56       1.72
+181 BTC  Evening strangle, buy back at 20 % of the pric closed 25 Nov 21:34  +103.80   -56.10   +11.56 25 Nov 22:25   -59.72 26 Nov 00:47      67.65
+182 ETH  ETH evening strangle, stop at triple           closed 25 Nov 21:34   +34.25   -20.04    +5.32 26 Nov 04:30   -32.16 26 Nov 05:46      25.37
+183 BTC  Evening strangle, half then trail              closed 25 Nov 21:34  +103.80   -45.78   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.33
+184 ETH  ETH evening strangle, wings and a trail        closed 25 Nov 21:34   +13.00    -7.62    +3.18 26 Nov 11:46   -16.64 26 Nov 05:46      10.80
+185 BTC  Evening strangle with wings                    closed 25 Nov 21:34   +54.26   -45.74    +2.32 25 Nov 22:14   -45.75 26 Nov 16:40      48.06
+186 BTC  Evening strangle, buy back at 5 dollars        closed 25 Nov 21:34  +103.80   -46.20   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.76
+187 BTC  Evening strangle, profit steps                 closed 25 Nov 21:34  +103.80   -50.18   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      61.73
+188 ETH  ETH evening strangle, take half                closed 25 Nov 21:34   +34.25   -20.04    +5.32 26 Nov 04:30   -32.16 26 Nov 05:46      25.37
+189 BTC  Evening strangle, 100 a side                   closed 25 Nov 21:34   +18.44   -12.68    +5.52 25 Nov 22:25   -16.44 25 Nov 22:52      18.20
+190 BTC  Evening strangle, profit lock                  closed 25 Nov 21:34  +103.80   -45.78   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.33
+191 BTC  Evening strangle, out by 1:30 AM               closed 25 Nov 21:34  +103.80   -53.73   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      65.28
+192 BTC  Evening strangle, stop at triple               closed 25 Nov 21:34   +97.38   -52.19   +10.94 25 Nov 22:25   -61.04 26 Nov 00:47      63.13
+193 BTC  Evening strangle, take half                    closed 25 Nov 21:34   +97.38    -4.80   +10.94 25 Nov 22:25   -26.00 25 Nov 22:41      15.74
+194 BTC  Evening strangle, cautious                     closed 25 Nov 21:34   +76.03    +4.22   +11.35 25 Nov 22:25   -13.46 25 Nov 22:41       7.13
+195 XAUT Gold evening strangle, stop at triple          closed 25 Nov 21:34    +3.17    -1.79    +0.56 25 Nov 22:23    -2.15 25 Nov 23:28       2.35
+196 ETH  ETH evening strangle, half then trail          closed 25 Nov 21:34   +34.25   -20.08    +5.32 26 Nov 04:30   -32.16 26 Nov 05:46      25.41
+197 ETH  ETH evening strangle, profit steps             closed 25 Nov 21:34   +34.25   -20.22    +5.32 26 Nov 04:30   -32.16 26 Nov 05:46      25.54
+198 BTC  Evening strangle, half a per cent away         closed 25 Nov 21:34  +120.54   -60.15   +12.14 25 Nov 22:25   -69.40 26 Nov 01:18      72.29
+199 ETH  ETH evening strangle, half a per cent away     closed 25 Nov 21:34   +42.89   -31.92    +5.28 26 Nov 04:30   -33.30 26 Nov 06:23      37.20
+200 BTC  Evening strangle, one side after a move        closed 25 Nov 21:34   +49.63   -99.93    +9.91 25 Nov 22:14  -103.55 26 Nov 00:47     109.84
+201 ETH  ETH evening strangle, with wings               closed 25 Nov 21:34   +16.21   -13.79    +2.19 26 Nov 11:46   -13.79 26 Nov 17:30      15.97
+202 XAUT Gold evening strangle, trail the rest          closed 25 Nov 21:34    +3.17    -0.18    +0.56 25 Nov 22:23    -0.71 25 Nov 22:54       0.74
+203 XAUT Gold evening strangle, take half               closed 25 Nov 21:34    +3.17    -0.18    +0.56 25 Nov 22:23    -0.71 25 Nov 22:54       0.74
+204 XAUT Gold evening strangle, trail from 15 %         closed 25 Nov 21:34    +3.17    +0.41    +0.53 25 Nov 21:42    -0.00 25 Nov 21:36       0.12
+205 BTC  Evening strangle, trail from 15 %              closed 25 Nov 21:34  +103.80   -45.78   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.33
+206 ETH  ETH evening strangle, one side after a move    closed 25 Nov 21:34   +17.62   -36.66    +6.09 25 Nov 22:14   -48.65 26 Nov 05:46      42.75
+207 BTC  Evening strangle, trail from 90 %              closed 25 Nov 21:34  +103.80   -45.78   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.33
+208 BTC  Evening strangle, stop at double               closed 25 Nov 21:34   +97.38    -4.80   +10.94 25 Nov 22:25   -26.00 25 Nov 22:41      15.74
+209 BTC  Evening strangle, trail the rest               closed 25 Nov 21:34   +97.38    -4.80   +10.94 25 Nov 22:25   -26.00 25 Nov 22:41      15.74
+210 ETH  ETH evening strangle, cautious                 closed 25 Nov 21:34   +20.99    -0.76    +3.97 25 Nov 22:57    -3.86 25 Nov 23:21       4.73
+211 BTC  Evening strangle, close at 90 %                closed 25 Nov 21:34  +103.80   -45.78   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.33
+212 ETH  ETH evening strangle, trail from 15 %          closed 25 Nov 21:34   +34.25    +3.51    +5.32 26 Nov 04:30    -9.78 25 Nov 23:48       1.82
+213 ETH  ETH evening strangle, wide, wings, take half   closed 25 Nov 21:34   +15.07   -18.02    +2.99 26 Nov 04:30   -18.02 26 Nov 17:23      21.01
+214 ETH  ETH evening strangle, stop at double           closed 25 Nov 21:34   +34.25    -1.52    +4.42 25 Nov 22:57    -6.09 26 Nov 00:02       5.94
+215 ETH  ETH evening strangle, wings at 3 %             closed 25 Nov 21:34   +20.12   -19.88    +1.26 25 Nov 22:26   -19.88 26 Nov 17:30      21.14
+216 ETH  ETH evening strangle, out by 1:30 AM           closed 25 Nov 21:34   +34.25    -0.88    +4.42 25 Nov 22:57    -9.78 25 Nov 23:48       5.30
+217 BTC  Wide evening strangle with wings               closed 25 Nov 21:34   +42.98   -57.02    +3.43 25 Nov 22:24   -57.02 26 Nov 16:53      60.45
+218 ETH  ETH evening strangle, close at 90 %            closed 25 Nov 21:34   +34.25   -20.08    +5.32 26 Nov 04:30   -32.16 26 Nov 05:46      25.41
+219 XAUT Gold evening strangle, stop at double          closed 25 Nov 21:34    +3.17    -0.18    +0.56 25 Nov 22:23    -0.71 25 Nov 22:54       0.74
+220 BTC  Evening strangle, profit lock and buy back at  closed 25 Nov 21:34  +103.80   -46.20   +11.56 25 Nov 22:25   -55.25 26 Nov 00:47      57.76
+221 ETH  ETH evening strangle, trail the rest           closed 25 Nov 21:34   +34.25    -1.52    +4.42 25 Nov 22:57    -6.09 26 Nov 00:02       5.94
+222 ETH  ETH evening strangle, trail from 90 %          closed 25 Nov 21:34   +34.25   -20.04    +5.32 26 Nov 04:30   -32.16 26 Nov 05:46      25.37
+223 BTC  Afternoon strangle, take half                  closed 26 Nov 15:34   +21.79   -13.20    +3.98 26 Nov 16:00   -14.13 26 Nov 17:08      17.18
+224 ETH  ETH evening strangle, trail from 90 %          closed 26 Nov 21:31   +22.59   -14.95   +11.55 27 Nov 07:02   -15.33 27 Nov 10:53      26.50
+225 ETH  ETH evening strangle, out by 1:30 AM           closed 26 Nov 21:31   +22.59   +10.24   +10.66 27 Nov 05:55    +0.07 26 Nov 21:32       0.42
+226 ETH  ETH evening strangle, wings and a trail        closed 26 Nov 21:31    +8.12    +2.30    +5.14 27 Nov 07:02    -0.03 26 Nov 21:34       2.84
+227 ETH  ETH evening strangle, half then trail          closed 26 Nov 21:31   +22.59    +4.98   +11.55 27 Nov 07:02    +0.07 26 Nov 21:32       6.57
+228 ETH  ETH evening strangle, stop at double           closed 26 Nov 21:31   +22.59    -6.27   +11.55 27 Nov 07:02    -7.72 27 Nov 08:15      17.82
+229 BTC  Evening strangle, stop at triple               closed 26 Nov 21:31   +60.19   +32.82   +42.93 27 Nov 16:34   -19.47 27 Nov 13:48      10.10
+230 ETH  ETH evening strangle, stop at triple           closed 26 Nov 21:31   +22.59   -14.95   +11.55 27 Nov 07:02   -15.33 27 Nov 10:53      26.50
+231 BTC  Evening strangle, trail the rest               closed 26 Nov 21:31   +60.19    +0.96   +33.36 27 Nov 07:36    -7.26 27 Nov 08:23      32.40
+232 ETH  ETH evening strangle, trail the rest           closed 26 Nov 21:31   +22.59    -6.27   +11.55 27 Nov 07:02    -7.72 27 Nov 08:15      17.82
+233 BTC  Evening strangle, buy back at 20 % of the pric closed 26 Nov 21:31   +52.99   +20.98   +31.13 27 Nov 16:34   -31.14 27 Nov 13:48      10.15
+234 BTC  Evening strangle, close at 90 %                closed 26 Nov 21:31   +52.99   +25.62   +35.73 27 Nov 16:34   -26.66 27 Nov 13:48      10.10
+235 BTC  Evening strangle, out by 1:30 AM               closed 26 Nov 21:31   +52.99   +20.30   +21.77 27 Nov 05:55    +0.20 26 Nov 21:35       1.47
+236 BTC  Evening strangle, stop at double               closed 26 Nov 21:31   +60.19    +0.96   +33.36 27 Nov 07:36    -7.26 27 Nov 08:23      32.40
+237 ETH  ETH evening strangle, profit steps             closed 26 Nov 21:31   +22.59    -3.25   +10.02 27 Nov 07:02    -3.42 27 Nov 10:53      13.27
+238 ETH  ETH evening strangle, cautious                 closed 26 Nov 21:31   +11.58    +4.36    +8.19 27 Nov 07:02    +0.06 26 Nov 21:32       3.82
+239 BTC  Evening strangle, half a per cent away         closed 26 Nov 21:31   +70.32   +22.95   +36.71 27 Nov 16:34   -28.20 27 Nov 13:48      13.76
+240 ETH  ETH evening strangle, wings at 3 %             closed 26 Nov 21:31   +15.84    -0.04    +5.99 27 Nov 07:02   -15.00 27 Nov 11:00       6.03
+241 BTC  Evening strangle, profit lock                  closed 26 Nov 21:31   +52.99   +12.46   +30.42 27 Nov 07:36    +0.20 26 Nov 21:35      17.96
+242 BTC  Evening strangle, trail from 90 %              closed 26 Nov 21:31   +52.99   +25.62   +35.73 27 Nov 16:34   -26.66 27 Nov 13:48      10.10
+243 ETH  ETH evening strangle, trail from 15 %          closed 26 Nov 21:31   +22.59    +4.98   +11.55 27 Nov 07:02    +0.07 26 Nov 21:32       6.57
+244 BTC  Evening strangle, trail from 15 %              closed 26 Nov 21:31   +52.99    +9.16   +12.88 26 Nov 22:55    +0.20 26 Nov 21:35       3.71
+245 ETH  ETH evening strangle, half a per cent away     closed 26 Nov 21:31   +26.50   -11.04   +12.44 27 Nov 07:01   -11.51 27 Nov 10:53      23.49
+246 BTC  Evening strangle, profit steps                 closed 26 Nov 21:31   +52.99   +22.76   +27.82 27 Nov 16:34    -3.38 27 Nov 13:48       5.05
+247 ETH  ETH evening strangle, with wings               closed 26 Nov 21:31   +11.64    +5.76    +5.94 27 Nov 07:02   -14.12 27 Nov 11:00       0.18
+248 BTC  Evening strangle, 100 a side                   closed 26 Nov 21:31   +21.89   +11.04   +11.27 27 Nov 06:03    -0.49 26 Nov 21:35       0.23
+249 BTC  Evening strangle, profit lock and buy back at  closed 26 Nov 21:31   +52.99   +12.46   +30.42 27 Nov 07:36    +0.20 26 Nov 21:35      17.96
+250 BTC  Evening strangle with wings                    closed 26 Nov 21:31   +36.70    +9.35   +19.55 27 Nov 16:34   -22.35 27 Nov 13:48      10.20
+251 BTC  Evening strangle, one side after a move        closed 26 Nov 21:31   +23.92   +23.91   +23.91 27 Nov 17:06   -12.95 26 Nov 22:06       0.00
+252 BTC  Evening strangle, buy back at 5 dollars        closed 26 Nov 21:31   +52.99   +25.14   +35.29 27 Nov 16:34   -26.99 27 Nov 13:48      10.15
+253 BTC  Evening strangle, half then trail              closed 26 Nov 21:31   +52.99   +19.15   +30.42 27 Nov 07:36    +0.20 26 Nov 21:35      11.27
+254 BTC  Evening strangle, cautious                     closed 26 Nov 21:31   +38.31    +7.35   +10.46 26 Nov 22:55    -0.23 26 Nov 21:35       3.11
+255 XAUT Gold evening strangle, trail from 15 %         closed 26 Nov 21:31    +2.55    +1.06    +1.36 27 Nov 07:15    +0.00 26 Nov 21:32       0.30
+256 ETH  ETH evening strangle, one side after a move    closed 26 Nov 21:31   +10.12   +10.11   +10.11 27 Nov 17:09    -4.32 26 Nov 22:06       0.00
+257 ETH  ETH evening strangle, wide, wings, take half   closed 26 Nov 21:31    +9.36    +5.48    +5.71 27 Nov 05:55    +0.03 26 Nov 21:32       0.23
+258 ETH  ETH evening strangle, close at 90 %            closed 26 Nov 21:31   +22.59   -14.95   +11.55 27 Nov 07:02   -15.33 27 Nov 10:53      26.50
+259 BTC  Wide evening strangle with wings               closed 26 Nov 21:31   +24.41   +17.07   +18.09 27 Nov 16:34   -27.64 27 Nov 13:48       1.02
+260 BTC  Evening strangle, take half                    closed 26 Nov 21:31   +60.19   +30.10   +30.34 27 Nov 06:57    -0.55 26 Nov 21:35       0.24
+261 ETH  ETH evening strangle, take half                closed 26 Nov 21:31   +22.59   +11.33   +11.38 27 Nov 06:54    +0.07 26 Nov 21:32       0.06
+262 XAUT Gold evening strangle, stop at triple          closed 26 Nov 21:36    +2.52    -1.05    +1.33 27 Nov 07:16    -1.08 27 Nov 11:21       2.37
+263 XAUT Gold evening strangle, take half               closed 26 Nov 21:36    +2.52    +1.26    +1.26 27 Nov 06:51    +0.01 26 Nov 21:37       0.00
+264 XAUT Gold evening strangle, stop at double          closed 26 Nov 21:36    +2.52    +0.13    +1.33 27 Nov 07:16    -0.04 27 Nov 07:54       1.19
+265 XAUT Gold evening strangle, trail the rest          closed 26 Nov 21:36    +2.52    +0.13    +1.33 27 Nov 07:16    -0.04 27 Nov 07:54       1.19
+266 ETH  Trend with puts                                closed 27 Nov 11:13    -3.03    +0.81    +0.81 27 Nov 20:06    -0.02 27 Nov 11:23       0.00
+267 BTC  Afternoon strangle, take half                  closed 27 Nov 15:31   +16.14    +8.22    +8.49 27 Nov 16:24    -0.33 27 Nov 15:32       0.27
+268 ETH  Pin butterfly                                  open   27 Nov 20:11    -1.06    +0.46    +0.49 28 Nov 01:10    -0.22 27 Nov 20:35       0.03
+269 ETH  Premium harvest                                open   27 Nov 20:11    +9.08    +0.09    +0.26 27 Nov 23:13    -0.01 28 Nov 00:47       0.17
+270 BTC  Trend with puts                                closed 27 Nov 20:11    -7.84    +1.36    +1.47 27 Nov 20:30    +0.04 27 Nov 20:14       0.12
+271 BTC  Premium harvest                                open   27 Nov 20:11   +15.33    -0.03    +0.04 28 Nov 01:15    -0.15 27 Nov 21:08       0.08
+272 BTC  Pin butterfly                                  open   27 Nov 20:11    -0.44    +0.25    +0.29 28 Nov 00:48    -0.14 27 Nov 20:35       0.04
+273 ETH  Trend with puts                                open   27 Nov 20:11    -6.16    +0.38    +1.64 27 Nov 20:35    -0.02 27 Nov 20:14       1.27
+274 BTC  Premium harvest                                open   27 Nov 20:21   +15.42    -0.07    +0.09 27 Nov 20:34    -0.12 27 Nov 22:24       0.16
+275 ETH  Trend with puts                                open   27 Nov 20:21    -6.79    -0.25    +1.02 27 Nov 20:35    -0.55 27 Nov 22:03       1.27
+276 BTC  Trend with puts                                open   27 Nov 20:21    -7.73    -0.64    +0.51 27 Nov 20:35    -1.25 27 Nov 22:05       1.16
+277 ETH  Pin butterfly                                  open   27 Nov 20:21    -1.10    +0.38    +0.38 28 Nov 01:20    -0.07 27 Nov 20:35       0.00
+278 ETH  Premium harvest                                open   27 Nov 20:21    +8.96    -0.03    +0.15 27 Nov 23:13    -0.13 28 Nov 00:47       0.17
+279 BTC  Pin butterfly                                  open   27 Nov 20:21    -3.26    +0.86    +0.86 28 Nov 01:24    -0.39 27 Nov 20:35       0.00
+280 ETH  Trend with puts                                open   27 Nov 20:21    -6.79    -0.25    +1.02 27 Nov 20:35    -0.55 27 Nov 22:03       1.27
+281 BTC  Trend with puts                                open   27 Nov 20:51    -4.12    -0.28    -0.08 27 Nov 23:15    -0.61 27 Nov 22:05       0.20
+282 BTC  Evening strangle, profit lock and buy back at  open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+283 ETH  ETH Friday weekly strangle, one day            open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+284 ETH  ETH evening strangle, close at 90 %            open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+285 ETH  ETH evening strangle, cautious                 open   27 Nov 21:31   +13.15    +8.16    +8.22 28 Nov 01:17    -0.01 27 Nov 21:35       0.06
+286 BTC  Evening strangle, one side after a move        open   27 Nov 21:31   +24.14   +15.80   +15.94 28 Nov 01:22   -16.17 27 Nov 22:05       0.14
+287 BTC  Evening strangle, stop at triple               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+288 BTC  Evening strangle, half a per cent away         open   27 Nov 21:31   +69.34   +31.12   +33.32 28 Nov 01:14    +0.23 27 Nov 21:32       2.20
+289 XAUT Gold evening strangle, trail the rest          open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+290 XAUT Gold evening strangle, take half               open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+291 BTC  Friday weekly strangle, stop at triple         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+292 ETH  ETH evening strangle, stop at triple           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+293 BTC  Evening strangle, half then trail              open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+294 BTC  Friday weekly strangle, 200 a side             open   27 Nov 21:31   +38.86    +4.27    +4.47 28 Nov 01:15    -1.44 27 Nov 22:05       0.20
+295 BTC  Evening strangle with wings                    open   27 Nov 21:31   +32.24   +17.04   +17.14 28 Nov 01:07    -1.30 27 Nov 22:05       0.10
+296 BTC  Evening strangle, half a per cent away         open   27 Nov 21:31   +69.34   +31.12   +33.32 28 Nov 01:14    +0.23 27 Nov 21:32       2.20
+297 ETH  ETH Friday weekly strangle, with wings         open   27 Nov 21:31   +36.19    +2.39    +2.59 28 Nov 01:23    -0.13 27 Nov 21:34       0.20
+298 ETH  ETH evening strangle, out by 1:30 AM           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+299 ETH  ETH evening strangle, take half                open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+300 BTC  Monthly strangle, 1,000 a side                 open   27 Nov 21:31  +202.39    +6.38    +6.39 28 Nov 01:23    -1.61 27 Nov 22:05       0.01
+301 ETH  ETH Friday weekly strangle, stop at triple     open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+302 BTC  Evening strangle, cautious                     closed 27 Nov 21:31   +35.62    +5.23    +9.62 27 Nov 22:50    +0.23 27 Nov 21:32       4.39
+303 BTC  Evening strangle, take half                    closed 27 Nov 21:31   +49.89   +24.95   +24.95 28 Nov 00:38    -1.76 27 Nov 22:05       0.00
+304 BTC  Evening strangle, buy back at 20 % of the pric open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+305 XAUT Gold evening strangle, trail the rest          open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+306 BTC  Evening strangle, take half                    closed 27 Nov 21:31   +49.89   +24.95   +24.95 28 Nov 00:38    -1.76 27 Nov 22:05       0.00
+307 ETH  ETH Friday weekly strangle, take half          open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+308 BTC  Evening strangle, out by 1:30 AM               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+309 BTC  Evening strangle with wings                    open   27 Nov 21:31   +32.24   +17.04   +17.14 28 Nov 01:07    -1.30 27 Nov 22:05       0.10
+310 ETH  ETH monthly 16 %, 2 months out, wings, stop at open   27 Nov 21:31   +61.93    +0.25    +1.73 27 Nov 23:17    -0.96 28 Nov 00:33       1.48
+311 ETH  ETH Friday weekly strangle, take half          open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+312 BTC  Evening strangle, profit lock                  open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+313 BTC  Evening strangle, half then trail              open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+314 BTC  Monthly strangle, 8 % away                     open   27 Nov 21:31  +534.51    +9.85    +9.85 28 Nov 01:24    -3.32 27 Nov 22:05       0.00
+315 BTC  Evening strangle, profit lock and buy back at  open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+316 ETH  ETH Friday weekly strangle, stop at triple     open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+317 ETH  ETH evening strangle, close at 90 %            open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+318 BTC  Evening strangle, profit steps                 open   27 Nov 21:31   +49.89   +23.08   +23.51 28 Nov 01:07    -1.76 27 Nov 22:05       0.43
+319 ETH  ETH evening strangle, one side after a move    open   27 Nov 21:31   +11.15    +5.91    +6.23 27 Nov 23:16    -3.75 27 Nov 22:03       0.32
+320 ETH  ETH evening strangle, trail from 90 %          open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+321 BTC  Evening strangle, out by 1:30 AM               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+322 ETH  ETH evening strangle, wings at 3 %             open   27 Nov 21:31   +16.73    +5.64    +5.79 28 Nov 01:14    -0.04 27 Nov 21:35       0.15
+323 BTC  Friday weekly strangle, 200 a side             open   27 Nov 21:31   +38.86    +4.27    +4.47 28 Nov 01:15    -1.44 27 Nov 22:05       0.20
+324 BTC  Evening strangle with wings                    open   27 Nov 21:31   +32.24   +17.04   +17.14 28 Nov 01:07    -1.30 27 Nov 22:05       0.10
+325 BTC  Friday weekly strangle, stop at triple         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+326 BTC  Friday weekly strangle, profit steps           open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+327 BTC  Friday weekly strangle, take half              open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+328 ETH  ETH evening strangle, wings at 3 %             open   27 Nov 21:31   +16.73    +5.64    +5.79 28 Nov 01:14    -0.04 27 Nov 21:35       0.15
+329 ETH  ETH evening strangle, wide, wings, take half   closed 27 Nov 21:31   +11.26    +5.64    +5.64 28 Nov 00:33    -0.03 27 Nov 21:35       0.00
+330 ETH  ETH evening strangle, close at 90 %            open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+331 ETH  ETH evening strangle, take half                open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+332 BTC  Friday weekly strangle, close at 90 %          open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+333 BTC  Friday weekly strangle, stop at double         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+334 BTC  Wide evening strangle with wings               open   27 Nov 21:31   +19.40   +10.54   +10.84 28 Nov 01:07    -1.06 27 Nov 22:05       0.30
+335 XAUT Gold evening strangle, stop at triple          open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+336 BTC  Friday weekly strangle, trail the rest         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+337 BTC  Friday weekly strangle, with wings             open   27 Nov 21:31   +85.90    +3.89    +4.14 28 Nov 01:19    -0.11 27 Nov 22:05       0.24
+338 XAUT Gold evening strangle, trail from 15 %         closed 27 Nov 21:31    +1.42    +0.48    +0.60 27 Nov 23:16    +0.02 27 Nov 21:32       0.12
+339 BTC  Friday weekly strangle, with wings             open   27 Nov 21:31   +85.90    +3.89    +4.14 28 Nov 01:19    -0.11 27 Nov 22:05       0.24
+340 BTC  Evening strangle, trail the rest               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+341 BTC  Evening strangle, profit lock                  open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+342 BTC  Evening strangle, close at 90 %                open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+343 BTC  Evening strangle, trail from 90 %              open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+344 ETH  ETH monthly 16 %, 2 months out, wings, stop at open   27 Nov 21:31   +61.93    +0.25    +1.73 27 Nov 23:17    -0.96 28 Nov 00:33       1.48
+345 BTC  Friday weekly strangle, one day                open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+346 ETH  ETH evening strangle, stop at double           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+347 ETH  ETH Friday weekly strangle, stop at double     open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+348 BTC  Evening strangle, half a per cent away         open   27 Nov 21:31   +69.34   +31.12   +33.32 28 Nov 01:14    +0.23 27 Nov 21:32       2.20
+349 ETH  ETH Friday weekly strangle, one day            open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+350 ETH  ETH evening strangle, stop at triple           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+351 BTC  Friday weekly strangle, stop at double         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+352 ETH  ETH evening strangle, cautious                 open   27 Nov 21:31   +13.15    +8.16    +8.22 28 Nov 01:17    -0.01 27 Nov 21:35       0.06
+353 ETH  ETH evening strangle, with wings               open   27 Nov 21:31   +12.54    +5.58    +5.68 28 Nov 01:13    -0.08 27 Nov 21:35       0.10
+354 ETH  ETH evening strangle, stop at double           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+355 ETH  ETH Friday weekly strangle, stop at double     open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+356 XAUT Gold evening strangle, stop at double          open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+357 ETH  ETH Friday weekly strangle, with wings         open   27 Nov 21:31   +36.19    +2.39    +2.59 28 Nov 01:23    -0.13 27 Nov 21:34       0.20
+358 ETH  ETH evening strangle, trail the rest           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+359 BTC  Evening strangle, trail the rest               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+360 BTC  Friday weekly strangle, profit lock            open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+361 BTC  Friday weekly strangle, profit lock            open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+362 ETH  ETH evening strangle, half then trail          open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+363 BTC  Evening strangle, stop at triple               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+364 XAUT Gold evening strangle, stop at double          open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+365 XAUT Gold evening strangle, trail from 15 %         closed 27 Nov 21:31    +1.42    +0.48    +0.60 27 Nov 23:16    +0.02 27 Nov 21:32       0.12
+366 XAUT Gold evening strangle, take half               open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+367 ETH  ETH evening strangle, profit steps             open   27 Nov 21:31   +24.63   +10.08   +10.16 28 Nov 01:18    +0.03 27 Nov 21:35       0.08
+368 BTC  Evening strangle, stop at double               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+369 BTC  Wide evening strangle with wings               open   27 Nov 21:31   +19.40   +10.54   +10.84 28 Nov 01:07    -1.06 27 Nov 22:05       0.30
+370 BTC  Evening strangle, trail from 90 %              open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+371 ETH  ETH evening strangle, trail from 90 %          open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+372 BTC  Evening strangle, buy back at 5 dollars        open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+373 ETH  ETH evening strangle, out by 1:30 AM           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+374 BTC  Evening strangle, stop at double               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+375 BTC  Friday weekly strangle, take half              open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+376 ETH  ETH evening strangle, wide, wings, take half   closed 27 Nov 21:31   +11.26    +5.64    +5.64 28 Nov 00:33    -0.03 27 Nov 21:35       0.00
+377 BTC  Evening strangle, buy back at 5 dollars        open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+378 BTC  Evening strangle, stop at double               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+379 BTC  Friday weekly strangle, stop at triple         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+380 BTC  Evening strangle, profit steps                 open   27 Nov 21:31   +49.89   +23.08   +23.51 28 Nov 01:07    -1.76 27 Nov 22:05       0.43
+381 BTC  Evening strangle, trail from 15 %              closed 27 Nov 21:31   +49.89    -0.13    +7.94 27 Nov 21:58    -0.13 27 Nov 22:04       8.07
+382 BTC  Evening strangle, 100 a side                   closed 27 Nov 21:31   +20.44   +10.22   +10.24 27 Nov 23:53    -4.36 27 Nov 22:05       0.02
+383 BTC  Evening strangle, buy back at 20 % of the pric open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+384 BTC  Evening strangle, close at 90 %                open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+385 XAUT Gold evening strangle, trail from 15 %         closed 27 Nov 21:31    +1.42    +0.48    +0.60 27 Nov 23:16    +0.02 27 Nov 21:32       0.12
+386 ETH  ETH evening strangle, half then trail          open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+387 BTC  Friday weekly strangle, with wings             open   27 Nov 21:31   +85.90    +3.89    +4.14 28 Nov 01:19    -0.11 27 Nov 22:05       0.24
+388 BTC  Evening strangle, profit lock                  open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+389 ETH  ETH evening strangle, trail from 15 %          closed 27 Nov 21:31   +24.63    +3.47    +5.00 27 Nov 22:58    +0.03 27 Nov 21:35       1.53
+390 BTC  Friday weekly strangle, profit lock            open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+391 ETH  ETH evening strangle, trail the rest           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+392 ETH  ETH evening strangle, trail from 90 %          open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+393 ETH  ETH evening strangle, take half                open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+394 BTC  Monthly strangle, 1,000 a side                 open   27 Nov 21:31  +202.39    +6.38    +6.39 28 Nov 01:23    -1.61 27 Nov 22:05       0.01
+395 ETH  ETH evening strangle, with wings               open   27 Nov 21:31   +12.54    +5.58    +5.68 28 Nov 01:13    -0.08 27 Nov 21:35       0.10
+396 ETH  ETH evening strangle, wings and a trail        open   27 Nov 21:31    +8.43    +4.44    +4.51 28 Nov 01:23    +0.00 27 Nov 21:32       0.08
+397 ETH  ETH evening strangle, with wings               open   27 Nov 21:31   +12.54    +5.58    +5.68 28 Nov 01:13    -0.08 27 Nov 21:35       0.10
+398 BTC  Evening strangle, cautious                     closed 27 Nov 21:31   +35.62    +5.23    +9.62 27 Nov 22:50    +0.23 27 Nov 21:32       4.39
+399 ETH  ETH evening strangle, cautious                 open   27 Nov 21:31   +13.15    +8.16    +8.22 28 Nov 01:17    -0.01 27 Nov 21:35       0.06
+400 BTC  Evening strangle, cautious                     closed 27 Nov 21:31   +35.62    +5.23    +9.62 27 Nov 22:50    +0.23 27 Nov 21:32       4.39
+401 BTC  Monthly strangle, 8 % away                     open   27 Nov 21:31  +534.51    +9.85    +9.85 28 Nov 01:24    -3.32 27 Nov 22:05       0.00
+402 BTC  Evening strangle, buy back at 20 % of the pric open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+403 ETH  ETH Friday weekly strangle, take half          open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+404 BTC  Friday weekly strangle, trail the rest         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+405 BTC  Friday weekly strangle, take half              open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+406 ETH  ETH evening strangle, half a per cent away     open   27 Nov 21:31   +28.52   +12.01   +12.01 28 Nov 01:24    +0.10 27 Nov 21:32       0.00
+407 XAUT Gold evening strangle, stop at triple          open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+408 BTC  Evening strangle, profit lock and buy back at  open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+409 ETH  ETH evening strangle, profit steps             open   27 Nov 21:31   +24.63   +10.08   +10.16 28 Nov 01:18    +0.03 27 Nov 21:35       0.08
+410 BTC  Evening strangle, trail from 15 %              closed 27 Nov 21:31   +49.89    -0.13    +7.94 27 Nov 21:58    -0.13 27 Nov 22:04       8.07
+411 BTC  Evening strangle, half then trail              open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+412 BTC  Evening strangle, 100 a side                   closed 27 Nov 21:31   +20.44   +10.22   +10.24 27 Nov 23:53    -4.36 27 Nov 22:05       0.02
+413 ETH  ETH evening strangle, wide, wings, take half   closed 27 Nov 21:31   +11.26    +5.64    +5.64 28 Nov 00:33    -0.03 27 Nov 21:35       0.00
+414 BTC  Evening strangle, trail from 15 %              closed 27 Nov 21:31   +49.89    -0.13    +7.94 27 Nov 21:58    -0.13 27 Nov 22:04       8.07
+415 ETH  ETH evening strangle, trail from 15 %          closed 27 Nov 21:31   +24.63    +3.47    +5.00 27 Nov 22:58    +0.03 27 Nov 21:35       1.53
+416 BTC  Evening strangle, one side after a move        open   27 Nov 21:31   +24.14   +15.80   +15.94 28 Nov 01:22   -16.17 27 Nov 22:05       0.14
+417 BTC  Friday weekly strangle, stop at double         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+418 ETH  ETH Friday weekly strangle, with wings         open   27 Nov 21:31   +36.19    +2.39    +2.59 28 Nov 01:23    -0.13 27 Nov 21:34       0.20
+419 ETH  ETH evening strangle, profit steps             open   27 Nov 21:31   +24.63   +10.08   +10.16 28 Nov 01:18    +0.03 27 Nov 21:35       0.08
+420 ETH  ETH Friday weekly strangle, stop at double     open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+421 ETH  ETH evening strangle, out by 1:30 AM           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+422 BTC  Friday weekly strangle, one day                open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+423 ETH  ETH evening strangle, trail the rest           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+424 BTC  Evening strangle, buy back at 5 dollars        open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+425 ETH  ETH evening strangle, half a per cent away     open   27 Nov 21:31   +28.52   +12.01   +12.01 28 Nov 01:24    +0.10 27 Nov 21:32       0.00
+426 ETH  ETH evening strangle, trail from 15 %          closed 27 Nov 21:31   +24.63    +3.47    +5.00 27 Nov 22:58    +0.03 27 Nov 21:35       1.53
+427 BTC  Evening strangle, trail the rest               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+428 ETH  ETH evening strangle, half then trail          open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+429 BTC  Evening strangle, 100 a side                   closed 27 Nov 21:31   +20.44   +10.22   +10.24 27 Nov 23:53    -4.36 27 Nov 22:05       0.02
+430 BTC  Evening strangle, out by 1:30 AM               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+431 BTC  Friday weekly strangle, profit steps           open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+432 BTC  Friday weekly strangle, trail the rest         open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+433 BTC  Friday weekly strangle, 200 a side             open   27 Nov 21:31   +38.86    +4.27    +4.47 28 Nov 01:15    -1.44 27 Nov 22:05       0.20
+434 ETH  ETH Friday weekly strangle, stop at triple     open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+435 ETH  ETH evening strangle, wings and a trail        open   27 Nov 21:31    +8.43    +4.44    +4.51 28 Nov 01:23    +0.00 27 Nov 21:32       0.08
+436 BTC  Evening strangle, one side after a move        open   27 Nov 21:31   +24.14   +15.80   +15.94 28 Nov 01:22   -16.17 27 Nov 22:05       0.14
+437 BTC  Evening strangle, close at 90 %                open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+438 BTC  Wide evening strangle with wings               open   27 Nov 21:31   +19.40   +10.54   +10.84 28 Nov 01:07    -1.06 27 Nov 22:05       0.30
+439 BTC  Friday weekly strangle, close at 90 %          open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+440 BTC  Friday weekly strangle, one day                open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+441 BTC  Evening strangle, stop at triple               open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+442 ETH  ETH evening strangle, stop at double           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+443 ETH  ETH monthly 16 %, 2 months out, wings, stop at open   27 Nov 21:31   +61.93    +0.25    +1.73 27 Nov 23:17    -0.96 28 Nov 00:33       1.48
+444 BTC  Friday weekly strangle, close at 90 %          open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+445 BTC  Evening strangle, take half                    closed 27 Nov 21:31   +49.89   +24.95   +24.95 28 Nov 00:38    -1.76 27 Nov 22:05       0.00
+446 ETH  ETH Friday weekly strangle, one day            open   27 Nov 21:31   +59.86    +5.07    +5.07 28 Nov 01:23    -0.19 27 Nov 21:35       0.00
+447 XAUT Gold evening strangle, take half               open   27 Nov 21:31    +1.42    +0.26    +0.60 28 Nov 01:05    -0.02 27 Nov 23:35       0.34
+448 BTC  Evening strangle, profit steps                 open   27 Nov 21:31   +49.89   +23.08   +23.51 28 Nov 01:07    -1.76 27 Nov 22:05       0.43
+449 BTC  Friday weekly strangle, profit steps           open   27 Nov 21:31  +172.77   +11.61   +12.03 28 Nov 01:19    +0.22 27 Nov 21:32       0.42
+450 ETH  ETH monthly 16 %, 2 months out, wings, stop at open   27 Nov 21:31   +61.93    +0.25    +1.73 27 Nov 23:17    -0.96 28 Nov 00:33       1.48
+451 ETH  ETH evening strangle, wings and a trail        open   27 Nov 21:31    +8.43    +4.44    +4.51 28 Nov 01:23    +0.00 27 Nov 21:32       0.08
+452 ETH  ETH evening strangle, one side after a move    open   27 Nov 21:31   +11.15    +5.91    +6.23 27 Nov 23:16    -3.75 27 Nov 22:03       0.32
+453 ETH  ETH evening strangle, wings at 3 %             open   27 Nov 21:31   +16.73    +5.64    +5.79 28 Nov 01:14    -0.04 27 Nov 21:35       0.15
+454 ETH  ETH evening strangle, stop at triple           open   27 Nov 21:31   +24.63   +11.35   +11.45 28 Nov 01:18    +0.03 27 Nov 21:35       0.10
+455 BTC  Evening strangle, trail from 90 %              open   27 Nov 21:31   +49.89   +27.44   +28.29 28 Nov 01:07    -1.76 27 Nov 22:05       0.85
+456 ETH  ETH evening strangle, one side after a move    open   27 Nov 21:31   +11.15    +5.91    +6.23 27 Nov 23:16    -3.75 27 Nov 22:03       0.32
+457 ETH  ETH evening strangle, half a per cent away     open   27 Nov 21:31   +28.52   +12.01   +12.01 28 Nov 01:24    +0.10 27 Nov 21:32       0.00
+458 XAUT Gold evening strangle, trail the rest          open   27 Nov 21:36    +1.38    -0.01    +0.57 27 Nov 23:16    -0.12 28 Nov 00:05       0.58
+459 XAUT Gold evening strangle, stop at double          open   27 Nov 21:36    +1.38    -0.01    +0.57 27 Nov 23:16    -0.12 28 Nov 00:05       0.58
+460 XAUT Gold evening strangle, stop at triple          open   27 Nov 21:36    +1.38    +0.23    +0.57 28 Nov 01:05    -0.05 27 Nov 23:35       0.34
+
+all 460 trades: last +3636.21; sum of each trade's own best moment +8002.51; sum of each trade's worst moment -4560.74
+(premium: + is collected, - is paid. 'last' is the last tracked minute, or the close for a closed trade. The bests are at different times, so their sum is a ceiling no rule could reach.)
