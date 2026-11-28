@@ -9694,6 +9694,21 @@
   "evidence": "ADR-157 (28 Nov 2026): packages/schema/src/autopilot-saved.ts (savedLossLimit, SAVED_LOSS_LIMIT_LABELS, savedApprovalChecks), packages/schema/src/autopilot-mandate.ts (MANDATE_REFUSALS.legStop), apps/api/src/autopilot-mandate.ts (liveRefusalOf), apps/api/src/autopilot-saved.ts, apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx, apps/web/src/lib/strategy/autopilot-words.ts (exitTags); tests: packages/schema/src/autopilot-saved.test.ts HC-TR-315, apps/api/src/autopilot-mandate.test.ts HC-TR-297 and HC-TR-310, apps/api/src/autopilot-live.test.ts HC-TR-315 and HC-TR-304, apps/api/src/saved-approval.test.ts, apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-315, apps/web/src/components/autopilot/autopilot-mandate.test.tsx HC-TR-307, autopilot-saved.test.tsx HC-TR-284"
  },
  {
+  "id": "HC-TR-316",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/desk",
+  "screen": "Trading · Autopilot",
+  "feature": "Live trading: an exit never sells the bought leg behind a sold leg that is still open",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api, real Postgres, fake exchange)",
+  "acceptance": "When a stop, target, trail or timed exit closes a whole live trade, the sold legs are bought back first. If the buy-back of a sold leg is refused, fails, or is still unfilled on the exchange, the bought leg of the same kind is not sold: it stays open as cover, the rule ends as partial and its note and alert name the leg still open and the leg kept, and say to close the sold leg first. Squaring a live trade off by hand also buys the sold legs back first and stops at the first order that does not fill. Paper trades are unchanged",
+  "evidence": "ADR-158 (28 Nov 2026): apps/api/src/rules-engine.ts (coversSold, the exit loop), apps/api/src/routes/strategies.ts (POST /v1/strategies/{id}/close); tests: apps/api/src/autopilot-live.test.ts HC-TR-316 (four tests), apps/api/src/rules-engine.test.ts (a bought call beside a refused sold put is still sold)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
