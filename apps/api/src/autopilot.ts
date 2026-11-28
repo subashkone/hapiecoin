@@ -806,6 +806,9 @@ export async function autopilotResults(db: Db, userId: string): Promise<Autopilo
       startedAt: strategies.startedAt,
       closedAt: strategies.closedAt,
       closeReason: strategies.closeReason,
+      marginEstimate: strategies.marginEstimate,
+      // HC-TR-314: no legs, a future, or more sold than bought of calls or of puts (a lone sold put included: its loss to a price of zero is not what it ties up)
+      uncovered: sql<boolean>`(select count(*) = 0 or bool_or(k.fut or k.n < 0) from (select ${strategyLegs.kind} = 'future' as fut, sum(case when ${strategyLegs.side} = 'buy' then ${strategyLegs.lots} else -${strategyLegs.lots} end) as n from ${strategyLegs} where ${strategyLegs.strategyId} = ${strategies.id} group by ${strategyLegs.kind}) k)`,
       openLegs: sql<number>`(select count(*)::int from ${strategyLegs} where ${strategyLegs.strategyId} = ${strategies.id} and ${strategyLegs.status} = 'open')`,
       lastLegClose: sql<string | null>`(select max(${strategyLegs.closedAt}) from ${strategyLegs} where ${strategyLegs.strategyId} = ${strategies.id})`,
     })
@@ -849,7 +852,7 @@ export async function autopilotResults(db: Db, userId: string): Promise<Autopilo
     row.heldMs += Math.max(0, closedAt.getTime() - openedAt.getTime());
     const reason = e.closeReason ?? (e.status === "paper" ? "squared_off" : "unknown");
     row.reasons[reason] = (row.reasons[reason] ?? 0) + 1;
-    trades.push({ strategyId: e.strategyId, playbookId: e.playbookId, asset: e.asset, exit, strikes: (e.detail.legs ?? []).map((l) => l.strike), expiry: e.detail.expiry ?? null, dte: e.detail.dte ?? null, openedAt: openedAt.toISOString(), closedAt: closedAt.toISOString(), closeReason: reason === "unknown" ? null : reason, grossUsd: usd(gross), feesUsd: usd(fees), netUsd: usd(net) });
+    trades.push({ strategyId: e.strategyId, playbookId: e.playbookId, asset: e.asset, exit, strikes: (e.detail.legs ?? []).map((l) => l.strike), expiry: e.detail.expiry ?? null, dte: e.detail.dte ?? null, openedAt: openedAt.toISOString(), closedAt: closedAt.toISOString(), closeReason: reason === "unknown" ? null : reason, grossUsd: usd(gross), feesUsd: usd(fees), netUsd: usd(net), maxLossUsd: e.uncovered ? null : (e.detail.capital ?? null), marginUsd: e.marginEstimate ?? null });
   }
   return {
     since: entries[0]?.at.toISOString() ?? null,

@@ -791,7 +791,7 @@ describe("HC-TR-267 the Autopilot screen: four views, each the full width", () =
   const cards = () => screen.queryAllByTestId("autopilot-card").map((x) => x.dataset["playbook"]);
   const card = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
 
-  it("HC-TR-267 the screen opens on the open trades, worst first, and counts what needs attention; the other views are one press away, each with its count", async () => {
+  it("HC-TR-267 HC-TR-314 the screen opens on the open trades, worst first, and counts what needs attention; the other views are one press away, each with its count", async () => {
     // against a 9 dollar stop: a1 is 7 dollars down (close to its stop), a2 is 1 down (losing), a3 is 2 up; e1 is on ETH, whose prices never arrive here
     acc().strategies.push(auto("a3", "pin-butterfly", { legs: [leg("a3", -200)] }), auto("a2", "pin-butterfly", { legs: [leg("a2", 100)] }), auto("a1", "pin-butterfly", { legs: [leg("a1", 700)] }), auto("e1", "trend-puts", { asset: "ETH", rules: [rule({})] }));
     acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "pin-butterfly", exit: "trail" }] }, runs: [run({ id: "1" })] };
@@ -816,6 +816,9 @@ describe("HC-TR-267 the Autopilot screen: four views, each the full width", () =
     expect(a1.textContent).toContain("78%");
     expect(within(a1).getByTestId("autopilot-trade-used").textContent).toBe("Loss used78% of the loss the stop allows"); // also where the narrow screen hides the column
     expect(a1.dataset["near"]).toBe("false");
+    // HC-TR-314: the capital recorded at entry reads with the levels, and says which figure it is
+    expect(within(a1).getByTestId("autopilot-trade-capital").textContent).toMatch(/^Capital, recorded at entry\$[\d,.]+ · the most it can lose at expiry with every option held$/);
+    expect(within(screen.getAllByTestId("autopilot-trade")[0]!).queryByTestId("autopilot-trade-capital")).toBeNull(); // nothing recorded for it: no line, never a made-up figure
     expect(within(a1).getByRole("rowheader").textContent).toContain("Pin butterfly · BTC");
     expect(within(a1).getByTestId("autopilot-trade-detail").hidden).toBe(true);
     await u.click(within(a1).getByTestId("autopilot-trade-more"));

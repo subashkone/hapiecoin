@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useAutopilotResults } from "@/lib/api/autopilot";
 import { fmtDateTime, fmtExpiry, fmtStrike } from "@/lib/format";
 import { type MoneyFormat, fmtMoney } from "@/lib/money";
+import { tradeCapital } from "@/lib/strategy/autopilot";
 import { BUILT_IN_CATALOGUE } from "@/lib/strategy/autopilot-catalogue";
 
 /** Closed trades drawn at first, and added by "Show more": a year of dailies is thousands of rows. */
@@ -24,7 +25,7 @@ const thNum = "micro whitespace-nowrap px-2.5 py-2 text-right font-normal";
 const td = "whitespace-nowrap px-2.5 py-2";
 const tdNum = "num whitespace-nowrap px-2.5 py-2 text-right";
 const chip = (on: boolean) => cn("h-7 rounded border border-border px-2.5 text-xs", on ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground");
-const NUMERIC = new Set(["Open", "Closed", "Won", "Net after fees", "Per trade", "Best", "Worst", "Held on average", "Fees", "Before fees", "Net", "Strikes"]);
+const NUMERIC = new Set(["Open", "Closed", "Won", "Net after fees", "Per trade", "Best", "Worst", "Held on average", "Fees", "Before fees", "Net", "Strikes", "Capital"]);
 const head = (h: string) => <th key={h} scope="col" className={NUMERIC.has(h) ? thNum : th}>{h}</th>;
 
 /** "1 trade", "3 trades". */
@@ -124,17 +125,17 @@ export function AutopilotResultsPanel({ money, show, nameOf = BUILT_IN_CATALOGUE
                 </div>
               </div>
               <div className="overflow-x-auto rounded border border-border">
-                <table className="w-full min-w-[980px] border-collapse text-sm" data-testid="results-trades">
+                <table className="w-full min-w-[1100px] border-collapse text-sm" data-testid="results-trades">
                   <caption className="micro px-2.5 pb-1 pt-2 text-left">Closed trades by the day they closed, newest first{cut > 0 ? ` (the newest ${q.data.trades.length} of ${q.data.total.closed})` : ""}</caption>
-                  <thead><tr className="border-b border-border">{["Closed at", "Strategy", "Strikes", "Opened", "Exit", "Ended", "Before fees", "Fees", "Net"].map(head)}</tr></thead>
+                  <thead><tr className="border-b border-border">{["Closed at", "Strategy", "Strikes", "Opened", "Exit", "Ended", "Capital", "Before fees", "Fees", "Net"].map(head)}</tr></thead>
                   <tbody>
-                    {picked.length === 0 ? <tr><td colSpan={9} className="px-2.5 py-3 text-xs text-muted-foreground" data-testid="results-none">No {outcome === "all" ? "closed" : outcome} trade {dayShown === "all" ? "in this selection" : `on ${dayShown}`}.</td></tr> : null}
+                    {picked.length === 0 ? <tr><td colSpan={10} className="px-2.5 py-3 text-xs text-muted-foreground" data-testid="results-none">No {outcome === "all" ? "closed" : outcome} trade {dayShown === "all" ? "in this selection" : `on ${dayShown}`}.</td></tr> : null}
                     {drawn.map((d) => [
                         <tr key={d.day} className="border-b border-border bg-muted" data-testid="results-day" data-day={d.day}>
-                          <th scope="row" colSpan={8} className="px-2.5 py-1.5 text-left text-xs font-medium">{d.day} · {d.trades.length} closed · {d.wins} won · {d.trades.length - d.wins} lost{d.day === partDay ? " · only the part of this day that is listed" : ""}</th>
+                          <th scope="row" colSpan={9} className="px-2.5 py-1.5 text-left text-xs font-medium">{d.day} · {d.trades.length} closed · {d.wins} won · {d.trades.length - d.wins} lost{d.day === partDay ? " · only the part of this day that is listed" : ""}</th>
                           <td className={cn(tdNum, "py-1.5 text-xs font-medium", tone(d.netUsd))} data-testid="results-day-net">{signed(d.netUsd)}</td>
                         </tr>,
-                        ...d.list.map((x) => (
+                        ...d.list.map((x) => ({ x, cap: tradeCapital(x.maxLossUsd, x.marginUsd) })).map(({ x, cap }) => (
                           <tr key={x.strategyId} className="border-b border-border last:border-b-0" data-testid="results-trade" data-id={x.strategyId} data-won={won(x)}>
                             <td className={cn(td, "num text-muted-foreground")}>{timeOf(x.closedAt)}</td>
                             <th scope="row" className={cn(td, "text-left font-medium")}>{nameOf(x.playbookId)} · {x.asset}</th>
@@ -142,6 +143,7 @@ export function AutopilotResultsPanel({ money, show, nameOf = BUILT_IN_CATALOGUE
                             <td className={cn(td, "num text-muted-foreground")}>{fmtDateTime(x.openedAt)}</td>
                             <td className={td}>{EXIT_SHORT[x.exit]}</td>
                             <td className={td}>{reasonOf(x.closeReason)}</td>
+                            <td className={cn(tdNum, !cap && "text-muted-foreground")} data-testid="results-trade-capital" data-basis={cap?.basis}>{cap ? <>{fmtMoney(cap.usd, money)} <span className="text-xs text-muted-foreground">{cap.basis}</span></> : "—"}</td>
                             <td className={tdNum}>{signed(x.grossUsd)}</td>
                             <td className={tdNum}>{fmtMoney(x.feesUsd, money)}</td>
                             <td className={cn(tdNum, tone(x.netUsd))}>{signed(x.netUsd)}</td>
@@ -152,6 +154,7 @@ export function AutopilotResultsPanel({ money, show, nameOf = BUILT_IN_CATALOGUE
                 </table>
               </div>
               {pickedCount > limit ? <div><Button size="sm" variant="outline" onClick={() => setLimit(limit + TRADES_PAGE)} data-testid="results-more">Show {Math.min(TRADES_PAGE, pickedCount - limit)} more of {pickedCount}</Button></div> : null}
+              <p className="max-w-[90ch] text-xs text-muted-foreground" data-testid="results-capital-note">Capital is what the trade tied up, recorded when it was entered. "max loss" is the most the trade could lose at expiry with every option held, where bought options cover the sold ones; a trade that buys a sold option back on a stop and keeps the rest can lose more than that. "est. margin" is our estimate of the margin for sold options with no cover: it has not been checked against what the exchange blocks, so read it as a rough figure. A dash means none was recorded.</p>
               <p className="text-xs text-muted-foreground" data-testid="results-day-note">A day's total counts every trade closed that day in this selection, whatever the Result buttons show.{cut > 0 ? ` ${cut} older closed ${cut === 1 ? "trade is" : "trades are"} counted in the totals and not listed.` : ""}</p>
             </>
           ) : (

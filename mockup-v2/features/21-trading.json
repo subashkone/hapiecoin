@@ -3034,5 +3034,17 @@
     "how": "One more BTC daily strategy on paper, beside the winged strangle that is held: each evening it sells a call and a put three strikes out on the next expiry and buys the options eight strikes out; a sold option whose price triples is bought back alone, its wing and everything else are held to settlement. Its card says what its figure rests on: 84 days of one period, picked after seeing the table, September more than half of the total, no trade on the days the wings had no price, and the lower figure with fill costs. The stop at double the owner asked for was tested first and is not built. Paper only; switched on for nobody",
     "evidence": "ADR-154 (27 Nov 2026): packages/pricing/src/playbooks.ts (WINGS_STOP_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-313, apps/api/src/autopilot.test.ts HC-TR-313",
     "test": "unit (pricing) + integration (api, real Postgres)"
+  },
+  {
+    "id": "HC-TR-314",
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot: the capital of a trade on the closed trades table and in an open trade's levels",
+    "how": "The closed trades table has a Capital column and an open trade's Levels panel a capital line: the most the trade could lose at expiry where bought options cover the sold ones (\"max loss\"), otherwise the margin estimated when it was entered (\"est. margin\"), otherwise a dash. A note under the table says the margin is an estimate not checked against the exchange and that a trade with a stop that keeps its other options can lose more than its max loss. No return on capital is shown",
+    "evidence": "ADR-155 (28 Nov 2026): packages/schema/src/autopilot.ts (AutopilotClosedTrade.maxLossUsd, marginUsd), apps/api/src/autopilot.ts (autopilotResults), apps/web/src/lib/strategy/autopilot.ts (tradeCapital), apps/web/src/components/autopilot/AutopilotResultsPanel.tsx, AutopilotPage.tsx; tests: packages/schema/src/autopilot.test.ts HC-TR-314, apps/api/src/autopilot.test.ts HC-TR-314, apps/web/src/components/autopilot/autopilot-results.test.tsx HC-TR-314, autopilot-page.test.tsx HC-TR-314",
+    "test": "unit (schema) + integration (api, real Postgres) + component (web)"
   }
 ]

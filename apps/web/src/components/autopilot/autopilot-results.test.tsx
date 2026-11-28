@@ -7,6 +7,7 @@ import { installMockFetch, renderWithProviders, type MockFetch } from "../../../
 import { fmtDateTime } from "@/lib/format";
 import { USD } from "@/lib/money";
 import { AutopilotPage } from "./AutopilotPage";
+import { tradeCapital } from "@/lib/strategy/autopilot";
 import { AutopilotResultsPanel, TRADES_PAGE, byDay, dayOf, exitTotals, totalOf, won } from "./AutopilotResultsPanel";
 
 const EMAIL = "autopilot-results@example.com";
@@ -103,9 +104,9 @@ describe("HC-TR-224 Autopilot results", () => {
     const trades = screen.getAllByTestId("results-trade");
     expect(trades.map((x) => x.dataset["id"])).toEqual(["res_4", "res_1", "res_5"]);
     // HC-TR-267: the time it closed (its day is the group's heading), then the trade, with when it was opened
-    expect(cells(trades[0]!)).toEqual([fmtDateTime(RESULTS.trades[0]!.closedAt).split(", ")[1], "Trend with puts · ETH", "1,600 / 1,500 · 11 Dec · 20d out", fmtDateTime(RESULTS.trades[0]!.openedAt), "Target", "closed", "+$0.30", "$0.50", "−$0.20"]);
-    expect(cells(trades[1]!).slice(1)).toEqual(["Pin butterfly · BTC", "57,600 / 58,000 / 58,400 · 22 Nov · 1d out", fmtDateTime(RESULTS.trades[1]!.openedAt), "Trail", "target hit", "+$5.00", "$0.40", "+$4.60"]);
-    expect(cells(trades[2]!).slice(1)).toEqual(["gone-playbook · BTC", "—", fmtDateTime(RESULTS.trades[2]!.openedAt), "Trail", "squared off", "+$1.00", "$0.00", "+$1.00"]);
+    expect(cells(trades[0]!)).toEqual([fmtDateTime(RESULTS.trades[0]!.closedAt).split(", ")[1], "Trend with puts · ETH", "1,600 / 1,500 · 11 Dec · 20d out", fmtDateTime(RESULTS.trades[0]!.openedAt), "Target", "closed", "—", "+$0.30", "$0.50", "−$0.20"]);
+    expect(cells(trades[1]!).slice(1)).toEqual(["Pin butterfly · BTC", "57,600 / 58,000 / 58,400 · 22 Nov · 1d out", fmtDateTime(RESULTS.trades[1]!.openedAt), "Trail", "target hit", "—", "+$5.00", "$0.40", "+$4.60"]);
+    expect(cells(trades[2]!).slice(1)).toEqual(["gone-playbook · BTC", "—", fmtDateTime(RESULTS.trades[2]!.openedAt), "Trail", "squared off", "—", "+$1.00", "$0.00", "+$1.00"]);
     expect(screen.getByTestId("results-since").textContent).toContain("Counted since");
   });
 
@@ -210,3 +211,31 @@ describe("HC-TR-224 Autopilot results", () => {
     expect(ids()).toEqual(["d2_win", "d2_loss", "d1_flat"]);
   });
 });
+
+describe("HC-TR-314 the capital of a closed Autopilot trade", () => {
+  it("HC-TR-314 one figure and what it is: the most a covered trade could lose, otherwise the margin estimated at entry, otherwise nothing", () => {
+    expect(tradeCapital("114.35", "291.67")).toEqual({ usd: 114.35, basis: "max loss" });
+    expect(tradeCapital(null, "291.67")).toEqual({ usd: 291.67, basis: "est. margin" });
+    expect(tradeCapital(undefined, "108.5")).toEqual({ usd: 108.5, basis: "est. margin" });
+    // nothing recorded, or a figure that is not a positive amount: no capital, never a made-up one
+    for (const [a, b] of [[null, null], [undefined, undefined], ["0", "0"], ["x", "-3"], ["0.00", null]] as const) expect(tradeCapital(a, b)).toBeNull();
+  });
+
+  it("HC-TR-314 the closed trades table has a Capital column that says which figure it shows, and a note that the margin is an unchecked estimate", async () => {
+    const [a, b, c] = RESULTS.trades;
+    acc().autopilotResults = { ...RESULTS, trades: [{ ...a!, maxLossUsd: "114.35", marginUsd: "291.67" }, { ...b!, maxLossUsd: null, marginUsd: "108.50" }, { ...c!, maxLossUsd: null, marginUsd: null }] };
+    renderWithProviders(<AutopilotResultsPanel money={USD} />);
+    await waitFor(() => expect(screen.getAllByTestId("results-trade")).toHaveLength(3));
+    const heads = [...screen.getByTestId("results-trades").querySelectorAll("thead th")].map((h) => h.textContent);
+    expect(heads).toEqual(["Closed at", "Strategy", "Strikes", "Opened", "Exit", "Ended", "Capital", "Before fees", "Fees", "Net"]);
+    const caps = screen.getAllByTestId("results-trade-capital");
+    expect(caps.map((x) => x.textContent)).toEqual(["$114.35 max loss", "$108.50 est. margin", "—"]);
+    expect(caps.map((x) => x.dataset["basis"])).toEqual(["max loss", "est. margin", undefined]);
+    const note = screen.getByTestId("results-capital-note").textContent;
+    expect(note).toContain("has not been checked against what the exchange blocks");
+    expect(note).toContain("can lose more than that");
+    // a day's heading still spans to its net
+    expect(screen.getAllByTestId("results-day")[0]!.querySelector("th")!.colSpan).toBe(9);
+  });
+});
+
