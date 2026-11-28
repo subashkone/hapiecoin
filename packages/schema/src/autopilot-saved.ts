@@ -146,6 +146,28 @@ export function savedProfitCapped(legs: readonly SavedLeg[]): boolean {
 export function savedLossCapped(legs: readonly SavedLeg[]): boolean {
   return lotsOf(legs, "call", "buy") >= lotsOf(legs, "call", "sell") && lotsOf(legs, "put", "buy") >= lotsOf(legs, "put", "sell");
 }
+/**
+ * ADR-157 (HC-TR-315): whether the loss stays limited while the trade is managed, not only at expiry. Covered legs are
+ * not enough when a stop closes ONE sold option alone (`legStop`): that option is bought back at a loss, its bought
+ * option and the whole other side stay open, and the other side can still lose in full. The trade can then lose more
+ * than the figure its four legs gave at entry, and in a fast market the stop fills beyond its level. Such a strategy
+ * is not loss-limited for live. A cheap buy-back of a sold option is not counted here: it can take the trade past the
+ * four-leg figure by the price of the buy-back at most, a known and small amount, and it is refused on live for its own
+ * reason (ADR-147); it has to be judged again before that exit is released on live (GAPS #191 e). The exits on the whole
+ * trade send an order for every option; what happens when the exchange refuses one of them is GAPS #192.
+ */
+export const SAVED_LOSS_LIMITS = ["limited", "legStop", "uncovered"] as const;
+export type SavedLossLimit = (typeof SAVED_LOSS_LIMITS)[number];
+export function savedLossLimit(d: { legs: readonly SavedLeg[]; exits: SavedExits }): SavedLossLimit {
+  if (!savedLossCapped(d.legs)) return "uncovered";
+  return d.exits.legStop === undefined ? "limited" : "legStop";
+}
+/** What a strategy list says of each. */
+export const SAVED_LOSS_LIMIT_LABELS: Record<SavedLossLimit, string> = {
+  limited: "Loss limited by bought options",
+  legStop: "Loss not limited: its stop closes one sold option alone",
+  uncovered: "Loss not limited",
+};
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 /** A UTC hour as the clock reads in India (UTC + 5:30), as the built-in strategies write it: "9:30 PM". 24 is 5:30 the next morning. */
@@ -373,12 +395,15 @@ export const SavedApprovalCheck = z.strictObject({
 });
 export type SavedApprovalCheck = z.infer<typeof SavedApprovalCheck>;
 /**
- * The checks of design §3.4 as the owner kept them. Five are blocking. The days are counted from the first paper trade,
+ * The checks of design §3.4 as the owner kept them. Five are blocking. "Loss limited" is `savedLossLimit` (ADR-157):
+ * covered legs, and no stop that closes one sold option alone. The days are counted from the first paper trade,
  * not from the publish: a strategy published and left switched off has not been on paper. The margin check is shown and
  * left open: the app cannot make it (GAPS #109), and live itself waits on it (step 4), so it does not stand in the way
  * of this record.
  */
-export function savedApprovalChecks(strategy: { backtest: SavedBacktest | null; lossCapped: boolean }, record: SavedPaperRecord): SavedApprovalCheck[] {
+export function savedApprovalChecks(strategy: { backtest: SavedBacktest | null; lossCapped: boolean; definition?: Parameters<typeof savedLossLimit>[0] }, record: SavedPaperRecord): SavedApprovalCheck[] {
+  // ADR-157: covered legs with a stop on one sold option alone is its own finding, said in its own words
+  const stopsOneAlone = !strategy.lossCapped && strategy.definition !== undefined && savedLossLimit(strategy.definition) === "legStop";
   const b = strategy.backtest;
   const net = Math.round(Number(record.netUsd) * 100);
   const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
@@ -388,7 +413,7 @@ export function savedApprovalChecks(strategy: { backtest: SavedBacktest | null; 
     { key: "days", label: `At least ${APPROVAL_MIN_DAYS} days since its first paper trade`, blocking: true, pass: record.days >= APPROVAL_MIN_DAYS, detail: record.firstEntryAt === null ? (record.since === null ? "It is not on paper." : `No paper trade yet; published ${plural(record.publishedDays, "day")} ago.`) : `First paper trade on ${record.firstEntryAt.slice(0, 10)}, ${plural(record.days, "day")} ago; published ${plural(record.publishedDays, "day")} ago.${record.days > record.logDays ? ` The log keeps ${record.logDays} days: older trades are not in this record.` : ""}` },
     { key: "trades", label: `At least ${APPROVAL_MIN_TRADES} closed paper trades`, blocking: true, pass: record.closed >= APPROVAL_MIN_TRADES, detail: `${plural(record.closed, "closed paper trade")}, ${record.open} still open, in the account that took the most entries (${plural(record.accounts, "account")} traded it).` },
     { key: "paperNet", label: "Paper result is positive after estimated fees", blocking: true, pass: net > 0, detail: record.closed === 0 ? "No paper trade has closed yet." : `${record.netUsd} USD on ${paper}.` },
-    { key: "lossCapped", label: "Loss limited by bought options", blocking: true, pass: strategy.lossCapped, detail: strategy.lossCapped ? "By its settings, every sold option is covered by a bought one." : "Its loss is not limited: such a strategy runs on paper and never goes live." },
+    { key: "lossCapped", label: "Loss limited: every sold option covered, none stopped alone", blocking: true, pass: strategy.lossCapped, detail: strategy.lossCapped ? "By its settings, every sold option is covered by a bought one, and no stop closes a sold option alone." : stopsOneAlone ? "Every sold option is covered, but its stop closes one sold option alone and keeps the rest open: after that the loss is not limited. Such a strategy runs on paper and never goes live." : "Its loss is not limited: such a strategy runs on paper and never goes live." },
     { key: "margin", label: "Margin estimate checked against the exchange", blocking: false, pass: false, detail: "Not checked yet. It is required before any live order, and is part of the live step, not of this approval." },
   ];
 }

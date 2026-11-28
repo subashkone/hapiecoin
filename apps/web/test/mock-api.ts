@@ -7,7 +7,7 @@ import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, Availab
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { AUTOPILOT_PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
 import { MANDATE_CONFIRM_MESSAGE, MANDATE_REFUSALS, type Mandate, MandateSign } from "@hapiecoin/schema";
-import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedApproval, type SavedApprovalView, SavedApprove, type SavedBacktestRun, SavedBacktestStart, type SavedBacktestTrade, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedApprovalChecks, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
+import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedApproval, type SavedApprovalView, SavedApprove, type SavedBacktestRun, SavedBacktestStart, type SavedBacktestTrade, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedApprovalChecks, savedEntryText, savedLossLimit } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
@@ -750,7 +750,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   // ADR-147, ADR-149: what lets a strategy trade live at all, and so take a mandate
   const liveRefusal = (x: SavedStrategy | undefined): string | null => {
     if (!x || x.stage !== "paper" || x.approval === null) return MANDATE_REFUSALS.notApproved;
-    if (!savedLossCapped(x.definition.legs)) return MANDATE_REFUSALS.notCapped;
+    const limit = savedLossLimit(x.definition);
+    if (limit === "uncovered") return MANDATE_REFUSALS.notCapped;
+    if (limit === "legStop") return MANDATE_REFUSALS.legStop;
     const e = x.definition.exits;
     if (e.ladder !== undefined || e.legBuyBackAt !== undefined || e.legBuyBackShare !== undefined) return MANDATE_REFUSALS.heldExit;
     return null;
@@ -1853,7 +1855,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   const savedDraft = (name: string, summary: string, definition: SavedStrategy["definition"], by: string, family?: { familyId: string; version: number }): SavedStrategy => {
     const sid = id("sv");
     const at = nowIso();
-    return { id: sid, familyId: family?.familyId ?? sid, version: family?.version ?? 1, name, summary, definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, approval: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: by, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null };
+    return { id: sid, familyId: family?.familyId ?? sid, version: family?.version ?? 1, name, summary, definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, approval: null, traded: false, lossCapped: savedLossLimit(definition) === "limited", entryText: savedEntryText(definition), createdBy: by, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null };
   };
   v1.get("/admin/autopilot-strategies", (c) => adminGate(c) ?? c.json({ items: [...state.savedStrategies].reverse() }));
   v1.post("/admin/autopilot-strategies", async (c) => {
@@ -1891,7 +1893,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       return c.json(made);
     }
     if (resettled) {
-      Object.assign(row, next, { definition: body.definition!, lossCapped: savedLossCapped(body.definition!.legs), entryText: savedEntryText(body.definition!), stage: backtest ? "backtested" : "draft", publishedAt: null, approval: null, updatedAt: at });
+      Object.assign(row, next, { definition: body.definition!, lossCapped: savedLossLimit(body.definition!) === "limited", entryText: savedEntryText(body.definition!), stage: backtest ? "backtested" : "draft", publishedAt: null, approval: null, updatedAt: at });
       return c.json(row);
     }
     if (row.stage === "paper" && !backtest) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsBacktest);

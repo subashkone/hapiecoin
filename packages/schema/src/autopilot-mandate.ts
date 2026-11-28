@@ -82,6 +82,7 @@ export const MANDATE_REFUSALS = {
   notApproved: "This strategy is not approved for live",
   notUsable: "This strategy is not available to you",
   notCapped: "Its loss is not limited by bought options: it cannot trade live",
+  legStop: "Its stop closes one sold option alone and keeps the rest open, so its loss is not limited: it cannot trade live",
   unreadable: "Its settings cannot be read: it cannot trade live",
   tooManyOpen: "More trades open at once than the strategy has coins: it holds one trade per coin",
   heldExit: "It takes profit in steps or buys back a cheap option, and those exits run on paper only for now: it cannot trade live yet",

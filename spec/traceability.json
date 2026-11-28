@@ -9679,6 +9679,21 @@
   "evidence": "ADR-155 (28 Nov 2026): packages/schema/src/autopilot.ts (AutopilotClosedTrade.maxLossUsd, marginUsd), apps/api/src/autopilot.ts (autopilotResults), apps/web/src/lib/strategy/autopilot.ts (tradeCapital), apps/web/src/components/autopilot/AutopilotResultsPanel.tsx, AutopilotPage.tsx; tests: packages/schema/src/autopilot.test.ts HC-TR-314, apps/api/src/autopilot.test.ts HC-TR-314, apps/web/src/components/autopilot/autopilot-results.test.tsx HC-TR-314, autopilot-page.test.tsx HC-TR-314"
  },
  {
+  "id": "HC-TR-315",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot: a saved strategy with a stop on one sold option alone is not loss-limited for live",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema) + integration (api, real Postgres, fake exchange) + component (web)",
+  "acceptance": "A saved strategy counts as loss-limited for live only when every sold option is covered by a bought one AND no stop closes one sold option alone. With such a stop it cannot be approved for live (the check fails and says why), no mandate can be signed or resumed for it, its card offers no Trade live, and the engine takes no live entry for it even under an approval and a mandate given earlier: the trader stays on paper. The admin list reads \"Loss not limited: its stop closes one sold option alone\"; a trader's card shows the tag Wings, not Loss limited. Paper trading is unchanged. Exits on the whole trade stay allowed on live: the profit take of a live trade closes all its options with reduce-only orders",
+  "evidence": "ADR-157 (28 Nov 2026): packages/schema/src/autopilot-saved.ts (savedLossLimit, SAVED_LOSS_LIMIT_LABELS, savedApprovalChecks), packages/schema/src/autopilot-mandate.ts (MANDATE_REFUSALS.legStop), apps/api/src/autopilot-mandate.ts (liveRefusalOf), apps/api/src/autopilot-saved.ts, apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx, apps/web/src/lib/strategy/autopilot-words.ts (exitTags); tests: packages/schema/src/autopilot-saved.test.ts HC-TR-315, apps/api/src/autopilot-mandate.test.ts HC-TR-297 and HC-TR-310, apps/api/src/autopilot-live.test.ts HC-TR-315 and HC-TR-304, apps/api/src/saved-approval.test.ts, apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-315, apps/web/src/components/autopilot/autopilot-mandate.test.tsx HC-TR-307, autopilot-saved.test.tsx HC-TR-284"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

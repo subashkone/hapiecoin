@@ -171,7 +171,8 @@ describe("HC-TR-279 saved strategies on the Autopilot screen", () => {
     // with a stop on its sold option the stop leads, as on every card
     expect(words("sv_legstop")).toBe("How it gets out: Stop at 2x on each sold option, target at 50 % of the most it can make, stop at 50 % of the most it can lose");
     expect(how("sv_legstop")).toContain("It is closed at a loss of 50 % of the most it can lose, before fees. Each sold option is bought back if its price reaches 2 times what it was sold for.");
-    expect(tags("sv_legstop")).toEqual(["Stop 2x", "Loss limited", "Target 50 % of max profit", "Stop 50 % of max loss"]);
+    // ADR-157 (HC-TR-315): with a stop on one sold option alone the card does not say the loss is limited
+    expect(tags("sv_legstop")).toEqual(["Stop 2x", "Wings", "Target 50 % of max profit", "Stop 50 % of max loss"]);
     for (const id of ["sv_spread", "sv_trail", "sv_sold", "sv_legstop"]) expect(cardOf(id)!.textContent, id).not.toContain("Held to expiry");
   });
 });

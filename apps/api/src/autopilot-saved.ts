@@ -10,7 +10,7 @@
  * trade at entry, autopilot.ts).
  */
 import type { Playbook } from "@hapiecoin/pricing";
-import { type AutopilotStrategy, SAVED_REFUSALS, type SavedBacktest, type SavedCard, SavedDefinition, type SavedStrategy, type SavedStrategyCreate, type SavedStrategyPatch, savedEntryText, savedLossCapped, savedPlaybookOf } from "@hapiecoin/schema";
+import { type AutopilotStrategy, SAVED_REFUSALS, type SavedBacktest, type SavedCard, SavedDefinition, type SavedStrategy, type SavedStrategyCreate, type SavedStrategyPatch, savedEntryText, savedLossLimit, savedPlaybookOf } from "@hapiecoin/schema";
 import { and, desc, eq, inArray, max, ne, notExists, sql } from "drizzle-orm";
 import type { Db } from "./db/client.js";
 import { autopilotSavedStrategies, autopilotSettings, plans, strategies, subscriptions, users } from "./db/schema.js";
@@ -27,6 +27,12 @@ export const isSavedId = (id: string): boolean => id.startsWith(SAVED_ID_PREFIX)
 const stable = (v: unknown): string => JSON.stringify(v, (_k, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x));
 
 /** A saved strategy as the playbook the engine runs: always entered by the clock, with its own exits (one conversion, shared with the screens). */
+/** ADR-157: whether these settings are loss-limited for live. Parsed first: a row written past the schema (GAPS #153) is not limited, and never a crash of the list. */
+export function lossLimitedFor(definition: unknown): boolean {
+  const parsed = SavedDefinition.safeParse(definition);
+  return parsed.success && savedLossLimit(parsed.data) === "limited";
+}
+
 export function savedPlaybook(row: Pick<Row, "id" | "name" | "summary" | "definition" | "backtest">): Playbook {
   return savedPlaybookOf(row);
 }
@@ -58,7 +64,8 @@ export function toSaved(r: Row, traded: boolean): SavedStrategy {
     backtestAt: r.backtestAt?.toISOString() ?? null,
     approval: r.stage === "paper" ? r.approval : null,
     traded,
-    lossCapped: savedLossCapped(r.definition.legs),
+    // ADR-157: limited for live, which a stop on one sold option alone is not; settings that cannot be read are not limited
+    lossCapped: lossLimitedFor(r.definition),
     entryText: savedEntryText(r.definition),
     createdBy: r.createdBy,
     createdAt: r.createdAt.toISOString(),

@@ -62,7 +62,7 @@ function resetVenue(): void {
 
 const leg = (kind: "call" | "put", side: "buy" | "sell", value: number) => ({ kind, side, by: "pct" as const, value });
 /** A strangle 1 % away with wings 3 % away: every sold option is covered. Stop a sold option at double, take half the premium. */
-const WINGED = { assets: ["BTC"], venues: ["delta_india"], lots: 100, cadence: "daily", fromHourUtc: 16, toHourUtc: 17, oncePerExpiry: false, minDte: 0.5, maxDte: 1.5, legs: [leg("put", "buy", 3), leg("put", "sell", 1), leg("call", "sell", 1), leg("call", "buy", 3)], exits: { legStop: 2, takeProfitOfCredit: 0.5 } };
+const WINGED = { assets: ["BTC"], venues: ["delta_india"], lots: 100, cadence: "daily", fromHourUtc: 16, toHourUtc: 17, oncePerExpiry: false, minDte: 0.5, maxDte: 1.5, legs: [leg("put", "buy", 3), leg("put", "sell", 1), leg("call", "sell", 1), leg("call", "buy", 3)], exits: { takeProfitOfCredit: 0.5 } };
 const FIGURES = { mean: 4.2, per: "day", positivePct: 71, worst: -60, samples: 106, basis: "autopilot-study, real fees" };
 
 type Trader = { cookie: string; id: string; accountId: string };
@@ -182,10 +182,10 @@ describe("HC-TR-301 a complete live entry", () => {
     expect(new Set(orders.map((o) => o.clientOrderId)).size).toBe(4);
     const booked = await t.db.select().from(strategyOrders).where(eq(strategyOrders.strategyId, trade.id));
     expect(booked.map((o) => [o.purpose, o.state])).toEqual(Array(4).fill(["entry", "filled"]));
-    // the legs carry their fills, and the exits were armed: a stop on each sold option and the profit take
+    // the legs carry their fills, and the exit was armed: the profit take on the whole trade (ADR-157: a live strategy has no stop on one option alone)
     expect(legs.every((l) => l.entryPrice === markOf(l.kind as "call" | "put", Number(l.strike)))).toBe(true);
     const rules = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
-    expect(rules.map((r) => r.kind).sort()).toEqual(["leg_stop", "leg_stop", "target"]);
+    expect(rules.map((r) => r.kind).sort()).toEqual(["target"]);
     expect(rules.every((r) => r.state === "armed")).toBe(true);
     // the log line says live and names the mandate; the audit trail has the entry and its fills; the mandate stays active
     const lines = await linesOf(who, s);
@@ -196,18 +196,6 @@ describe("HC-TR-301 a complete live entry", () => {
     expect((await mandateOf(mandateId)).state).toBe("active");
 
     expect(legs.every((l) => l.openedAt !== null)).toBe(true);
-
-    // the exits are real: the sold put doubles, its stop fires, and ONE reduce-only buy of that option goes to the exchange
-    const soldPut = legs.find((l) => l.side === "sell" && l.kind === "put")!;
-    const marksNow = Object.fromEntries(legs.map((l) => [l.symbol, Number(l.entryPrice) * (l.id === soldPut.id ? 2.5 : 1)]));
-    t.trading.fillAt(productId("put", Number(soldPut.strike)), String(marksNow[soldPut.symbol]));
-    const before = t.trading.placed.length;
-    const fired = await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(Object.entries(marksNow)), spot: SPOT }) }, () => W + MIN);
-    expect(fired.fired.length).toBeGreaterThan(0);
-    const exits = t.trading.placed.slice(before).map((o) => o.input);
-    expect(exits.map((o) => [o.side, o.size, o.reduceOnly])).toEqual([["buy", 10, true]]);
-    expect(exits[0]!.productId).toBe(productId("put", Number(soldPut.strike)));
-    expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.id, soldPut.id)))[0]).toMatchObject({ status: "squared_off" });
 
     // HC-TR-303: the next passes hold the trade and send nothing more
     const after = t.trading.placed.length;
@@ -224,8 +212,37 @@ describe("HC-TR-301 a complete live entry", () => {
     // the trader squares it off by hand like any live trade: four reduce-only orders, and it is closed
     const closed = await t.request(`/v1/strategies/${trade.id}/close`, { cookie: who.cookie, method: "POST", json: { exits: {} } });
     expect(closed.status).toBe(200);
-    expect(t.trading.placed.slice(after).map((o) => o.input.reduceOnly)).toEqual([true, true, true]); // the three legs still open
+    expect(t.trading.placed.slice(after).map((o) => o.input.reduceOnly)).toEqual([true, true, true, true]);
     expect((await tradesOf(who, s))[0]).toMatchObject({ status: "archived", closeReason: "squared_off" });
+  });
+});
+
+describe("HC-TR-315 the exit of a live trade is on the whole trade (ADR-157)", () => {
+  it("HC-TR-315 the profit take closes the four options together, each order reduce-only, and the trade ends", async () => {
+    const { who, s } = await ready("Whole exit");
+    await pass(true);
+    const trade = (await tradesOf(who, s))[0]!;
+    expect(trade).toMatchObject({ status: "live", tradingMode: "live" });
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    // the sold options fall to a tenth of their price: the trade is past half of its premium
+    const marksNow = Object.fromEntries(legs.map((l) => [l.symbol, Number(l.entryPrice) * (l.side === "sell" ? 0.1 : 1)]));
+    for (const l of legs) t.trading.fillAt(productId(l.kind as "call" | "put", Number(l.strike)), String(marksNow[l.symbol]));
+    const before = t.trading.placed.length;
+    const fired = await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(Object.entries(marksNow)), spot: SPOT }) }, () => W + MIN);
+    // (trades other tests left open hold the same options and may fire in the same pass: this trade is read by its own rows)
+    const [rule] = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
+    expect(rule).toMatchObject({ kind: "target", state: "fired" });
+    expect(fired.fired).toContain(rule!.id);
+    const booked = (await t.db.select().from(strategyOrders).where(eq(strategyOrders.strategyId, trade.id))).filter((o) => o.purpose !== "entry");
+    // (an exit order the exchange filled is booked "closed", as an entry is booked "filled")
+    expect(booked.map((o) => [o.purpose, o.state, o.size])).toEqual(Array(4).fill(["exit", "closed", 10]));
+    expect(booked.every((o) => o.fillPrice !== null)).toBe(true);
+    // every order of the pass only reduces a position: nothing new is opened by an exit
+    const exits = t.trading.placed.slice(before).map((o) => o.input);
+    expect(exits.length).toBeGreaterThanOrEqual(4);
+    expect(exits.every((o) => o.reduceOnly === true)).toBe(true);
+    expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id))).map((l) => l.status)).toEqual(Array(4).fill("squared_off"));
+    expect((await tradesOf(who, s))[0]).toMatchObject({ status: "archived", closeReason: "target" });
   });
 });
 
@@ -434,6 +451,8 @@ describe("HC-TR-304 what stops new live entries", () => {
     const sent = t.trading.placed.length;
     const cases: [string, (x: Awaited<ReturnType<typeof ready>>) => Promise<unknown>][] = [
       ["Withdrawn", (x) => t.db.update(autopilotSavedStrategies).set({ approval: null }).where(eq(autopilotSavedStrategies.id, x.s.id))],
+      // ADR-157 (HC-TR-315): an approval and a mandate that stand on a strategy with a stop on one sold option alone (given before the rule, or written past it)
+      ["Stops one alone", (x) => t.db.update(autopilotSavedStrategies).set({ definition: { ...WINGED, exits: { legStop: 2 } } as unknown as SavedStrategy["definition"] }).where(eq(autopilotSavedStrategies.id, x.s.id))],
       ["Paused", (x) => t.db.update(autopilotMandates).set({ state: "paused" }).where(eq(autopilotMandates.id, x.mandateId))],
       ["Ended", (x) => t.db.update(autopilotMandates).set({ state: "ended" }).where(eq(autopilotMandates.id, x.mandateId))],
       ["No account", (x) => t.db.update(autopilotMandates).set({ accountId: null }).where(eq(autopilotMandates.id, x.mandateId))],
