@@ -7,7 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { type AutopilotDeps, runAutopilot } from "./autopilot.js";
 import { LIVE_ENTRY_GRACE_MS, hasIncompleteEntry, liveEntryHook, liveOrderKey, lossWindows, sweepIncompleteLive } from "./autopilot-live.js";
 import { stepMandate } from "./autopilot-mandate.js";
-import { evaluateRules } from "./rules-engine.js";
+import { coversSold, evaluateRules } from "./rules-engine.js";
 import { autopilotLiveOf, loadConfig } from "./config.js";
 import { auditLog, autopilotMandates, autopilotRuns, autopilotSavedStrategies, brokerCredentials, strategies, strategyLegs, strategyOrders, strategyRules, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
@@ -243,6 +243,108 @@ describe("HC-TR-315 the exit of a live trade is on the whole trade (ADR-157)", (
     expect(exits.every((o) => o.reduceOnly === true)).toBe(true);
     expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id))).map((l) => l.status)).toEqual(Array(4).fill("squared_off"));
     expect((await tradesOf(who, s))[0]).toMatchObject({ status: "archived", closeReason: "target" });
+  });
+});
+
+describe("HC-TR-316 an exit never sells the bought option behind a sold one that is still open (ADR-158)", () => {
+  it("HC-TR-316 the exchange refuses the buy-back of the sold call: the bought call is kept, the put side is closed, the rule says what is held", async () => {
+    const { who, s } = await ready("Refused exit");
+    await pass(true);
+    const trade = (await tradesOf(who, s))[0]!;
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    const of = (side: string, kind: string) => legs.find((l) => l.side === side && l.kind === kind)!;
+    const marksNow = Object.fromEntries(legs.map((l) => [l.symbol, Number(l.entryPrice) * (l.side === "sell" ? 0.1 : 1)]));
+    for (const l of legs) t.trading.fillAt(productId(l.kind as "call" | "put", Number(l.strike)), String(marksNow[l.symbol]));
+    // a final refusal for the sold call only
+    t.trading.failWith(productId("call", Number(of("sell", "call").strike)), "insufficient_margin", { retryable: false });
+    const fired = await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(Object.entries(marksNow)), spot: SPOT }) }, () => W + MIN, { attempts: 3, backoffMs: 0 });
+    const [rule] = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
+    expect(fired.fired).toContain(rule!.id);
+    expect(rule).toMatchObject({ kind: "target", state: "fired", outcome: "partial" });
+    const after = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    expect(after.map((l) => [l.side, l.kind, l.status])).toEqual([["buy", "put", "squared_off"], ["sell", "put", "squared_off"], ["sell", "call", "open"], ["buy", "call", "open"]]);
+    // no order of any state was sent for the bought call: it still stands behind the sold one
+    const exits = (await t.db.select().from(strategyOrders).where(eq(strategyOrders.strategyId, trade.id))).filter((o) => o.purpose === "exit");
+    expect(exits.map((o) => [o.symbol, o.state]).sort()).toEqual([[of("buy", "put").symbol, "closed"], [of("sell", "call").symbol, "failed"], [of("sell", "put").symbol, "closed"]].sort());
+    expect(rule!.note).toContain(`1 still open: ${of("sell", "call").symbol}`);
+    expect(rule!.note).toContain(`1 bought leg held back (not sold) because a sold leg it covers is still open: ${of("buy", "call").symbol} · close the sold leg first, then this one`);
+    expect((await tradesOf(who, s))[0]).toMatchObject({ status: "live", closeReason: null });
+    const [audit] = await t.db.select({ after: auditLog.after }).from(auditLog).where(and(eq(auditLog.target, `strategy:${trade.id}`), eq(auditLog.action, "strategy.rule_fire")));
+    expect(audit!.after).toMatchObject({ outcome: "partial", kept: [of("buy", "call").symbol] });
+  });
+
+  it("HC-TR-316 a buy-back the exchange has not filled yet keeps its bought option too: the sold put rests, the bought put is not sold", async () => {
+    const { who, s } = await ready("Resting exit");
+    await pass(true);
+    const trade = (await tradesOf(who, s))[0]!;
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    const of = (side: string, kind: string) => legs.find((l) => l.side === side && l.kind === kind)!;
+    const marksNow = Object.fromEntries(legs.map((l) => [l.symbol, Number(l.entryPrice) * (l.side === "sell" ? 0.1 : 1)]));
+    for (const l of legs) t.trading.fillAt(productId(l.kind as "call" | "put", Number(l.strike)), String(marksNow[l.symbol]));
+    // the first exit order of the pass is the sold put (sold legs first, in the trade's order): it is accepted and not filled
+    t.trading.partialNextOrder();
+    await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(Object.entries(marksNow)), spot: SPOT }) }, () => W + MIN, { attempts: 3, backoffMs: 0 });
+    const [rule] = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
+    expect(rule).toMatchObject({ state: "fired", outcome: "partial" });
+    const after = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    expect(after.map((l) => [l.side, l.kind, l.status])).toEqual([["buy", "put", "open"], ["sell", "put", "open"], ["sell", "call", "squared_off"], ["buy", "call", "squared_off"]]);
+    const exits = (await t.db.select().from(strategyOrders).where(eq(strategyOrders.strategyId, trade.id))).filter((o) => o.purpose === "exit");
+    expect(exits.map((o) => [o.symbol, o.state]).sort()).toEqual([[of("buy", "call").symbol, "closed"], [of("sell", "call").symbol, "closed"], [of("sell", "put").symbol, "pending"]].sort());
+    // the order is with the exchange: the next step is the sync, not a close on top of it
+    expect(rule!.note).toContain(`1 bought leg held back (not sold) because a sold leg it covers is still open: ${of("buy", "put").symbol} · press Sync on the trade; once the sold leg is closed, close this one`);
+  });
+
+  it("HC-TR-316 a sold option whose ENTRY order is still with the exchange keeps its bought option as well: the exit does not reach it, and does not sell its cover", async () => {
+    const { who, s } = await ready("Entry resting");
+    await pass(true);
+    const trade = (await tradesOf(who, s))[0]!;
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    const of = (side: string, kind: string) => legs.find((l) => l.side === side && l.kind === kind)!;
+    // the sold call as an entry that the exchange accepted and has not filled: no entry price, its order pending
+    await t.db.update(strategyLegs).set({ entryPrice: null }).where(eq(strategyLegs.id, of("sell", "call").id));
+    await t.db.update(strategyOrders).set({ state: "pending", fillPrice: null }).where(and(eq(strategyOrders.legId, of("sell", "call").id), eq(strategyOrders.purpose, "entry")));
+    // the sold put falls to nothing: the three options that are valued are past the profit take
+    const marksNow = Object.fromEntries(legs.map((l) => [l.symbol, Number(l.entryPrice) * (l.side === "sell" ? 0.01 : 1)]));
+    for (const l of legs) t.trading.fillAt(productId(l.kind as "call" | "put", Number(l.strike)), String(marksNow[l.symbol]));
+    await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(Object.entries(marksNow)), spot: SPOT }) }, () => W + MIN, { attempts: 3, backoffMs: 0 });
+    const [rule] = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
+    expect(rule).toMatchObject({ state: "fired", outcome: "partial" });
+    const after = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    expect(after.map((l) => [l.side, l.kind, l.status])).toEqual([["buy", "put", "squared_off"], ["sell", "put", "squared_off"], ["sell", "call", "open"], ["buy", "call", "open"]]);
+    const exits = (await t.db.select().from(strategyOrders).where(eq(strategyOrders.strategyId, trade.id))).filter((o) => o.purpose === "exit");
+    expect(exits.map((o) => o.symbol).sort()).toEqual([of("buy", "put").symbol, of("sell", "put").symbol].sort());
+    expect(rule!.note).toContain(`${of("sell", "call").symbol} (its entry order is still with the exchange · sync)`);
+    expect(rule!.note).toContain(`held back (not sold) because a sold leg it covers is still open: ${of("buy", "call").symbol} · press Sync on the trade`);
+  });
+
+  it("HC-TR-316 squaring a live trade off by hand buys the sold options back first, and stops at the first one that does not fill: no bought option is sold", async () => {
+    const { who, s } = await ready("Refused square-off");
+    await pass(true);
+    const trade = (await tradesOf(who, s))[0]!;
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    // the trade's own order starts with a bought option: the bought put, then the sold put
+    expect(legs.map((l) => [l.side, l.kind])).toEqual([["buy", "put"], ["sell", "put"], ["sell", "call"], ["buy", "call"]]);
+    const soldPut = legs[1]!;
+    t.trading.failWith(productId("put", Number(soldPut.strike)), "insufficient_margin", { retryable: false });
+    const before = t.trading.placed.length;
+    const refused = await t.request(`/v1/strategies/${trade.id}/close`, { cookie: who.cookie, method: "POST", json: { exits: {} } });
+    expect(refused.status).toBeGreaterThanOrEqual(400);
+    // one order went to the exchange, the buy-back of the sold put, and nothing after its refusal
+    expect(t.trading.placed.slice(before).map((o) => [o.input.productId, o.input.side, o.input.reduceOnly])).toEqual([[productId("put", Number(soldPut.strike)), "buy", true]]);
+    expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id))).map((l) => l.status)).toEqual(Array(4).fill("open"));
+    expect((await tradesOf(who, s))[0]).toMatchObject({ status: "live" });
+    // the way is free again: the same square-off closes all four, sold ones first
+    resetVenue();
+    const again = t.trading.placed.length;
+    expect((await t.request(`/v1/strategies/${trade.id}/close`, { cookie: who.cookie, method: "POST", json: { exits: {} } })).status).toBe(200);
+    expect(t.trading.placed.slice(again).map((o) => o.input.side)).toEqual(["buy", "buy", "sell", "sell"]);
+    expect((await tradesOf(who, s))[0]).toMatchObject({ status: "archived", closeReason: "squared_off" });
+  });
+
+  it("HC-TR-316 which bought leg covers which sold one", () => {
+    expect([coversSold("call", "call"), coversSold("put", "put"), coversSold("call", "put"), coversSold("put", "call")]).toEqual([true, true, false, false]);
+    // with a future on either side the leg is kept: the safe mistake
+    expect([coversSold("future", "call"), coversSold("put", "future"), coversSold("future", "future")]).toEqual([true, true, true]);
   });
 });
 

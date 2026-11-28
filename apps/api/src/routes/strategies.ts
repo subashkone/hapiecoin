@@ -721,7 +721,10 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       let realized = "0";
       const creds = row.status === "live" ? await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId) : null;
       const batch = `exit:${newId("b")}`;
-      for (const l of legs) {
+      // ADR-158 (HC-TR-316): on a live trade the sold legs go first. An exit that does not fill stops the square-off
+      // right there (placeExit throws), so no bought leg is ever sold while a sold one is still held.
+      const inOrder = creds ? [...legs].sort((x, y) => (x.side === y.side ? 0 : x.side === "sell" ? -1 : 1)) : legs;
+      for (const l of inOrder) {
         const exit = creds ? await placeExit(deps, creds, me, row, l, l.lots, batch) : body.exits[l.id]!;
         realized = addDecimal(realized, await closeLeg(row, l, exit, undefined, lotSize, now));
       }

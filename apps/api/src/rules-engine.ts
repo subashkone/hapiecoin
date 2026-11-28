@@ -14,7 +14,7 @@
 // reached it, is never re-sent: the leg is left for the order sync and named on the rule.
 // Never runs under NODE_ENV=test unless a test calls it.
 import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, openProfitPct, restTrailFloorUsd, settlementMsOf, stepLots, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyRules, users } from "./db/schema.js";
 import { type DeltaCredentials } from "@hapiecoin/venues";
@@ -31,6 +31,15 @@ export interface RulesTick {
 export interface RulesTickSource {
   /** The marks and spot of `asset` on `venue` (ADR-070); null when this API reads no market data for that venue (its rules wait). */
   tick(asset: Underlying, venue: string): Promise<RulesTick | null>;
+}
+
+/**
+ * ADR-158 (HC-TR-316): whether a bought leg covers a sold one, so that it must not be sold while the sold one is still
+ * held. An option covers a sold option of its own kind (a call a call, a put a put). Where either is a future the
+ * answer is yes: which side a future covers depends on the rest of the trade, and keeping a leg is the safe mistake.
+ */
+export function coversSold(boughtKind: string, soldKind: string): boolean {
+  return boughtKind === soldKind || boughtKind === "future" || soldKind === "future";
 }
 
 export interface RulesReport {
@@ -88,7 +97,9 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
     try {
       const user = { id: strategy.userId, email: "", name: "", role: "user" as const };
       // only legs the exchange (or the paper book) actually holds count: a never-filled entry is not a position
-      const legs = (await deps.db.select().from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open")))).filter((l) => l.entryPrice !== null);
+      // (in the trade's own order, so that the orders of an exit go out in one known order)
+      const openLegs = await deps.db.select().from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).orderBy(asc(strategyLegs.position));
+      const legs = openLegs.filter((l) => l.entryPrice !== null);
       const tick = legs.length ? await tickFor(strategy.asset, strategy.venue) : null;
       if (legs.length === 0 || tick === null) {
         out.skipped += rules.length;
@@ -312,6 +323,21 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           let closedLots = 0;
           const failed: { symbol: string; error: string }[] = [];
           const unconfirmed: { symbol: string; what: string }[] = [];
+          // ADR-158 (HC-TR-316): the sold legs whose exit did not go through on the exchange, and the bought legs kept
+          // because of them. A bought leg is what limits the loss of a sold one: it is not sold while that one is open.
+          const soldOpen: { kind: string; waiting: boolean }[] = [];
+          const kept: string[] = [];
+          // a sold leg this exit does not reach because its ENTRY order is still with the exchange (it has no entry
+          // price yet, so it is not among the legs valued): it may be held there, and its cover stays too
+          if (creds && exitLegs === legs) {
+            for (const l of openLegs.filter((x) => x.entryPrice === null && x.side === "sell")) {
+              const [entering] = await deps.db.select({ id: strategyOrders.id }).from(strategyOrders).where(and(eq(strategyOrders.legId, l.id), eq(strategyOrders.purpose, "entry"), eq(strategyOrders.state, "pending"))).limit(1);
+              if (entering) {
+                soldOpen.push({ kind: l.kind, waiting: true });
+                unconfirmed.push({ symbol: l.symbol, what: "its entry order is still with the exchange · sync" });
+              }
+            }
+          }
           for (const seen of order) {
             // the leg is re-read right before the order: a click or the settler may have closed it since the pass began
             const [leg] = await deps.db.select().from(strategyLegs).where(and(eq(strategyLegs.id, seen.id), eq(strategyLegs.status, "open"))).limit(1);
@@ -322,10 +348,16 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             const mark = marks.get(leg.symbol)!;
             let fill: string | null = null;
             if (creds) {
+              // (the sold legs went first, so by the first bought leg every sold one has its answer)
+              if (leg.side === "buy" && soldOpen.some((s) => coversSold(leg.kind, s.kind))) {
+                kept.push(leg.symbol);
+                continue;
+              }
               // an exit for this leg that rested (from an earlier rule, or a click) is still the venue's to fill: never a second one
               const [resting] = await deps.db.select({ id: strategyOrders.id }).from(strategyOrders).where(and(eq(strategyOrders.legId, leg.id), eq(strategyOrders.purpose, "exit"), eq(strategyOrders.state, "pending"))).limit(1);
               if (resting) {
                 unconfirmed.push({ symbol: leg.symbol, what: "an earlier exit is still filling · sync" });
+                if (leg.side === "sell") soldOpen.push({ kind: leg.kind, waiting: true });
                 continue;
               }
               let lastError = "";
@@ -353,6 +385,9 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
               }
               if (fill === null) {
                 if (lastError) failed.push({ symbol: leg.symbol, error: lastError });
+                // refused, failed before the order, or with the exchange and not confirmed: this sold leg is still held
+                // (no error text: the order is with the exchange and waits for the sync)
+                if (leg.side === "sell") soldOpen.push({ kind: leg.kind, waiting: !lastError });
                 continue;
               }
             } else {
@@ -367,10 +402,16 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
               failed.push({ symbol: leg.symbol, error: errorMessage(e) });
             }
           }
-          const outcome = failed.length === 0 && unconfirmed.length === 0 ? ("closed" as const) : ("partial" as const);
+          const outcome = failed.length === 0 && unconfirmed.length === 0 && kept.length === 0 ? ("closed" as const) : ("partial" as const);
           const parts = [rule.kind === "step" ? `${closedLots} ${closedLots === 1 ? "lot" : "lots"} closed on ${fills.length} ${fills.length === 1 ? "leg" : "legs"}, the rest kept` : `${fills.length} ${fills.length === 1 ? "leg" : "legs"} exited`];
           if (unconfirmed.length) parts.push(`${unconfirmed.length} still filling on the exchange: ${unconfirmed.map((u) => `${u.symbol} (${u.what})`).join("; ")}`);
           if (failed.length) parts.push(`${failed.length} still open: ${failed.map((f) => `${f.symbol} (${f.error})`).join("; ")}`);
+          if (kept.length) {
+            const these = kept.length === 1 ? "this one" : "these";
+            // an order still with the exchange cannot be closed over: the sync comes first
+            const next = soldOpen.some((s) => s.waiting) ? `press Sync on the trade; once the sold leg is closed, close ${these}` : `close the sold leg first, then ${these}`;
+            parts.push(`${kept.length} bought ${kept.length === 1 ? "leg" : "legs"} held back (not sold) because a sold leg ${kept.length === 1 ? "it covers" : "they cover"} is still open: ${kept.join(", ")} · ${next}`);
+          }
           const realized = addDecimal(await freshTotal(deps, strategy.id, strategy.realizedPnl), batchPnl);
           const left = await deps.db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
           const archive = left.length === 0;
@@ -411,11 +452,11 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             action: "strategy.rule_fire",
             target: `strategy:${strategy.id}`,
             before: { rule: rule.id, kind: rule.kind, trigger: rule.trigger, level: rule.thresholdUsd, legId: rule.legId, scope: rule.scope, detail, pnl: toDecimal(pnl, 2), spot: tick.spot, marks: legs.map((l) => ({ symbol: l.symbol, mark: marks.get(l.symbol), entry: l.entryPrice })) },
-            after: { outcome, fills, unconfirmed, failed, realizedPnl: realized, archived: archive },
+            after: { outcome, fills, unconfirmed, failed, kept, realizedPnl: realized, archived: archive },
           });
           await notify(deps, strategy.userId, rule.channels, `${label} fired · ${strategy.name}`, `${note}\n\n${deps.config.webUrl}/desk`);
           out.fired.push(rule.id);
-          deps.logger.info({ strategyId: strategy.id, rule: rule.id, kind: rule.kind, pnl: toDecimal(pnl, 2), outcome, failed: failed.length, unconfirmed: unconfirmed.length }, "rule fired");
+          deps.logger.info({ strategyId: strategy.id, rule: rule.id, kind: rule.kind, pnl: toDecimal(pnl, 2), outcome, failed: failed.length, unconfirmed: unconfirmed.length, kept: kept.length }, "rule fired");
         } catch (e) {
           // claimed, then something broke before the bookkeeping finished: say so on the rule, never leave it blank
           const message = errorMessage(e);
