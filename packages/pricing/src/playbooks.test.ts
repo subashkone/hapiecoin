@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_AGAIN_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, ONE_DAY_WEEKLY_PLAYBOOKS, CAUTIOUS_DAILY_PLAYBOOKS, WINGS_TRAIL_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { WINGS_STOP_DAILY_PLAYBOOKS, ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_AGAIN_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, ONE_DAY_WEEKLY_PLAYBOOKS, CAUTIOUS_DAILY_PLAYBOOKS, WINGS_TRAIL_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -231,7 +231,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + ALT_MONTHLY_AGAIN_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length + ONE_DAY_WEEKLY_PLAYBOOKS.length + CAUTIOUS_DAILY_PLAYBOOKS.length + WINGS_TRAIL_DAILY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + ALT_MONTHLY_AGAIN_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length + ONE_DAY_WEEKLY_PLAYBOOKS.length + CAUTIOUS_DAILY_PLAYBOOKS.length + WINGS_TRAIL_DAILY_PLAYBOOKS.length + WINGS_STOP_DAILY_PLAYBOOKS.length);
   });
 
   it("HC-TR-311 one more ETH monthly strangle beside the five: 12 % away, a stop at double, a take at 35 % of the premium after the entry fee, and the same expiry sold again after each take until 7 days before it settles", () => {
@@ -1043,5 +1043,28 @@ describe("HC-TR-266 the ETH daily strangle with wings and the trail alone (ADR-1
     expect(r.proposal.maxLoss).toBeCloseTo(-50 - r.proposal.entryCost, 6);
     const short = chain(2304, 2300, 30, 40).filter((x) => x.strike >= 2240 && x.strike <= 2370);
     expect(proposalFor(p, evening(2304, short), base)).toEqual({ ok: false, reason: "noFit" });
+  });
+});
+
+describe("HC-TR-313 the BTC evening strangle with wings and a stop at triple", () => {
+  it("HC-TR-313 one more BTC daily playbook: the winged strangle's own strikes and hour, a stop at triple on the sold options and no other exit; its card says what the figure rests on", () => {
+    const p = autopilotPlaybookById("evening-strangle-wings-3-stop-3x")!;
+    const held = autopilotPlaybookById("evening-strangle-wings-3")!;
+    expect(WINGS_STOP_DAILY_PLAYBOOKS).toEqual([p]);
+    expect(p).toMatchObject({ name: "Evening strangle with wings, stop at triple", assets: ["BTC"], lots: 100, control: false, minDte: held.minDte });
+    expect(p.name.length).toBeLessThanOrEqual(68);
+    // the same window, expiry and strikes as the winged strangle that is held; the stop is the one difference
+    expect(p.clock).toEqual({ ...held.clock, legStop: 3 });
+    expect(playbookTemplate(p)!.legs).toEqual(playbookTemplate(held)!.legs);
+    expect(playbookTemplate(p)!.risk).toBe("defined");
+    expect(playbookCadence(p)).toBe("daily");
+    // the only BTC daily strangle with bought wings and a stop on its sold options
+    expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.assets.includes("BTC") && playbookCadence(x) === "daily" && playbookTemplate(x)?.risk === "defined" && x.clock?.legStop !== undefined && (playbookTemplate(x)?.legs.length ?? 0) === 4).map((x) => x.id)).toEqual([p.id]);
+    // the figure of the table, at the mark as the two winged cards beside it, and what it rests on in words
+    expect(playbookBacktest(p.id)).toMatchObject({ mean: 8.57, per: "day", positivePct: 63, worst: -92.4, samples: 84 });
+    expect(p.evidence.claim).toContain("+8.57 a day on 84 days, 63 % of days positive, worst day -92.4");
+    expect(p.evidence.source).toContain("results-wings-stop-2026-11-27.txt");
+    for (const said of ["picked after seeing the table", "On 22 of the 106 days the wings had no price", "+6.99 a day with a worst day of -95.0", "A stop at double did not work there", "over all 90 days traded it reads +7.06 a day, and +5.43 with fill costs, with November at -26", "its loss is NOT capped at the figure the wings give", "On 5 of the 90 days traded to 27 Nov it lost more than that day's largest loss of the four options held together"]) expect(p.rationale).toContain(said);
+    expect(p.trials).toMatchObject({ count: 26 });
   });
 });
