@@ -915,21 +915,21 @@ describe("HC-TR-263 the Friday weekly strangle held for its first day only (ADR-
       expect(p.name.length).toBeLessThanOrEqual(68);
       expect(p.trials.count).toBe(108);
       expect(p.trials.note).toContain("not whether the price can be had");
-      expect(p.evidence.source).toContain("results-weekly-one-day-2026-11-24.txt");
+      expect(p.evidence.source).toContain("results-weekly-one-day-2026-11-28.txt, the table corrected on 28 Nov 2026");
       expect(p.summary).toContain("Saturday at 5:30 PM IST");
     }
     expect(byId("weekly-fri-strangle-one-day").name).toBe("Friday weekly strangle, one day");
     expect(byId("eth-weekly-fri-strangle-one-day").name).toBe("ETH Friday weekly strangle, one day");
     // the cards give the result and the three reasons to distrust it
-    expect(byId("weekly-fri-strangle-one-day").evidence.claim).toContain("+15.63 a week on 51 weeks, 88 % of weeks positive, worst week -63.0");
-    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("the same one-day hold started on Saturday lost (-5.65 a week), on Sunday lost (-2.99) and on Monday earned about half (+8.05)");
-    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("sold two hours after the entry window it earned +8.92, four hours after +3.30, and eight hours after it lost (-1.30)");
-    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("It is one of the best of 108 rows");
-    expect(byId("eth-weekly-fri-strangle-one-day").rationale).toContain("a hold of 8 hours earned +6.05 and of 12 hours +7.17");
-    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("Half of the gain came in the first four hours (+7.89)");
-    expect(byId("eth-weekly-fri-strangle-one-day").evidence.claim).toContain("+6.77 a week on 51 weeks, 80 % of weeks positive, worst week -18.3");
-    expect(byId("eth-weekly-fri-strangle-one-day").rationale).toContain("Started on Saturday the same hold lost (-1.82 a week)");
-    expect(ONE_DAY_WEEKLY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 15.63, per: "week", positivePct: 88, worst: -63, samples: 51 }, { mean: 6.77, per: "week", positivePct: 80, worst: -18.3, samples: 51 }]);
+    expect(byId("weekly-fri-strangle-one-day").evidence.claim).toContain("+14.84 a week on 51 weeks, 86 % of weeks positive, worst week -69.0");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("the same one-day hold started on Saturday lost (-5.67 a week), on Sunday lost (-0.69) and on Monday earned about three fifths (+8.95)");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("sold two hours after the entry window it earned +11.29, four hours after +4.12, and eight hours after it lost (-1.59)");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("so the hour kept here is not the best of its neighbours");
+    expect(byId("eth-weekly-fri-strangle-one-day").rationale).toContain("a hold of 8 hours earned +5.56 and of 12 hours +6.83, as much as the 20 hours kept here");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("Three quarters of the gain came in the first eight hours (+11.13)");
+    expect(byId("eth-weekly-fri-strangle-one-day").evidence.claim).toContain("+6.83 a week on 51 weeks, 78 % of weeks positive, worst week -19.4");
+    expect(byId("eth-weekly-fri-strangle-one-day").rationale).toContain("Started on Saturday the same hold lost (-1.54 a week)");
+    expect(ONE_DAY_WEEKLY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 14.84, per: "week", positivePct: 86, worst: -69, samples: 51 }, { mean: 6.83, per: "week", positivePct: 78, worst: -19.4, samples: 51 }]);
     // the only weekly playbooks with a timed exit; the daily ones keep 20:00 UTC
     expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.exitHourUtc !== undefined).map((p) => `${p.id} ${p.clock!.exitHourUtc}`)).toEqual(["evening-strangle-out-early 20", "eth-evening-strangle-out-early 20", "weekly-fri-strangle-one-day 12", "eth-weekly-fri-strangle-one-day 12"]);
   });

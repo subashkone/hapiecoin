@@ -2437,7 +2437,7 @@
     "new": true,
     "feature": "Autopilot weekly strategies that hold the Friday strangle for its first day only",
     "how": "two paper playbooks, on BTC (3 % away) and ETH (4 % away): the Friday weekly strangle of that coin with a stop at triple on each option, closed whole on Saturday at 5:30 PM IST, about 20 hours after the entry, whatever the profit; the existing timed exit of a clock playbook, with no new rule; the card says the exit is the next day's and gives the study's cautions (one of the best rows of 108, its neighbours fall away fast, fills at the mark); a running trade's row says when it will be closed in place of held to settlement",
-    "evidence": "ADR-134, GAPS #169 (24 Nov 2026): packages/pricing/src/playbooks.ts (ONE_DAY_WEEKLY_PLAYBOOKS), apps/web/src/components/autopilot/AutopilotPage.tsx (nextDay, the Closes at row), apps/web/src/lib/strategy/autopilot.ts (closesAtMs); tests: packages/pricing/src/playbooks.test.ts HC-TR-263, apps/api/src/autopilot.test.ts HC-TR-263 (the job's Friday entry and the Saturday close), autopilot-page.test.tsx HC-TR-263, lib/strategy/autopilot.test.ts HC-TR-263",
+    "evidence": "ADR-134, GAPS #169 (24 Nov 2026), the cards' figures corrected to the 20-hour table by ADR-156, GAPS #189 (28 Nov 2026): packages/pricing/src/playbooks.ts (ONE_DAY_WEEKLY_PLAYBOOKS), apps/web/src/components/autopilot/AutopilotPage.tsx (nextDay, the Closes at row), apps/web/src/lib/strategy/autopilot.ts (closesAtMs); tests: packages/pricing/src/playbooks.test.ts HC-TR-263, apps/api/src/autopilot.test.ts HC-TR-263 (the job's Friday entry and the Saturday close), autopilot-page.test.tsx HC-TR-263, lib/strategy/autopilot.test.ts HC-TR-263",
     "test": "unit (pricing), integration (api), unit (web)"
   },
   {
