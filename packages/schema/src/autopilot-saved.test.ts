@@ -1,6 +1,6 @@
 // Saved Autopilot strategies (ADR-141, ADR-142): the settings an admin may save, and how they read.
 import { describe, expect, it } from "vitest";
-import { SavedBacktest, SavedBacktestRun, SavedBacktestStart, SavedBacktestTyped, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedProfitCapped, savedWindowText } from "./autopilot-saved.js";
+import { SAVED_LOSS_LIMIT_LABELS, SAVED_LOSS_LIMITS, SavedBacktest, SavedBacktestRun, SavedBacktestStart, SavedBacktestTyped, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedLossLimit, savedPlaybookOf, savedProfitCapped, savedWindowText } from "./autopilot-saved.js";
 import { AutopilotView } from "./autopilot.js";
 import { APPROVAL_MIN_DAYS, APPROVAL_MIN_TRADES, SavedApproval, SavedApprovalView, SavedApprove, type SavedPaperRecord, savedApprovalChecks } from "./autopilot-saved.js";
 
@@ -89,6 +89,25 @@ describe("HC-TR-269 the settings of a saved strategy", () => {
     expect(savedLossCapped([buyPut, sellPut, sellCall, buyCall])).toBe(true);
     expect(savedLossCapped([buyPut, sellPut, sellCall])).toBe(false);
     expect(savedLossCapped([sellPut, sellCall, buyCall])).toBe(false);
+  });
+
+  it("HC-TR-315 covered legs are loss-limited only while no stop closes one sold option alone (ADR-157)", () => {
+    const winged = [buyPut, sellPut, sellCall, buyCall];
+    expect(savedLossLimit({ legs: winged, exits: {} })).toBe("limited");
+    // the exits on the whole trade, and a cheap buy-back (past the four-leg figure by its own price at most; refused on live for its own reason)
+    expect(savedLossLimit({ legs: winged, exits: { takeProfitOfCredit: 0.5, takeTrailPct: 10, stopOfMax: 0.5, exitHourUtc: 12, timeStopDte: 1, legBuyBackShare: 0.2, ladder: [30, 60], lock: { at: 0.5, floor: 0.2 } } })).toBe("limited");
+    // the stop on one sold option: that option is bought back at a loss and the rest stays open
+    expect(savedLossLimit({ legs: winged, exits: { legStop: 3 } })).toBe("legStop");
+    expect(savedLossLimit({ legs: winged, exits: { legStop: 1.5, trailRestPct: 50, takeProfitOfCredit: 0.5 } })).toBe("legStop");
+    // not covered is its own answer, with the stop or without
+    expect(savedLossLimit({ legs: [sellPut, sellCall], exits: { legStop: 2 } })).toBe("uncovered");
+    expect(savedLossLimit({ legs: [sellPut, sellCall, buyCall], exits: {} })).toBe("uncovered");
+    expect(Object.keys(SAVED_LOSS_LIMIT_LABELS)).toEqual([...SAVED_LOSS_LIMITS]);
+    expect(SAVED_LOSS_LIMIT_LABELS).toMatchObject({ limited: "Loss limited by bought options", legStop: "Loss not limited: its stop closes one sold option alone", uncovered: "Loss not limited" });
+    // the template keeps the payoff at expiry, which the paper screens price the trade on
+    const row = { id: "sv_1", name: "Wings, stop 3x", summary: "s", backtest: null, definition: SavedDefinition.parse({ assets: ["BTC"], venues: ["delta_india"], lots: 100, cadence: "daily", fromHourUtc: 16, toHourUtc: 17, oncePerExpiry: false, minDte: 0.5, maxDte: 1.5, legs: winged, exits: { legStop: 3 } }) };
+    expect(savedPlaybookOf(row).template.risk).toBe("defined");
+    expect(savedLossLimit(row.definition)).toBe("legStop");
   });
 
   it("HC-TR-269 writes the entry as a trader in India reads it", () => {
@@ -322,8 +341,14 @@ describe("HC-TR-292 the approval checks (ADR-145)", () => {
       "First paper trade on 2026-10-01, 120 days ago; published 121 days ago. The log keeps 90 days: older trades are not in this record.",
       "0 closed paper trades, 0 still open, in the account that took the most entries (1 account traded it).",
       "No paper trade has closed yet.",
-      "By its settings, every sold option is covered by a bought one.",
+      "By its settings, every sold option is covered by a bought one, and no stop closes a sold option alone.",
     ]);
+    // ADR-157 (HC-TR-315): covered legs with a stop on one sold option alone fail the check in their own words; without the settings the plain words stay
+    const stopped = { ...good, lossCapped: false, definition: { legs: [buyPut, sellPut, sellCall, buyCall], exits: { legStop: 3 } } };
+    expect(failing(stopped, record)).toEqual(["lossCapped", "margin"]);
+    expect(savedApprovalChecks(stopped, record).find((c) => c.key === "lossCapped")!.label).toBe("Loss limited: every sold option covered, none stopped alone");
+    expect(savedApprovalChecks(stopped, record).find((c) => c.key === "lossCapped")!.detail).toBe("Every sold option is covered, but its stop closes one sold option alone and keeps the rest open: after that the loss is not limited. Such a strategy runs on paper and never goes live.");
+    expect(savedApprovalChecks({ ...stopped, definition: { legs: [sellPut, sellCall], exits: { legStop: 3 } } }, record).find((c) => c.key === "lossCapped")!.detail).toBe("Its loss is not limited: such a strategy runs on paper and never goes live.");
     const none = { ...record, firstEntryAt: null, lastEntryAt: null, days: 0, closed: 0 };
     expect(savedApprovalChecks(good, { ...none, publishedDays: 3 }).find((c) => c.key === "days")!.detail).toBe("No paper trade yet; published 3 days ago.");
     expect(savedApprovalChecks({ ...good, backtest: null }, { ...none, since: null, publishedDays: 0 }).slice(0, 2).map((c) => c.detail)).toEqual(["It has no backtest figures.", "It is not on paper."]);

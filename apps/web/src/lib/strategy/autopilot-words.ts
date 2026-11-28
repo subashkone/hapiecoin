@@ -59,7 +59,9 @@ export const exitTags = (p: Playbook): string[] => {
   if (!c) return ["Playbook stop", "Time exit"];
   const whole = wholeTradeTags(p);
   const tags = [c.legStop ? `Stop ${c.legStop}x` : p.exits?.stopPct !== undefined ? "No stop on a leg" : "No stop"];
-  if (p.exits ? lossLimited(p) : hasWings(p)) tags.push(p.exits ? "Loss limited" : "Wings");
+  // ADR-157: with a stop on one sold option alone the bought options do not limit the loss; the tag then says what is held, not a limit
+  const limited = Boolean(p.exits) && !c.legStop;
+  if (limited ? lossLimited(p) : hasWings(p)) tags.push(limited ? "Loss limited" : "Wings");
   if (c.takeProfitOfCredit) tags.push(`${c.takeTrailPct ? "Trail from" : "Take"} ${Math.round(c.takeProfitOfCredit * 100)} %`);
   if (c.trailRestPct) tags.push("Trail the other side");
   if (c.ladder) tags.push(`Steps ${c.ladder.join(" / ")} %`);

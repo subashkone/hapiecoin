@@ -39,6 +39,17 @@ async function open() {
 }
 
 describe("HC-TR-277 the list of saved strategies", () => {
+  it("HC-TR-315 a strategy with wings and a stop on one sold option alone is listed as not loss-limited, with the reason (ADR-157)", async () => {
+    saved({ name: "Wings held", definition: WINGS });
+    saved({ name: "Wings, stop 3x", definition: SavedDefinition.parse({ ...WINGS, exits: { legStop: 3 } }), traded: true });
+    saved({ name: "No wings" });
+    await open();
+    const said = (name: string) => within(rowOf(name)).getByTestId("saved-loss-limit").textContent;
+    expect(said("Wings held")).toBe("Loss limited by bought options");
+    expect(said("Wings, stop 3x")).toBe("Loss not limited: its stop closes one sold option alone · has traded");
+    expect(said("No wings")).toBe("Loss not limited");
+  });
+
   it("HC-TR-277 the steps a strategy allows follow its stage and whether it has traded", () => {
     const at = (stage: SavedStrategy["stage"], traded = false) => stepsOf({ stage, traded } as SavedStrategy);
     expect(at("draft")).toEqual({ edit: true, publish: true, retire: false, remove: true });
@@ -67,7 +78,7 @@ describe("HC-TR-277 the list of saved strategies", () => {
     expect(within(paper).getByTestId("saved-backtest").textContent).toContain("−$3 a day");
     expect(within(paper).getByTestId("saved-who").textContent).toBe(pro.name);
     const wings = rowOf("Tested wings");
-    expect(wings.textContent).toContain("Loss limited by bought options");
+    expect(within(wings).getByTestId("saved-loss-limit").textContent).toBe("Loss limited by bought options");
     expect(within(wings).getByTestId("saved-backtest").textContent).toContain("+$12.4 a day");
     expect(within(wings).getByTestId("saved-backtest").textContent).toContain("71 % won · worst −$180 · 106 trades");
     expect(within(wings).getByTestId("saved-backtest").textContent).toContain("entered by hand");

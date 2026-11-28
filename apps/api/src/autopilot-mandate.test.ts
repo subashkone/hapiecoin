@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUTH_BASE_PATH } from "./auth.js";
 import { hasHeldExit, liveRefusalOf, standingFor } from "./autopilot-mandate.js";
+import { lossLimitedFor } from "./autopilot-saved.js";
 import { auditLog, autopilotMandates, autopilotSavedStrategies, brokerCredentials, strategies, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { paperRecordOf } from "./saved-approval.js";
@@ -134,11 +135,12 @@ describe("HC-TR-310 what a trader's Autopilot view says about live", () => {
     const pending = await strategy("Card pending", WINGED, false);
     const naked = await strategy("Card naked", NAKED);
     const held = await strategy("Card held", { ...WINGED, exits: { ladder: [30, 60] } });
+    const stopped = await strategy("Card stopped", { ...WINGED, exits: { legStop: 3 } });
     type View = { saved?: { id: string; liveOpen?: boolean; usable: boolean }[]; liveAvailable?: boolean };
     const view = await json<View>(await t.request("/v1/autopilot", { cookie: trader.cookie }));
     const card = (id: string) => view.saved!.find((c) => c.id === id)!;
     expect(card(open.id)).toMatchObject({ usable: true, liveOpen: true });
-    for (const s of [pending, naked, held]) expect("liveOpen" in card(s.id), s.name).toBe(false);
+    for (const s of [pending, naked, held, stopped]) expect("liveOpen" in card(s.id), s.name).toBe(false);
     // the card carries no approval: who approved, when and on which record stay the admin's
     expect(Object.keys(card(open.id)).sort()).toEqual(["backtest", "definition", "id", "liveOpen", "name", "summary", "usable", "version"]);
     // the harness has the switch off: the field is absent, which reads as "not available"
@@ -195,6 +197,12 @@ describe("HC-TR-297 what a signing is refused for", () => {
     const naked = await strategy("Naked", NAKED);
     const r2 = await sign(terms(naked.id));
     expect([r2.status, await why(r2)]).toEqual([409, MANDATE_REFUSALS.notCapped]);
+    // ADR-157 (HC-TR-315): every sold option covered, and a stop that closes one of them alone: the loss is not limited
+    for (const exits of [{ legStop: 3 }, { legStop: 2, trailRestPct: 50, takeProfitOfCredit: 0.5 }]) {
+      const stopped = await strategy(`Stopped at ${exits.legStop}`, { ...WINGED, exits });
+      const r = await sign(terms(stopped.id));
+      expect([r.status, await why(r)], JSON.stringify(exits)).toEqual([409, MANDATE_REFUSALS.legStop]);
+    }
     for (const exits of [{ ladder: [30, 60] }, { legBuyBackShare: 0.2 }, { legBuyBackAt: 5 }]) {
       const held = await strategy(`Held ${JSON.stringify(exits)}`.slice(0, 40), { ...WINGED, exits });
       const r = await sign(terms(held.id));
@@ -257,6 +265,19 @@ describe("HC-TR-297 what a signing is refused for", () => {
 });
 
 describe("HC-TR-298 pause, resume and end", () => {
+  it("HC-TR-315 a mandate whose strategy has a stop on one sold option alone does not stand and cannot be resumed (ADR-157)", async () => {
+    const s = await strategy("Later stopped");
+    const m = await json<Mandate>(await sign(terms(s.id)));
+    expect(m).toMatchObject({ state: "active", standing: true });
+    // (written straight onto the row, as an approval given before the rule would stand: a change of settings through the app withdraws the approval by itself)
+    await t.db.update(autopilotSavedStrategies).set({ definition: { ...WINGED, exits: { legStop: 3 } } as unknown as SavedStrategy["definition"] }).where(eq(autopilotSavedStrategies.id, s.id));
+    expect((await mine()).find((x) => x.id === m.id)).toMatchObject({ state: "active", standing: false });
+    expect((await step(m.id, "pause")).status).toBe(200);
+    const refused = await step(m.id, "resume", await coded());
+    expect([refused.status, await why(refused)]).toEqual([409, MANDATE_REFUSALS.legStop]);
+    expect((await mine()).find((x) => x.id === m.id)).toMatchObject({ state: "paused", standing: false });
+  });
+
   it("HC-TR-298 pausing and ending ask for no code; resuming asks for one and checks the strategy again; an ended mandate is final; another trader's is not found", async () => {
     const s = await strategy("Steps");
     const m = await json<Mandate>(await sign(terms(s.id)));
@@ -352,6 +373,8 @@ describe("HC-TR-298 pause, resume and end", () => {
     expect(hasHeldExit({ exits: { legStop: 2, takeProfitOfCredit: 0.5 } })).toBe(false);
     expect(hasHeldExit({ exits: { ladder: [50] } })).toBe(true);
     expect(liveRefusalOf(undefined)).toBe(MANDATE_REFUSALS.notApproved);
+    // ADR-157 (HC-TR-315): the flag the admin list and the approval read; settings that cannot be read are not limited
+    expect([lossLimitedFor(WINGED), lossLimitedFor({ ...WINGED, exits: { legStop: 3 } }), lossLimitedFor(NAKED), lossLimitedFor({ legs: WINGED.legs }), lossLimitedFor(null)]).toEqual([true, false, false, false, false]);
   });
 
   it("HC-TR-297 a trader whose account was deactivated signs nothing", async () => {

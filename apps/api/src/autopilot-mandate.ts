@@ -4,13 +4,14 @@
  *
  * A RECORD ONLY: nothing in the engine reads a mandate yet, nothing here reaches a venue or opens a stored exchange
  * key, and Autopilot still trades on paper only. Signing is refused unless the strategy would be allowed to trade
- * live: on paper with a standing approval, its loss limited by bought options, no exit that runs on paper only, the
+ * live: on paper with a standing approval, its loss limited by bought options and by no stop on one sold option alone
+ * (ADR-157), no exit that runs on paper only, the
  * trader in its audience, and an exchange account of the trader's own on the strategy's venue.
  *
  * Every step runs in one transaction on the locked strategy row (sign, resume) or the locked mandate row, and writes
  * its audit line in the same transaction: the step and its line stand or fall together.
  */
-import { MANDATE_ENDED_BY_TRADER, MANDATE_PAUSED_BY_TRADER, MANDATE_REFUSALS, MANDATE_STATEMENTS, type Mandate, type MandateSign, SavedDefinition, savedLossCapped } from "@hapiecoin/schema";
+import { MANDATE_ENDED_BY_TRADER, MANDATE_PAUSED_BY_TRADER, MANDATE_REFUSALS, MANDATE_STATEMENTS, type Mandate, type MandateSign, SavedDefinition, savedLossLimit } from "@hapiecoin/schema";
 import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { mayUseSaved } from "./autopilot-saved.js";
 import type { Db } from "./db/client.js";
@@ -43,7 +44,10 @@ export function liveRefusalOf(s: StrategyRow | undefined): string | null {
   if (!standingFor(s)) return MANDATE_REFUSALS.notApproved;
   const parsed = SavedDefinition.safeParse(s!.definition);
   if (!parsed.success) return MANDATE_REFUSALS.unreadable;
-  if (!savedLossCapped(parsed.data.legs)) return MANDATE_REFUSALS.notCapped;
+  // ADR-157: covered legs are not enough; a stop that closes one sold option alone leaves a trade whose loss is not limited
+  const limit = savedLossLimit(parsed.data);
+  if (limit === "uncovered") return MANDATE_REFUSALS.notCapped;
+  if (limit === "legStop") return MANDATE_REFUSALS.legStop;
   if (hasHeldExit(parsed.data)) return MANDATE_REFUSALS.heldExit;
   return null;
 }

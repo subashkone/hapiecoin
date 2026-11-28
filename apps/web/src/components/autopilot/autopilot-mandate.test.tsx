@@ -25,7 +25,7 @@ afterEach(() => mock.restore());
 
 const leg = (kind: "call" | "put", side: "buy" | "sell", value: number) => ({ kind, side, by: "pct" as const, value });
 /** A strangle with wings: its loss is limited by the bought options, so it may trade live. */
-const WINGED = SavedDefinition.parse({ assets: ["BTC"], venues: ["delta_india"], lots: 100, cadence: "daily", fromHourUtc: 16, toHourUtc: 17, oncePerExpiry: false, minDte: 0.5, maxDte: 1.5, legs: [leg("put", "buy", 3), leg("put", "sell", 1), leg("call", "sell", 1), leg("call", "buy", 3)], exits: { legStop: 2 } });
+const WINGED = SavedDefinition.parse({ assets: ["BTC"], venues: ["delta_india"], lots: 100, cadence: "daily", fromHourUtc: 16, toHourUtc: 17, oncePerExpiry: false, minDte: 0.5, maxDte: 1.5, legs: [leg("put", "buy", 3), leg("put", "sell", 1), leg("call", "sell", 1), leg("call", "buy", 3)], exits: { takeProfitOfCredit: 0.5 } });
 const FIGURES = { mean: 4.2, per: "day" as const, positivePct: 71, worst: -60, samples: 106, basis: "autopilot-study, real fees" };
 const APPROVED = { by: null, byName: "The Owner", at: "2026-11-26T08:00:00.000Z" } as unknown as SavedStrategy["approval"];
 function publish(id: string, over: Partial<SavedStrategy> = {}): SavedStrategy {
@@ -55,11 +55,13 @@ describe("HC-TR-307 the mandate dialog", () => {
     publish("sv_open", { name: "Winged evening" });
     publish("sv_pending", { name: "Not approved", approval: null });
     publish("sv_naked", { name: "Naked", definition: SavedDefinition.parse({ ...WINGED, legs: [leg("put", "sell", 1), leg("call", "sell", 1)] }) });
+    // ADR-157 (HC-TR-315): approved, covered, and a stop that closes one sold option alone: no mandate
+    publish("sv_stop", { name: "Wings, stop 2x", definition: SavedDefinition.parse({ ...WINGED, exits: { legStop: 2 } }) });
     const view = renderWithProviders(<AutopilotPage />);
     await ready();
     await waitFor(() => expect(within(cardOf("sv_open")).getByTestId("autopilot-trade-live")).toBeTruthy());
     expect(within(cardOf("sv_open")).getByTestId("trading-env").textContent).toBe("TESTNET");
-    for (const id of ["sv_pending", "sv_naked"]) expect(within(cardOf(id)).queryByTestId("autopilot-trade-live")).toBeNull();
+    for (const id of ["sv_pending", "sv_naked", "sv_stop"]) expect(within(cardOf(id)).queryByTestId("autopilot-trade-live")).toBeNull();
     // no built-in strategy can take a mandate
     expect(screen.getAllByTestId("autopilot-trade-live")).toHaveLength(1);
     expect(screen.queryByTestId("autopilot-live-strip")).toBeNull();

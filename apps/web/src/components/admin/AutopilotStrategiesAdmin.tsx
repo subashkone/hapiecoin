@@ -6,7 +6,7 @@
 // figures say whether they were computed in the app or entered by hand. HC-TR-294 (ADR-145): Approval opens the paper
 // record of a strategy on paper against the approval checks; an approved one is marked, and still trades on paper only.
 import { AUTOPILOT_PLAYBOOKS, type Playbook, playbookBacktest, playbookCadence } from "@hapiecoin/pricing";
-import { SAVED_STAGES, SAVED_STAGE_LABELS, type SavedStage, type SavedStrategy } from "@hapiecoin/schema";
+import { SAVED_LOSS_LIMIT_LABELS, SAVED_STAGES, SAVED_STAGE_LABELS, type SavedStage, type SavedStrategy, savedLossLimit } from "@hapiecoin/schema";
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { AdminHeader } from "./AdminShell";
@@ -125,7 +125,7 @@ export function AutopilotStrategiesAdmin() {
                     <td className="max-w-[280px] py-1.5 pl-2 pr-2">
                       <div className="flex items-baseline gap-1 font-medium"><span className="truncate" title={s.name}>{s.name}</span><span className="micro shrink-0" data-testid="saved-version">· v{s.version}</span></div>
                       <div className="micro truncate" title={s.summary}>{s.summary}</div>
-                      <div className="micro">{s.lossCapped ? "Loss limited by bought options" : "Loss not limited"}{s.traded ? " · has traded" : ""}</div>
+                      <div className="micro" data-testid="saved-loss-limit">{SAVED_LOSS_LIMIT_LABELS[savedLossLimit(s.definition)]}{s.traded ? " · has traded" : ""}</div>
                     </td>
                     <td className="py-1.5 pr-2"><span className={cn("rounded border px-1.5 py-0.5 font-mono text-3xs", s.stage === "paper" ? "border-foreground/50 text-foreground" : "border-border text-muted-foreground")} data-testid="saved-stage">{SAVED_STAGE_LABELS[s.stage]}</span>{s.approval ? <div className="micro mt-1" title={`By ${s.approval.byName} on ${fmtDate(s.approval.at)}. It still trades on paper only.`} data-testid="saved-approved">Approved for live</div> : null}</td>
                     <td className="max-w-[260px] py-1.5 pr-2"><div>{s.entryText}</div><div className="micro num">{s.definition.assets.join(", ")} · {s.definition.lots} lots</div></td>

@@ -176,7 +176,7 @@ describe("HC-TR-292 the approval checks, approve and withdraw", () => {
       "First paper trade on 2026-10-01, 120 days ago; published 121 days ago. The log keeps 90 days: older trades are not in this record.",
       "0 closed paper trades, 0 still open, in the account that took the most entries (1 account traded it).",
       "No paper trade has closed yet.",
-      "By its settings, every sold option is covered by a bought one.",
+      "By its settings, every sold option is covered by a bought one, and no stop closes a sold option alone.",
     ]);
     expect(approvalChecks(good, { ...record, firstEntryAt: null, lastEntryAt: null, days: 0, publishedDays: 3, closed: 0 }).find((c) => c.key === "days")!.detail).toBe("No paper trade yet; published 3 days ago.");
   });
@@ -194,7 +194,15 @@ describe("HC-TR-292 the approval checks, approve and withdraw", () => {
     const v = await view(naked.id);
     expect(v.checks.filter((c) => !c.pass && c.blocking).map((c) => c.key)).toEqual(["lossCapped"]);
     expect(v.approvable).toBe(false);
-    expect(await why(await post(`${BASE}/${naked.id}/approve`, { read: true }))).toBe(`${SAVED_REFUSALS.approveChecks}: loss limited by bought options`);
+    expect(await why(await post(`${BASE}/${naked.id}/approve`, { read: true }))).toBe(`${SAVED_REFUSALS.approveChecks}: loss limited: every sold option covered, none stopped alone`);
+    // ADR-157 (HC-TR-315): the same for wings with a stop that closes one sold option alone, in its own words
+    const stopped = await onPaper("Wings, stop 3x", 31, { ...WINGED, exits: { legStop: 3 } });
+    await goodRecord(stopped);
+    expect(stopped.lossCapped).toBe(false);
+    const vs = await view(stopped.id);
+    expect(vs.checks.filter((c) => !c.pass && c.blocking).map((c) => [c.key, c.detail])).toEqual([["lossCapped", "Every sold option is covered, but its stop closes one sold option alone and keeps the rest open: after that the loss is not limited. Such a strategy runs on paper and never goes live."]]);
+    expect(vs.approvable).toBe(false);
+    expect(await why(await post(`${BASE}/${stopped.id}/approve`, { read: true }))).toBe(`${SAVED_REFUSALS.approveChecks}: loss limited: every sold option covered, none stopped alone`);
     // everything passes: still nothing without the approver saying the trades were read
     const good = await onPaper("Good", 31);
     await goodRecord(good);
