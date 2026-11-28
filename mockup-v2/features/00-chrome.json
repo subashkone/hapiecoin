@@ -1265,8 +1265,8 @@
     "status": "working",
     "phase": 5,
     "new": true,
-    "feature": "The Desk fits the window with a plan banner showing",
-    "how": "With a plan banner between the header and the workspace, the Desk is exactly as tall as the window: the workspace gives up the 36 px of the banner, so the page cannot scroll and take the header out of view; closing the banner gives the row back to the workspace",
+    "feature": "A plan banner adds no height of its own to the Desk",
+    "how": "With a plan banner between the header and the workspace, the workspace gives up the 36 px of the banner, so an empty tab is exactly as tall as the window and the banner alone no longer lets the page scroll the header out of view; closing the banner gives the row back to the workspace. A tab whose own content is taller than the window still scrolls the page (the Chain tab stands 3 px over at 720 px with a banner)",
     "evidence": "GAPS #190 d (28 Nov 2026): apps/web/src/app/globals.css (--banner-h), apps/web/src/components/workspace/Workspace.tsx, WorkspaceLoader.tsx; test: apps/web/e2e/desk.spec.ts HC-SH-145",
     "test": "e2e (Playwright)"
   }

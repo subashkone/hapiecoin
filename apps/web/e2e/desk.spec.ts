@@ -23,27 +23,30 @@ test.describe("HC-SH desk header and live chain", () => {
     await expect(page.getByTestId("plan-banner")).toContainText("Congratulations! Your plan is active until 31 Dec 2026");
   });
 
-  test("HC-SH-145 a plan banner adds nothing to the height of the Desk: with it showing an empty tab is exactly the window, and closing it changes no tab's height", async ({ page }) => {
+  test("HC-SH-145 a plan banner adds no height of its own to the Desk: with it showing an empty tab is exactly the window, and closing it gives its 36 px to the workspace", async ({ page }) => {
     await expect(page.getByTestId("plan-banner")).toBeVisible();
-    await expect(page.getByTestId("workspace")).toBeVisible({ timeout: 15_000 });
-    const heights = () => page.evaluate(() => ({ doc: document.documentElement.scrollHeight, win: window.innerHeight }));
+    const workspace = page.getByTestId("workspace");
+    await expect(workspace).toBeVisible({ timeout: 15_000 });
+    const doc = () => page.evaluate(() => document.documentElement.scrollHeight);
+    const win = await page.evaluate(() => window.innerHeight);
+    const workspaceHeight = () => workspace.evaluate((el) => Math.round(el.getBoundingClientRect().height));
     // (the Chain tab is left out: at this window height its own rows stand 3 px over with a banner, which is its content, not the banner)
     const TABS = ["journal", "paper"];
-    const withBanner: number[] = [];
+    // an empty tab has nothing to grow the page: before the fix it stood one banner (36 px) taller than the window
     for (const tab of TABS) {
       await page.getByTestId(`tab-${tab}`).click();
       await expect(page.getByTestId(`tab-${tab}`)).toHaveAttribute("data-state", "active");
-      withBanner.push((await heights()).doc);
+      await expect.poll(doc, { message: `the ${tab} tab with the banner` }).toBe(win);
     }
-    // an empty Journal has nothing to grow the page: before the fix it stood one banner (36 px) taller than the window
-    const win = (await heights()).win;
-    expect(withBanner).toEqual([win, win]);
+    const before = await workspaceHeight();
     await page.getByTestId("plan-banner").getByRole("button", { name: "Dismiss" }).click();
     await expect(page.getByTestId("plan-banner")).toBeHidden();
-    for (const [i, tab] of TABS.entries()) {
+    // the banner's row goes to the workspace, and the page is still the window
+    await expect.poll(workspaceHeight).toBe(before + 36);
+    for (const tab of TABS) {
       await page.getByTestId(`tab-${tab}`).click();
       await expect(page.getByTestId(`tab-${tab}`)).toHaveAttribute("data-state", "active");
-      expect((await heights()).doc, `the ${tab} tab`).toBe(withBanner[i]);
+      await expect.poll(doc, { message: `the ${tab} tab without the banner` }).toBe(win);
     }
   });
 
